@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
@@ -13,6 +14,7 @@ import { ConfirmSheet } from "@/components/common/ConfirmSheet";
 import { EmptyState, LoadingState } from "@/components/common/StateViews";
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { AuroraWash } from "@/components/layout/AuroraWash";
+import { BrandHeader } from "@/components/layout/BrandHeader";
 import { appConfig } from "@/config/app.config";
 import { ROUTES } from "@/config/routes";
 import { profileController } from "@/controllers/profile.controller";
@@ -63,35 +65,46 @@ export default function ProfilePage() {
     reload();
   };
 
-  const initial = user?.name?.trim()?.[0] ?? "?";
-
   return (
     <>
     <main className="no-scrollbar animate-screen-in relative flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F5F7F9]">
-      <div className="relative overflow-hidden px-5 pt-4 pb-[3.75rem] sm:px-6">
-        <AuroraWash className="inset-0 h-full" />
-        <div className={cn("relative", COLUMN)}>
-          <div className="flex items-center justify-between">
-            <h1 className="font-heading text-[1.75rem] leading-tight font-bold tracking-tight text-[#111]">
-              {appConfig.name}
-            </h1>
-            <button
-              type="button"
-              onClick={() => setConfirmLogout(true)}
-              aria-label="લોગ આઉટ"
-              className="ml-auto grid size-10 place-items-center rounded-full border border-[#E8ECF0] bg-white transition-transform active:scale-95"
-            >
-              <LogOut className="size-4.5 text-[#111]" strokeWidth={2} />
-            </button>
+      <div className="relative overflow-hidden pb-[3.75rem]">
+        <AuroraWash
+          src="/gradient-bg-profile.png"
+          className="inset-0 h-full"
+          imageClassName="object-cover object-center"
+        />
+        <div className="relative">
+          <BrandHeader
+            plain
+            trailing={
+              <button
+                type="button"
+                onClick={() => setConfirmLogout(true)}
+                aria-label="લોગ આઉટ"
+                className="grid size-10 place-items-center rounded-full border border-[#E8ECF0] bg-white transition-transform active:scale-95"
+              >
+                <LogOut className="size-4.5 text-[#111]" strokeWidth={2} />
+              </button>
+            }
+          />
+          <div className={cn(COLUMN)}>
+            <div className="h-10" />
           </div>
-          <div className="h-24" />
         </div>
       </div>
 
       <div className={cn("relative -mt-[3.75rem] px-5 pb-8 sm:px-6", COLUMN)}>
         <div className="flex flex-col items-center text-center">
-          <div className="relative z-10 grid size-[7.5rem] place-items-center rounded-full bg-primary-600 font-heading text-4xl font-bold text-white ring-[3px] ring-white">
-            {initial}
+          <div className="relative z-10 size-[7.5rem] overflow-hidden rounded-full bg-[#d8dde3] ring-[3px] ring-white">
+            <Image
+              src={BRAND_ICONS.profilePhoto}
+              alt={user?.name ?? ""}
+              width={240}
+              height={240}
+              priority
+              className="size-full object-cover object-[center_18%]"
+            />
           </div>
           <h2 className="mt-6 font-heading text-[18px] leading-tight font-bold text-[#000000]">
             {user?.name}

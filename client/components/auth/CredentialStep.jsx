@@ -40,11 +40,11 @@ export function CredentialStep({
 
       <div
         role="tablist"
-        className="relative grid h-15 w-full grid-cols-2 rounded-[1.5rem] bg-[linear-gradient(90deg,#f6f5f3,#edf5f2)] p-1 shadow-[0_0_0_1px_#EFEFEF]"
+        className="relative mx-auto grid h-15 w-[80%] grid-cols-2 rounded-[1.9rem] bg-[#ffffff] p-1 shadow-[0_0_0_1px_#EFEFEF]"
       >
         <span
           aria-hidden
-          className="absolute inset-y-1 left-1 rounded-[1.25rem] bg-white transition-transform duration-300 ease-emphasized"
+          className="absolute inset-y-1 left-1 rounded-[1.9rem] bg-[linear-gradient(90deg,#f6f5f3,#edf5f2)] transition-transform duration-300 ease-emphasized"
           style={{
             width: "calc((100% - 0.5rem) / 2)",
             transform: `translateX(${activeIndex * 100}%)`,

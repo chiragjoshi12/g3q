@@ -2,10 +2,15 @@
 
 import { cn } from "@/lib/utils";
 
-function Avatar({ name }) {
+function Avatar({ name, className }) {
   const initial = name?.trim()?.[0] ?? "?";
   return (
-    <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary-600 text-base font-bold text-white md:size-12">
+    <span
+      className={cn(
+        "grid size-11 shrink-0 place-items-center rounded-full bg-primary-600 text-base font-bold text-white md:size-12",
+        className
+      )}
+    >
       {initial}
     </span>
   );
@@ -13,12 +18,12 @@ function Avatar({ name }) {
 
 export function LeaderboardRow({ rank, name, institute, grade, you = false }) {
   return (
-    <li className="flex items-start gap-3 py-3 md:gap-4 md:py-3.5">
-      <span className="w-7 shrink-0 pt-2 text-center text-lg font-bold text-[#111] md:w-9 md:text-xl">
+    <li className="flex items-start py-3 md:py-3.5">
+      <span className="w-8 shrink-0 pt-2 text-center text-lg font-bold text-[#111] md:w-9 md:text-xl">
         {rank}
       </span>
-      <Avatar name={name} />
-      <span className="min-w-0 flex-1">
+      <Avatar name={name} className="ml-8 md:ml-10" />
+      <span className="ml-3 min-w-0 flex-1 md:ml-4">
         <span className="block text-[1.05rem] font-bold text-[#111] md:text-lg">
           {you ? `${name} (You)` : name}
         </span>
@@ -52,7 +57,7 @@ export function BoardToggle({ value, onChange }) {
   ];
 
   return (
-    <div className="mx-auto flex w-[75%] rounded-[1.3rem] border border-[#D5DCE3] bg-white p-[5px]">
+    <div className="mx-auto flex w-[75%] rounded-[1.2rem] border border-[#D5DCE3] bg-white p-[3px]">
       {items.map((item) => {
         const active = item.id === value;
 
@@ -62,10 +67,10 @@ export function BoardToggle({ value, onChange }) {
             type="button"
             onClick={() => onChange(item.id)}
             className={cn(
-              "flex-1 rounded-[1.3rem] py-4 text-center text-[15px] font-bold transition-colors md:py-5 md:text-base",
+              "flex-1 rounded-[1.2rem] py-3 text-center text-[15px] transition-colors md:py-4 md:text-base",
               active
-                ? "bg-[#2d689d] text-white"
-                : "bg-transparent text-[#111]"
+                ? "bg-[#2d689d] font-bold text-white"
+                : "bg-transparent font-normal text-[#111]"
             )}
           >
             {item.label}

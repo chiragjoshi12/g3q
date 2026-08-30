@@ -156,6 +156,8 @@ export class QuizSessionModel {
           },
         });
 
+        if (!row.attempted) continue;
+
         const existing = await tx.userQuestionExposure.findUnique({
           where: {
             userId_bankQueId: { userId: row.userId, bankQueId: row.bankQueId },

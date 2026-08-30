@@ -4,13 +4,11 @@ import { Suspense, use } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "@/components/icons";
 
-import {
-  ACTION_BUTTON_CLASS,
-  ACTION_BUTTON_SECONDARY_CLASS,
-  AppButton,
-} from "@/components/common/AppButton";
+import { ACTION_BUTTON_CLASS, AppButton } from "@/components/common/AppButton";
 import { ErrorState, LoadingState } from "@/components/common/StateViews";
 import { AppShell } from "@/components/layout/AppShell";
+import { AuroraWash } from "@/components/layout/AuroraWash";
+import { QuestionReviewCard } from "@/components/result/QuestionReviewCard";
 import { ScoreSummary } from "@/components/result/ScoreSummary";
 import { ROUTES } from "@/config/routes";
 import { quizController } from "@/controllers/quiz.controller";
@@ -18,10 +16,9 @@ import { useAsyncData } from "@/hooks/useAsyncData";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { usePracticeMode } from "@/hooks/usePracticeMode";
 import { AppError, ERROR_CODE } from "@/lib/core/errors";
-import { useQuizStore } from "@/store/quiz.store";
 
 /**
- * Result screen: score, certificate, and retry / home actions.
+ * Result screen: score, certificate, question review, and home action.
  */
 export default function ResultPage({ params }) {
   return (
@@ -42,7 +39,6 @@ function ResultScreen({ params }) {
   const router = useRouter();
   const practice = usePracticeMode();
   const { ready, isAuthenticated } = useAuthGuard({ optional: practice });
-  const resetSession = useQuizStore((state) => state.resetSession);
 
   const { status, data, error, reload } = useAsyncData(
     async () => {
@@ -61,17 +57,17 @@ function ResultScreen({ params }) {
   const bundle = data?.bundle ?? null;
   const leaveTo = practice && !isAuthenticated ? ROUTES.root : ROUTES.home;
 
-  const handleRetry = () => {
-    const quizId = attempt?.quizId;
-    resetSession();
-    if (quizId) router.replace(ROUTES.quiz(quizId, { practice }));
-  };
-
   const subtitle = bundle?.quiz?.subtitle || attempt?.quizTitle;
 
   return (
     <AppShell className="bg-[#F2F2F2] font-canva">
-      <header className="shrink-0 px-5 pt-4 pb-2 sm:px-6">
+      <AuroraWash
+        className="h-56"
+        imageClassName="object-cover object-[center_38%]"
+        unoptimized
+      />
+
+      <header className="relative z-10 shrink-0 px-5 pt-4 pb-8 sm:px-6">
         <div className="mx-auto flex w-full max-w-[26.5rem] items-center gap-3 md:max-w-none">
           <button
             type="button"
@@ -86,39 +82,67 @@ function ResultScreen({ params }) {
               Result - Score
             </h1>
             {subtitle ? (
-              <p className="mt-0.5 truncate font-canva text-sm text-[#111]">{subtitle}</p>
+              <p className="mt-0.5 truncate font-canva text-sm font-normal text-[#111]">
+                {subtitle}
+              </p>
             ) : null}
           </div>
         </div>
       </header>
 
-      <main className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 sm:px-6">
-        <div className="mx-auto w-full max-w-[26.5rem] py-3 md:max-w-none">
-          {status === "loading" ? <LoadingState label="પરિણામ તૈયાર થઈ રહ્યું છે…" /> : null}
-          {status === "error" ? <ErrorState message={error} onRetry={reload} /> : null}
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-[2rem] bg-white shadow-[0_-6px_20px_rgb(15_23_42/0.04)]">
+        <main className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-5 pb-6 sm:px-6">
+          <div className="mx-auto w-full max-w-[26.5rem] md:max-w-none">
+            {status === "loading" ? <LoadingState label="પરિણામ તૈયાર થઈ રહ્યું છે…" /> : null}
+            {status === "error" ? <ErrorState message={error} onRetry={reload} /> : null}
 
-          {status === "ready" && attempt ? (
-            <ScoreSummary attempt={attempt} quiz={bundle?.quiz} />
-          ) : null}
-        </div>
-      </main>
-
-      {status === "ready" && attempt ? (
-        <footer className="shrink-0 px-5 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-6">
-          <div className="mx-auto flex w-full max-w-[26.5rem] flex-col items-center gap-2.5 md:max-w-none">
-            <AppButton onClick={handleRetry} className={ACTION_BUTTON_CLASS}>
-              Try again
-            </AppButton>
-            <AppButton
-              variant="outline"
-              onClick={() => router.replace(leaveTo)}
-              className={ACTION_BUTTON_SECONDARY_CLASS}
-            >
-              Home page
-            </AppButton>
+            {status === "ready" && attempt ? (
+              <>
+                <ScoreSummary attempt={attempt} quiz={bundle?.quiz} />
+                <QuizReview attempt={attempt} bundle={bundle} />
+              </>
+            ) : null}
           </div>
-        </footer>
-      ) : null}
+        </main>
+
+        {status === "ready" && attempt ? (
+          <footer className="shrink-0 px-5 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-6">
+            <div className="mx-auto flex w-full max-w-[26.5rem] flex-col items-center gap-2.5 md:max-w-none">
+              <AppButton onClick={() => router.replace(leaveTo)} className={ACTION_BUTTON_CLASS}>
+                Home page
+              </AppButton>
+            </div>
+          </footer>
+        ) : null}
+      </div>
     </AppShell>
+  );
+}
+
+function QuizReview({ attempt, bundle }) {
+  const questions = bundle?.questions ?? [];
+  const questionsById = Object.fromEntries(questions.map((question) => [question.id, question]));
+  const rows = attempt.breakdown ?? [];
+
+  if (rows.length === 0) return null;
+
+  return (
+    <section className="mt-8">
+      <h2 className="font-canva text-[1.2rem] font-bold text-[#111]">Quiz સમીક્ષા</h2>
+      <div className="mt-3 space-y-3">
+        {rows.map((row, index) => {
+          const question = questionsById[row.questionId];
+          if (!question) return null;
+          return (
+            <QuestionReviewCard
+              key={row.questionId}
+              index={index}
+              question={question}
+              row={row}
+            />
+          );
+        })}
+      </div>
+    </section>
   );
 }

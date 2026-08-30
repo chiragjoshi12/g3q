@@ -1,8 +1,6 @@
 import { appConfig } from "@/config/app.config";
 import { ROLE } from "@/lib/domain/roles";
 
-export const CERTIFICATE_MIN_PERCENT = 60;
-
 /** Native pixel size of `/certificate-bg.png`. */
 export const CERT_NATIVE = { width: 6250, height: 4419 };
 
@@ -26,7 +24,7 @@ export const CERT_LAYOUT = {
 };
 
 export function attemptEarnsCertificate(attempt) {
-  return (attempt?.percentage ?? 0) >= CERTIFICATE_MIN_PERCENT;
+  return Boolean(attempt?.attemptId);
 }
 
 export function formatG3qId(user = {}) {

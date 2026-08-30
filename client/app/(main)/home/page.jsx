@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { ErrorState, LoadingState } from "@/components/common/StateViews";
 import { FeaturedQuizCard } from "@/components/home/FeaturedQuizCard";
 import { AuroraWash } from "@/components/layout/AuroraWash";
+import { BrandHeader } from "@/components/layout/BrandHeader";
 import { ContentWidth } from "@/components/layout/ContentWidth";
-import { appConfig } from "@/config/app.config";
 import { ROUTES } from "@/config/routes";
 import { quizController } from "@/controllers/quiz.controller";
 import { useAsyncData } from "@/hooks/useAsyncData";
@@ -27,22 +27,28 @@ export default function HomePage() {
 
   return (
     <main className="no-scrollbar animate-screen-in flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F5F7F9]">
-      <div className="relative overflow-hidden px-5 pt-5 pb-7 sm:px-6">
+      <div className="relative overflow-hidden">
         <AuroraWash className="inset-0 h-full" />
-        <h1 className="relative font-heading text-[1.75rem] leading-tight font-bold tracking-tight text-[#111]">
-          {appConfig.name}
-        </h1>
+        <BrandHeader priority plain />
       </div>
 
-      <ContentWidth
-        size="phone"
-        className="px-5 pt-5 pb-8 sm:px-6 md:max-w-none"
+      <div
+        className="px-5 pt-5 pb-4 sm:px-6"
+        style={{
+          backgroundImage:
+            "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(255,255,255,0.28) 50%, #e6ebeb 100%)",
+        }}
       >
         <h2 className="font-heading text-[1.2rem] font-bold text-[#111]">
           Today&apos;s special Quiz
         </h2>
+      </div>
 
-        <div className="mt-4 md:mt-5">
+      <div className="bg-[#e6ebeb]">
+        <ContentWidth
+          size="phone"
+          className="px-5 pb-8 sm:px-6 md:max-w-none"
+        >
           {status === "loading" ? <LoadingState /> : null}
           {status === "error" ? <ErrorState message={error} onRetry={reload} /> : null}
 
@@ -63,8 +69,8 @@ export default function HomePage() {
               })}
             </div>
           ) : null}
-        </div>
-      </ContentWidth>
+        </ContentWidth>
+      </div>
     </main>
   );
 }

@@ -26,7 +26,16 @@ export const quizController = {
   },
 
   /** Grades the session, persists the attempt, and returns the result. */
-  async finalizeAttempt({ attemptId, quiz, questions, answers, timings, startedAt, user }) {
+  async finalizeAttempt({
+    attemptId,
+    quiz,
+    questions,
+    answers,
+    timings,
+    startedAt,
+    user,
+    abandoned = false,
+  }) {
     const completedAt = Date.now();
     const result = buildAttemptResult({
       attemptId,
@@ -36,6 +45,7 @@ export const quizController = {
       timings,
       startedAt,
       completedAt,
+      abandoned,
     });
 
     const attempt = {

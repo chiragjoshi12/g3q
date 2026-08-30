@@ -28,9 +28,9 @@ export function ScoreSummary({ attempt, quiz }) {
 
   return (
     <section className="animate-slide-up space-y-4">
-      <div className={cn("rounded-[1.75rem] bg-white px-5 pt-6 pb-5", CARD_SHADOW)}>
+      <div>
         <div className="flex items-center justify-between gap-3">
-          <p className="font-canva text-[3rem] leading-none font-bold tracking-tight text-[#111]">
+          <p className="ml-8 font-canva text-[3rem] leading-none font-bold tracking-tight text-[#111]">
             {attempt.percentage}
             <span className="text-[1.85rem]">%</span>
           </p>
@@ -73,18 +73,8 @@ export function ScoreSummary({ attempt, quiz }) {
           )}
         >
           <BrandIcon src={BRAND_ICONS.resultCertificate} alt="" className="size-9 shrink-0" />
-          <span className="font-canva text-[1.05rem] font-bold text-[#2C6698]">Certificate</span>
+          <span className="font-canva text-[1.05rem] font-bold text-[#000000]">Certificate</span>
         </button>
-      ) : named ? (
-        <div
-          className={cn(
-            "flex items-center gap-3 rounded-[1.35rem] bg-white px-5 py-4 opacity-55",
-            CARD_SHADOW
-          )}
-        >
-          <BrandIcon src={BRAND_ICONS.resultCertificate} alt="" className="size-9 shrink-0" />
-          <span className="font-canva text-[1.05rem] font-bold text-[#2C6698]">Certificate</span>
-        </div>
       ) : null}
 
       <CertificateViewer open={open} payload={payload} onClose={() => setOpen(false)} />
@@ -106,7 +96,7 @@ function StatChip({ tone, value, label, iconSrc }) {
         tones[tone]
       )}
     >
-      <BrandIcon src={iconSrc} alt="" className="size-8" />
+      <BrandIcon src={iconSrc} alt="" className="size-6" />
       <span className="font-inter text-center text-[0.95rem] leading-snug font-bold text-[#111]">
         {value}
       </span>

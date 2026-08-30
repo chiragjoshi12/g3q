@@ -176,10 +176,17 @@ export const useQuizStore = create()(
       },
 
       /** Grades and persists the attempt. Returns the attempt id for routing. */
-      finishQuiz: async (user) => {
+      finishQuiz: async (user, { abandoned = false } = {}) => {
         const state = get();
-        if (state.phase !== QUIZ_PHASE.REVIEWING || !state.isLastQuestion()) return null;
-        set({ loading: true });
+        if (!abandoned && (state.phase !== QUIZ_PHASE.REVIEWING || !state.isLastQuestion())) {
+          return null;
+        }
+        if (!state.attemptId || !state.quiz) return null;
+        set({
+          loading: true,
+          runningSince: null,
+          accumulatedMs: state.readElapsedMs(),
+        });
         try {
           const attempt = await quizController.finalizeAttempt({
             attemptId: state.attemptId,
@@ -189,6 +196,7 @@ export const useQuizStore = create()(
             timings: state.timings,
             startedAt: state.startedAt,
             user,
+            abandoned,
           });
           set({
             loading: false,

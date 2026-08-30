@@ -13,4 +13,5 @@ export const BRAND_ICONS = {
   doYouKnow: "/icons/do-you-know.png",
   resultCertificate: "/icons/result-certificate.png",
   resultTrophy: "/icons/result-trophy.png",
+  profilePhoto: "/profile-photo.jpg",
 };

@@ -1,5 +1,10 @@
 import { gradeQuestion } from "@/lib/domain/grading";
 
+/** A question counts as attempted only after Submit — timings are written then. */
+function wasAttempted(timings, questionId) {
+  return Object.prototype.hasOwnProperty.call(timings ?? {}, questionId);
+}
+
 /** Builds a complete, self-contained attempt result from raw answers + timings. */
 export function buildAttemptResult({
   attemptId,
@@ -9,15 +14,35 @@ export function buildAttemptResult({
   timings,
   startedAt,
   completedAt,
+  abandoned = false,
 }) {
-  const breakdown = questions.map((question) =>
-    gradeQuestion(question, answers[question.id], timings[question.id] ?? 0)
+  const attemptedIds = new Set(
+    questions.filter((question) => wasAttempted(timings, question.id)).map((question) => question.id)
   );
+  const leftEarly = Boolean(abandoned) || attemptedIds.size < questions.length;
 
-  const correctCount = breakdown.filter((row) => row.correct).length;
+  const breakdown = questions.map((question) => {
+    const attempted = attemptedIds.has(question.id);
+    if (!attempted) {
+      return {
+        ...gradeQuestion(question, answers[question.id], 0),
+        correct: false,
+        earnedPoints: 0,
+        attempted: false,
+      };
+    }
+    return {
+      ...gradeQuestion(question, answers[question.id], timings[question.id] ?? 0),
+      attempted: true,
+    };
+  });
+
+  const attemptedRows = breakdown.filter((row) => row.attempted);
+  const correctCount = attemptedRows.filter((row) => row.correct).length;
   const earnedPoints = breakdown.reduce((sum, row) => sum + row.earnedPoints, 0);
   const maxPoints = breakdown.reduce((sum, row) => sum + row.maxPoints, 0);
-  const totalTimeMs = breakdown.reduce((sum, row) => sum + row.timeSpentMs, 0);
+  const totalTimeMs = attemptedRows.reduce((sum, row) => sum + row.timeSpentMs, 0);
+  const totalQuestions = questions.length;
 
   return {
     attemptId,
@@ -25,18 +50,19 @@ export function buildAttemptResult({
     quizTitle: quiz.title,
     startedAt,
     completedAt,
-    totalQuestions: questions.length,
+    totalQuestions,
+    attemptedCount: attemptedIds.size,
+    abandoned: leftEarly,
     correctCount,
-    wrongCount: questions.length - correctCount,
+    wrongCount: attemptedRows.length - correctCount,
     earnedPoints,
     maxPoints,
-    percentage: maxPoints > 0 ? Math.round((earnedPoints / maxPoints) * 100) : 0,
+    percentage: totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0,
     // Active answering time (sum of per-question timers, which pause on submit).
     totalTimeMs,
     // Wall-clock time from first question to submission, including review pauses.
     wallClockMs: Math.max(0, (completedAt ?? 0) - (startedAt ?? 0)),
-    averageTimeMs:
-      questions.length > 0 ? Math.round(totalTimeMs / questions.length) : 0,
+    averageTimeMs: attemptedRows.length > 0 ? Math.round(totalTimeMs / attemptedRows.length) : 0,
     breakdown,
   };
 }

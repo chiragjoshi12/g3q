@@ -9,7 +9,15 @@ import { cn } from "@/lib/utils";
  * Bottom confirmation sheet: icon, title, body, then ના / હા.
  * Portals into the app frame so it stays inside the phone chrome.
  */
-export function ConfirmSheet({ open, icon: Icon, title, description, onCancel, onConfirm }) {
+export function ConfirmSheet({
+  open,
+  icon: Icon,
+  title,
+  description,
+  busy = false,
+  onCancel,
+  onConfirm,
+}) {
   const [frame, setFrame] = useState(() =>
     typeof document === "undefined" ? null : document.querySelector("[data-app-frame]")
   );
@@ -21,11 +29,11 @@ export function ConfirmSheet({ open, icon: Icon, title, description, onCancel, o
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (event) => {
-      if (event.key === "Escape") onCancel?.();
+      if (event.key === "Escape" && !busy) onCancel?.();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onCancel]);
+  }, [open, busy, onCancel]);
 
   if (!open || !frame) return null;
 
@@ -34,7 +42,7 @@ export function ConfirmSheet({ open, icon: Icon, title, description, onCancel, o
       <button
         type="button"
         aria-label="રદ કરો"
-        onClick={onCancel}
+        onClick={busy ? undefined : onCancel}
         className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
       />
       <div
@@ -65,19 +73,21 @@ export function ConfirmSheet({ open, icon: Icon, title, description, onCancel, o
           <button
             type="button"
             onClick={onCancel}
-            className="py-3.5 text-center text-[1.05rem] font-bold text-[#111] transition-colors hover:bg-black/[0.03] active:bg-black/[0.05]"
+            disabled={busy}
+            className="py-3.5 text-center text-[1.05rem] font-bold text-[#111] transition-colors hover:bg-black/[0.03] active:bg-black/[0.05] disabled:opacity-45"
           >
             ના
           </button>
           <button
             type="button"
             onClick={onConfirm}
+            disabled={busy}
             className={cn(
               "border-l border-[#E4E4E4] py-3.5 text-center text-[1.05rem] font-bold text-[#111]",
-              "transition-colors hover:bg-black/[0.03] active:bg-black/[0.05]"
+              "transition-colors hover:bg-black/[0.03] active:bg-black/[0.05] disabled:opacity-45"
             )}
           >
-            હા
+            {busy ? "…" : "હા"}
           </button>
         </div>
       </div>

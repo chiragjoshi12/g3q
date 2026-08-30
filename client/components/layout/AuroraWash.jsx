@@ -8,19 +8,25 @@ const HEADER_BG = "/top-header-gradient-bg.jpeg";
  * Soft grainy header image used on Home and Profile.
  * Sit this behind page titles; content stays in a relative layer.
  */
-export function AuroraWash({ className }) {
+export function AuroraWash({
+  className,
+  src = HEADER_BG,
+  imageClassName,
+  unoptimized = false,
+}) {
   return (
     <div
       aria-hidden
       className={cn("pointer-events-none absolute inset-x-0 top-0 h-72 overflow-hidden", className)}
     >
       <Image
-        src={HEADER_BG}
+        src={src}
         alt=""
         fill
         sizes="100vw"
         priority
-        className="object-cover object-[center_72%]"
+        unoptimized={unoptimized}
+        className={cn("object-cover object-[center_72%]", imageClassName)}
       />
     </div>
   );

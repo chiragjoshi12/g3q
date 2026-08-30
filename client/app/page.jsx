@@ -8,7 +8,6 @@ import {
   ACTION_BUTTON_SECONDARY_CLASS,
   AppButton,
 } from "@/components/common/AppButton";
-import { BrandIcon } from "@/components/common/BrandIcon";
 import { BannerSlider } from "@/components/landing/BannerSlider";
 import {
   BoardToggle,
@@ -16,6 +15,7 @@ import {
   LeaderboardRow,
 } from "@/components/landing/LeaderboardList";
 import { AppShell } from "@/components/layout/AppShell";
+import { BrandHeader } from "@/components/layout/BrandHeader";
 import { appConfig } from "@/config/app.config";
 import { FEATURED_QUIZ_ID, ROUTES, setPostAuthPath } from "@/config/routes";
 import {
@@ -25,7 +25,6 @@ import {
 } from "@/data/leaderboard";
 import { useStoreHydrated } from "@/hooks/useStoreHydrated";
 import { ROLE } from "@/lib/domain/roles";
-import { BRAND_ICONS } from "@/lib/brand-icons";
 import { useAuthStore } from "@/store/auth.store";
 
 const ABOUT_LEAD =
@@ -88,20 +87,7 @@ export default function LandingPage() {
   return (
     <AppShell className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F3F3F3]">
       <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[26.5rem] flex-col bg-[#F3F3F3] md:max-w-none">
-        <header className="relative z-20 shrink-0 bg-white px-4 py-3 shadow-[0_1px_0_rgb(15_23_42/0.08)]">
-          <div className="flex items-center gap-2">
-            <BrandIcon
-              src={BRAND_ICONS.logo}
-              alt="G3Q 2.0"
-              priority
-              className="size-12 shrink-0"
-            />
-            <h1 className="font-heading min-w-0 flex-1 text-center text-[1.7rem] leading-none font-bold tracking-tight text-primary-600">
-              {appConfig.name}
-            </h1>
-            <span className="size-12 shrink-0" aria-hidden />
-          </div>
-        </header>
+        <BrandHeader priority />
 
         <main className="no-scrollbar relative z-0 min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <div className="px-4 pt-4 pb-40">
@@ -137,10 +123,10 @@ export default function LandingPage() {
               <h2 className="text-center text-[1.45rem] font-bold text-[#111]">
                 ક્વિઝ લીડરબોર્ડ
               </h2>
-              <p className="mt-1 text-center text-[13px] font-medium text-[#6B7280]">
+              <p className="mt-1 text-center text-[1rem] font-medium text-[#000000]">
                 ({taluka} - week {week})
               </p>
-              <p className="mt-2 text-center text-[13px] leading-relaxed text-[#6B7280]">
+              <p className="mt-2 text-center text-[13px] leading-relaxed text-[#000000]">
                 અહીં તમારા તાલુકાના ટોપ 10 વિદ્યાર્થીઓનો લાઈવ રેન્ક બતાવેલ છે.
               </p>
 
@@ -149,8 +135,8 @@ export default function LandingPage() {
               </div>
 
               <div className="mt-6 flex text-[14px] text-black">
-                <span className="w-7 shrink-0 text-center">રેન્ક</span>
-                <span className="ml-14">વિદ્યાર્થી</span>
+                <span className="w-8 shrink-0 text-center">રેન્ક</span>
+                <span className="ml-8 md:ml-10">વિદ્યાર્થી</span>
               </div>
 
               <ul>

@@ -241,35 +241,37 @@ export const sessionService = {
 
     const gradedRows = session.questions.map((q) => {
       const selected = normalizeOption(answerMap[q.bankQueId]);
-      const isCorrect = Boolean(selected && selected === q.correctOption);
-      const timeSpentMs = Math.max(0, Math.round(Number(timingMap[q.bankQueId]) || 0));
+      const attempted = Object.prototype.hasOwnProperty.call(timingMap, q.bankQueId);
+      const isCorrect = Boolean(attempted && selected && selected === q.correctOption);
+      const timeSpentMs = attempted
+        ? Math.max(0, Math.round(Number(timingMap[q.bankQueId]) || 0))
+        : 0;
       return {
         id: q.id,
         userId,
         bankQueId: q.bankQueId,
         selectedOption: selected,
         isCorrect,
+        attempted,
         timeSpentMs,
         points: q.points,
       };
     });
 
-    const correctCount = gradedRows.filter((r) => r.isCorrect).length;
-    const totalTimeMs = gradedRows.reduce((sum, r) => sum + r.timeSpentMs, 0);
-    const maxPoints = gradedRows.reduce((sum, r) => sum + r.points, 0);
-    const earnedPoints = gradedRows.reduce(
-      (sum, r) => sum + (r.isCorrect ? r.points : 0),
-      0
-    );
+    const attemptedRows = gradedRows.filter((r) => r.attempted);
+    const correctCount = attemptedRows.filter((r) => r.isCorrect).length;
+    const totalTimeMs = attemptedRows.reduce((sum, r) => sum + r.timeSpentMs, 0);
+    const totalQuestions = gradedRows.length;
 
     const updated = await QuizSessionModel.submit(sessionId, gradedRows, {
       correctCount,
-      wrongCount: gradedRows.length - correctCount,
+      wrongCount: attemptedRows.length - correctCount,
       totalTimeMs,
       wallClockMs: completedMs - startedMs,
       averageTimeMs:
-        gradedRows.length > 0 ? Math.round(totalTimeMs / gradedRows.length) : 0,
-      percentage: maxPoints > 0 ? Math.round((earnedPoints / maxPoints) * 100) : 0,
+        attemptedRows.length > 0 ? Math.round(totalTimeMs / attemptedRows.length) : 0,
+      percentage:
+        totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0,
     });
 
     return toSessionResult(updated);

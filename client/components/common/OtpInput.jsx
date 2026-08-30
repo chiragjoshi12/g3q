@@ -38,7 +38,7 @@ export function OtpInput({ length = 6, value, onChange, onComplete, invalid, aut
         aria-label="OTP"
         className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
       />
-      <div className="flex justify-between gap-2">
+      <div className="flex justify-between gap-1.5">
         {Array.from({ length }).map((_, index) => {
           const filled = Boolean(digits[index]);
           const isNext = index === digits.length;
@@ -46,7 +46,7 @@ export function OtpInput({ length = 6, value, onChange, onComplete, invalid, aut
             <div
               key={index}
               className={cn(
-                "grid h-12 min-w-0 flex-1 place-items-center rounded-lg border bg-white font-heading text-xl font-semibold transition-all duration-200",
+                "grid h-14 min-w-0 flex-1 place-items-center rounded-lg border bg-white font-heading text-xl font-semibold transition-all duration-200",
                 invalid
                   ? "border-error text-error"
                   : filled

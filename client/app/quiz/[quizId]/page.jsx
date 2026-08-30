@@ -46,6 +46,7 @@ function QuizScreen({ params }) {
   const practice = usePracticeMode();
   const { ready, user } = useAuthGuard({ optional: practice });
   const [confirmExit, setConfirmExit] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   // The color-coded right/wrong styling on the answer itself waits for this,
   // so scanning ahead to green/red can't spoil the "why" you're meant to
   // read first — it flips true once the AI explanation finishes writing (or
@@ -116,6 +117,18 @@ function QuizScreen({ params }) {
     if (attemptId) router.replace(ROUTES.result(attemptId, { practice }));
   };
 
+  const handleLeave = async () => {
+    if (leaving) return;
+    setLeaving(true);
+    const attemptId = await finishQuiz(user, { abandoned: true });
+    if (attemptId) {
+      router.replace(ROUTES.result(attemptId, { practice }));
+      return;
+    }
+    setLeaving(false);
+    router.replace(practice && !user ? ROUTES.root : ROUTES.home);
+  };
+
   if (!ready) {
     return (
       <AppShell>
@@ -142,31 +155,32 @@ function QuizScreen({ params }) {
           ) : null}
 
           {question ? (
-            <div
-              key={question.id}
-              className="animate-screen-in space-y-5"
-            >
+            <div key={question.id} className="animate-screen-in">
               <h2 className="font-canva text-lg leading-snug font-bold text-[#111] sm:text-xl">
                 {question.prompt}
               </h2>
 
-              <QuestionRenderer
-                question={question}
-                value={value}
-                onChange={setAnswer}
-                disabled={!answering}
-                revealed={reviewing && verdictRevealed}
-                celebrate={reviewing && verdictRevealed && !explanationOpen}
-              />
+              <div className="mt-8 sm:mt-9">
+                <QuestionRenderer
+                  question={question}
+                  value={value}
+                  onChange={setAnswer}
+                  disabled={!answering}
+                  revealed={reviewing && verdictRevealed}
+                  celebrate={reviewing && verdictRevealed && !explanationOpen}
+                />
+              </div>
 
               {verdictRevealed && !explanationOpen ? (
+                <div className="mt-5">
                 <AnswerVerdict
                   correct={isCorrect(question, value)}
                   timeSpentMs={timings[question.id] ?? 0}
                 />
+                </div>
               ) : null}
 
-              <div className="hidden pt-2 md:block">
+              <div className="mt-5 hidden pt-2 md:block">
                 {!explanationOpen ? (
                   <QuizAction
                     answering={answering}
@@ -219,9 +233,12 @@ function QuizScreen({ params }) {
         open={confirmExit}
         icon={LogOut}
         title="ક્વિઝ છોડો"
-        description="શું તમે ખરેખર આ ક્વિઝ છોડવા માંગો છો?"
-        onCancel={() => setConfirmExit(false)}
-        onConfirm={() => router.replace(practice && !user ? ROUTES.root : ROUTES.home)}
+        description="અત્યાર સુધીના સાચા અને ખોટા જવાબ પર પરિણામ બતાવવામાં આવશે. શું તમે ક્વિઝ છોડવા માંગો છો?"
+        busy={leaving}
+        onCancel={() => {
+          if (!leaving) setConfirmExit(false);
+        }}
+        onConfirm={handleLeave}
       />
     </AppShell>
   );

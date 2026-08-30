@@ -30,7 +30,7 @@ export function ChoiceOption({
       onClick={onToggle}
       aria-pressed={selected}
       className={cn(
-        "w-full overflow-visible rounded-[1.35rem] border-2 bg-white px-5 py-4 text-left font-canva text-sm leading-snug font-medium transition-all duration-200 ease-emphasized sm:text-base",
+        "flex min-h-[4.5rem] w-full items-center overflow-visible rounded-[1.35rem] border-2 bg-white px-5 py-5 text-left font-canva text-sm leading-snug font-medium transition-all duration-200 ease-emphasized sm:min-h-[5rem] sm:py-6 sm:text-base",
         !disabled && "active:scale-[0.99]",
         !revealed && selected && "border-primary-600 bg-primary-50",
         !revealed && !selected && "border-[#E8ECF0] hover:border-primary-300",

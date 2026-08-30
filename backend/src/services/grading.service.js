@@ -53,17 +53,49 @@ export function gradeQuestion(question, answer, timeSpentMs = 0) {
   };
 }
 
-/** Builds a complete attempt result from raw answers + timings — ported from
- *  gujarat-gov-quiz/lib/domain/scoring.js's buildAttemptResult(). */
-export function buildAttemptResult({ attemptId, quiz, questions, answers, timings, startedAt, completedAt }) {
-  const breakdown = questions.map((question) =>
-    gradeQuestion(question, answers[question.id], timings[question.id] ?? 0)
-  );
+function wasAttempted(timings, questionId) {
+  return Object.prototype.hasOwnProperty.call(timings ?? {}, questionId);
+}
 
-  const correctCount = breakdown.filter((row) => row.correct).length;
+/** Builds a complete attempt result from raw answers + timings — ported from
+ *  client/lib/domain/scoring.js's buildAttemptResult(). */
+export function buildAttemptResult({
+  attemptId,
+  quiz,
+  questions,
+  answers,
+  timings,
+  startedAt,
+  completedAt,
+  abandoned = false,
+}) {
+  const attemptedIds = new Set(
+    questions.filter((question) => wasAttempted(timings, question.id)).map((question) => question.id)
+  );
+  const leftEarly = Boolean(abandoned) || attemptedIds.size < questions.length;
+
+  const breakdown = questions.map((question) => {
+    const attempted = attemptedIds.has(question.id);
+    if (!attempted) {
+      return {
+        ...gradeQuestion(question, answers[question.id], 0),
+        correct: false,
+        earnedPoints: 0,
+        attempted: false,
+      };
+    }
+    return {
+      ...gradeQuestion(question, answers[question.id], timings[question.id] ?? 0),
+      attempted: true,
+    };
+  });
+
+  const attemptedRows = breakdown.filter((row) => row.attempted);
+  const correctCount = attemptedRows.filter((row) => row.correct).length;
   const earnedPoints = breakdown.reduce((sum, row) => sum + row.earnedPoints, 0);
   const maxPoints = breakdown.reduce((sum, row) => sum + row.maxPoints, 0);
-  const totalTimeMs = breakdown.reduce((sum, row) => sum + row.timeSpentMs, 0);
+  const totalTimeMs = attemptedRows.reduce((sum, row) => sum + row.timeSpentMs, 0);
+  const totalQuestions = questions.length;
 
   return {
     attemptId,
@@ -71,15 +103,17 @@ export function buildAttemptResult({ attemptId, quiz, questions, answers, timing
     quizTitle: quiz.title,
     startedAt,
     completedAt,
-    totalQuestions: questions.length,
+    totalQuestions,
+    attemptedCount: attemptedIds.size,
+    abandoned: leftEarly,
     correctCount,
-    wrongCount: questions.length - correctCount,
+    wrongCount: attemptedRows.length - correctCount,
     earnedPoints,
     maxPoints,
-    percentage: maxPoints > 0 ? Math.round((earnedPoints / maxPoints) * 100) : 0,
+    percentage: totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0,
     totalTimeMs,
     wallClockMs: Math.max(0, (completedAt ?? 0) - (startedAt ?? 0)),
-    averageTimeMs: questions.length > 0 ? Math.round(totalTimeMs / questions.length) : 0,
+    averageTimeMs: attemptedRows.length > 0 ? Math.round(totalTimeMs / attemptedRows.length) : 0,
     breakdown,
   };
 }
