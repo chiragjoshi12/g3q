@@ -1,0 +1,409 @@
+// Gujarat Quiz backend.
+//
+// Flows:
+//   1. Login: identity lookup (UDISE/ABC) -> OTP -> JWT
+//   2. Bank play: start session (allocate unseen ACCEPTED bank Qs) -> submit -> stats
+//   3. Admin: bilingual bank review (separate /api/v1/admin)
+//   4. Legacy fixed quizzes/attempts kept for compatibility
+//
+// Run `npm run prisma:migrate` then `npm run prisma:seed` to stand this up locally.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Mirrors ROLE in gujarat-gov-quiz/lib/domain/roles.js
+enum UserRole {
+  student
+  college
+}
+
+// Mirrors QUESTION_TYPE in gujarat-gov-quiz/config/question-types.js
+enum QuestionType {
+  single_choice
+  match_following
+  image_choice
+  drag_drop
+  drag_into_blanks
+}
+
+/// A student or college login identity — resolved by UDISE/ABC code, never by
+/// email or password. There is no self-signup flow: rows are provisioned
+/// (seeded / admin-imported) ahead of time, matching data/users.json.
+model User {
+  id              String    @id @default(cuid())
+  role            UserRole
+  name            String
+  surname         String?   @db.VarChar(128)
+  gender          String?   @db.VarChar(16)
+  fatherName      String?   @map("father_name") @db.VarChar(128)
+  motherName      String?   @map("mother_name") @db.VarChar(128)
+  institute       String?
+  schoolId        String?   @map("school_id") @db.VarChar(32)
+  grade           String?
+  district        String?
+  taluka          String?   @db.VarChar(128)
+  village         String?   @db.VarChar(128)
+  socialCategory  String?   @map("social_category") @db.VarChar(32)
+  dateOfBirth     String?   @map("date_of_birth") @db.VarChar(32)
+  phone           String?
+  udiseCode       String?   @unique @map("udise_code")
+  abcId           String?   @unique @map("abc_id")
+  joinedOn        DateTime? @map("joined_on")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  otpRequests OtpRequest[]
+  attempts    Attempt[]
+  quizSessions QuizSession[]
+  questionExposures UserQuestionExposure[]
+
+  @@index([schoolId])
+  @@index([taluka])
+  @@index([institute])
+  @@map("users")
+}
+
+/// Bank-backed play session: N questions allocated once at start, then graded on submit.
+enum SessionStatus {
+  in_progress
+  submitted
+  expired
+}
+
+model QuizSession {
+  id             String        @id @default(cuid())
+  userId         String        @map("user_id")
+  status         SessionStatus @default(in_progress)
+  questionCount  Int           @map("question_count")
+  language       String        @default("gu") @db.VarChar(8)
+  startedAt      DateTime      @map("started_at")
+  expiresAt      DateTime?     @map("expires_at")
+  completedAt    DateTime?     @map("completed_at")
+  correctCount   Int?          @map("correct_count")
+  wrongCount     Int?          @map("wrong_count")
+  totalTimeMs    Int?          @map("total_time_ms")
+  wallClockMs    Int?          @map("wall_clock_ms")
+  averageTimeMs  Int?          @map("average_time_ms")
+  percentage     Int?
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questions QuizSessionQuestion[]
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+  @@map("quiz_sessions")
+}
+
+/// Frozen snapshot of a bank MCQ inside a session (correctOption never sent until result).
+model QuizSessionQuestion {
+  id            String  @id @default(cuid())
+  sessionId     String  @map("session_id")
+  order         Int
+  bankQueId     String  @map("bank_que_id") @db.VarChar(32)
+  points        Int     @default(1)
+  departmentGu  String? @map("department_gu") @db.VarChar(255)
+  departmentEn  String? @map("department_en") @db.VarChar(255)
+  questionGu    String? @map("question_gu") @db.Text
+  questionEn    String? @map("question_en") @db.Text
+  optionAGu     String? @map("option_a_gu") @db.Text
+  optionBGu     String? @map("option_b_gu") @db.Text
+  optionCGu     String? @map("option_c_gu") @db.Text
+  optionDGu     String? @map("option_d_gu") @db.Text
+  optionAEn     String? @map("option_a_en") @db.Text
+  optionBEn     String? @map("option_b_en") @db.Text
+  optionCEn     String? @map("option_c_en") @db.Text
+  optionDEn     String? @map("option_d_en") @db.Text
+  correctOption String  @map("correct_option") @db.Char(1)
+  selectedOption String? @map("selected_option") @db.Char(1)
+  isCorrect     Boolean? @map("is_correct")
+  timeSpentMs   Int?     @map("time_spent_ms")
+
+  session      QuizSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  bankQuestion BankQuestion @relation(fields: [bankQueId], references: [queId], onDelete: Restrict)
+
+  @@unique([sessionId, order])
+  @@unique([sessionId, bankQueId])
+  @@index([bankQueId])
+  @@map("quiz_session_questions")
+}
+
+/// Per-user history of bank questions seen — drives no-repeat allocation.
+model UserQuestionExposure {
+  userId       String   @map("user_id")
+  bankQueId    String   @map("bank_que_id") @db.VarChar(32)
+  firstSeenAt  DateTime @map("first_seen_at")
+  lastSeenAt   DateTime @map("last_seen_at")
+  timesSeen    Int      @default(1) @map("times_seen")
+  timesCorrect Int      @default(0) @map("times_correct")
+  timesWrong   Int      @default(0) @map("times_wrong")
+  totalTimeMs  Int      @default(0) @map("total_time_ms")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankQuestion BankQuestion @relation(fields: [bankQueId], references: [queId], onDelete: Cascade)
+
+  @@id([userId, bankQueId])
+  @@index([userId, lastSeenAt])
+  @@map("user_question_exposures")
+}
+
+/// One OTP challenge issued for a login attempt. Short-lived and single-use.
+model OtpRequest {
+  id          String    @id @default(cuid())
+  requestId   String    @unique @map("request_id")
+  userId      String    @map("user_id")
+  role        UserRole
+  phone       String
+  maskedPhone String    @map("masked_phone")
+  otp         String
+  expiresAt   DateTime  @map("expires_at")
+  consumedAt  DateTime? @map("consumed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("otp_requests")
+}
+
+/// A quiz module, shown on the home/list screen. Mirrors data/quizzes.json.
+model Quiz {
+  id              String   @id
+  title           String
+  subtitle        String?
+  description     String?  @db.Text
+  banner          String?
+  category        String?
+  level           String?
+  totalQuestions  Int      @default(0) @map("total_questions")
+  durationMinutes Int      @default(0) @map("duration_minutes")
+  totalPoints     Int      @default(0) @map("total_points")
+  featured        Boolean  @default(false)
+  tags            Json?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  questions Question[]
+  attempts  Attempt[]
+
+  @@map("quizzes")
+}
+
+/// One question inside a quiz. The shape is a superset covering every type in
+/// QUESTION_TYPE — each row only populates the fields its `type` needs, same
+/// as data/questions.json. `answer` holds the grading key.
+model Question {
+  id          String       @id
+  quizId      String       @map("quiz_id")
+  order       Int
+  type        QuestionType
+  points      Int          @default(1)
+  prompt      String       @db.Text
+  placeholder String?
+  options     Json?
+  left        Json?
+  right       Json?
+  items       Json?
+  segments    Json?
+  bank        Json?
+  answer      Json
+  acceptable  Json?
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  quiz           Quiz            @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  explanation    Explanation?
+  attemptAnswers AttemptAnswer[]
+
+  @@index([quizId])
+  @@map("questions")
+}
+
+/// The AI-style explanation shown after a question is answered. Mirrors
+/// data/explanations.json (keyed there by questionId).
+model Explanation {
+  id         String  @id @default(cuid())
+  questionId String  @unique @map("question_id")
+  model      String  @default("AI")
+  summary    String? @db.Text
+  body       String? @db.Text
+  keyPoints  Json?   @map("key_points")
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("explanations")
+}
+
+/// One graded, completed quiz session. Shape mirrors buildAttemptResult() in
+/// gujarat-gov-quiz/lib/domain/scoring.js, so a future frontend swap to the
+/// REST source needs no changes downstream (ScoreSummary, QuestionReviewCard).
+model Attempt {
+  id             String   @id
+  userId         String   @map("user_id")
+  quizId         String   @map("quiz_id")
+  quizTitle      String   @map("quiz_title")
+  startedAt      DateTime @map("started_at")
+  completedAt    DateTime @map("completed_at")
+  totalQuestions Int      @map("total_questions")
+  correctCount   Int      @map("correct_count")
+  wrongCount     Int      @map("wrong_count")
+  earnedPoints   Int      @map("earned_points")
+  maxPoints      Int      @map("max_points")
+  percentage     Int
+  totalTimeMs    Int      @map("total_time_ms")
+  wallClockMs    Int      @map("wall_clock_ms")
+  averageTimeMs  Int      @map("average_time_ms")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz      Quiz            @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  breakdown AttemptAnswer[]
+
+  @@index([userId])
+  @@index([quizId])
+  @@map("attempts")
+}
+
+/// Per-question grading row within an attempt — mirrors gradeQuestion() in
+/// gujarat-gov-quiz/lib/domain/grading.js.
+model AttemptAnswer {
+  id            String  @id @default(cuid())
+  attemptId     String  @map("attempt_id")
+  questionId    String  @map("question_id")
+  type          QuestionType
+  correct       Boolean
+  earnedPoints  Int     @map("earned_points")
+  maxPoints     Int     @map("max_points")
+  answer        Json
+  correctAnswer Json    @map("correct_answer")
+  timeSpentMs   Int     @map("time_spent_ms")
+
+  attempt  Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+  @@map("attempt_answers")
+}
+
+// ---------------------------------------------------------------------------
+// Admin console + bilingual MCQ bank (formerly admin/ FastAPI MySQL schema).
+// Quiz runtime `questions` stay separate; this bank is the reviewable source.
+// ---------------------------------------------------------------------------
+
+enum AdminRole {
+  master
+  admin
+}
+
+enum ReviewStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+/// Console operator — username/password login (not student OTP users).
+model AdminUser {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique @db.VarChar(64)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  role         AdminRole @default(admin)
+  fullName     String?  @map("full_name") @db.VarChar(128)
+  university   String?  @db.VarChar(255)
+  mobileNumber String?  @map("mobile_number") @db.VarChar(20)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  reviewedQuestions BankQuestion[] @relation("QuestionReviewedBy")
+  editedQuestions   BankQuestion[] @relation("QuestionEditedBy")
+  comments          BankQuestionComment[]
+  activities        BankQuestionActivity[]
+
+  @@map("admin_users")
+}
+
+/// Bilingual 4-option MCQ bank row. Correct key is letter-only; answer text
+/// is derived from option_* + correct_option at read time.
+model BankQuestion {
+  id            Int           @id @default(autoincrement())
+  queId         String        @unique @map("que_id") @db.VarChar(32)
+
+  departmentGu  String?       @map("department_gu") @db.VarChar(255)
+  departmentEn  String?       @map("department_en") @db.VarChar(255)
+  questionGu    String?       @map("question_gu") @db.Text
+  questionEn    String?       @map("question_en") @db.Text
+
+  optionAGu     String?       @map("option_a_gu") @db.Text
+  optionBGu     String?       @map("option_b_gu") @db.Text
+  optionCGu     String?       @map("option_c_gu") @db.Text
+  optionDGu     String?       @map("option_d_gu") @db.Text
+  optionAEn     String?       @map("option_a_en") @db.Text
+  optionBEn     String?       @map("option_b_en") @db.Text
+  optionCEn     String?       @map("option_c_en") @db.Text
+  optionDEn     String?       @map("option_d_en") @db.Text
+  correctOption String?       @map("correct_option") @db.Char(1)
+
+  scope         String        @default("GENERAL") @db.VarChar(32)
+  district      String?       @db.VarChar(128)
+  casteCategory String        @default("GENERAL") @map("caste_category") @db.VarChar(32)
+
+  reviewStatus        ReviewStatus @default(PENDING) @map("review_status")
+  reviewedById        Int?         @map("reviewed_by_id")
+  reviewedAt          DateTime?    @map("reviewed_at")
+  lastEditedById      Int?         @map("last_edited_by_id")
+  lastEditedAt        DateTime?    @map("last_edited_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  reviewedBy AdminUser? @relation("QuestionReviewedBy", fields: [reviewedById], references: [id])
+  lastEditedBy AdminUser? @relation("QuestionEditedBy", fields: [lastEditedById], references: [id])
+  comments   BankQuestionComment[]
+  activities BankQuestionActivity[]
+  sessionQuestions QuizSessionQuestion[]
+  exposures  UserQuestionExposure[]
+
+  @@index([correctOption])
+  @@index([scope])
+  @@index([district])
+  @@index([casteCategory])
+  @@index([reviewStatus])
+  @@map("bank_questions")
+}
+
+model BankQuestionComment {
+  id        Int      @id @default(autoincrement())
+  queId     String   @map("que_id") @db.VarChar(32)
+  userId    Int      @map("user_id")
+  username  String   @db.VarChar(64)
+  body      String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  admin    AdminUser    @relation(fields: [userId], references: [id])
+  question BankQuestion @relation(fields: [queId], references: [queId], onDelete: Cascade)
+
+  @@index([queId])
+  @@map("bank_question_comments")
+}
+
+model BankQuestionActivity {
+  id        Int      @id @default(autoincrement())
+  queId     String   @map("que_id") @db.VarChar(32)
+  userId    Int      @map("user_id")
+  username  String   @db.VarChar(64)
+  action    String   @db.VarChar(32)
+  detail    String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  admin    AdminUser    @relation(fields: [userId], references: [id])
+  question BankQuestion @relation(fields: [queId], references: [queId], onDelete: Cascade)
+
+  @@index([queId])
+  @@index([createdAt])
+  @@map("bank_question_activities")
+}

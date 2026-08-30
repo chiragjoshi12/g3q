@@ -1,0 +1,117 @@
+{
+  "quiz_gujarat_gk": [
+    {
+      "id": "q1",
+      "order": 1,
+      "type": "single_choice",
+      "points": 1,
+      "prompt": "ગુજરાત રાજ્યની રાજધાની કયું શહેર છે?",
+      "options": [
+        { "id": "a", "label": "અમદાવાદ" },
+        { "id": "b", "label": "ગાંધીનગર" },
+        { "id": "c", "label": "સુરત" },
+        { "id": "d", "label": "વડોદરા" }
+      ],
+      "answer": ["b"]
+    },
+    {
+      "id": "q3",
+      "order": 2,
+      "type": "match_following",
+      "points": 1,
+      "prompt": "નીચેના સ્થળોને તેમના જિલ્લા સાથે જોડો.",
+      "left": [
+        { "id": "l1", "label": "સ્ટેચ્યુ ઓફ યુનિટી" },
+        { "id": "l2", "label": "રાણી કી વાવ" },
+        { "id": "l3", "label": "સાબરમતી આશ્રમ" },
+        { "id": "l4", "label": "દ્વારકાધીશ મંદિર" }
+      ],
+      "right": [
+        { "id": "r1", "label": "પાટણ" },
+        { "id": "r2", "label": "દેવભૂમિ દ્વારકા" },
+        { "id": "r3", "label": "નર્મદા" },
+        { "id": "r4", "label": "અમદાવાદ" }
+      ],
+      "answer": { "l1": "r3", "l2": "r1", "l3": "r4", "l4": "r2" }
+    },
+    {
+      "id": "q4",
+      "order": 3,
+      "type": "image_choice",
+      "points": 1,
+      "prompt": "નીચેનામાંથી કયું ચિત્ર 'સ્ટેચ્યુ ઓફ યુનિટી' દર્શાવે છે?",
+      "options": [
+        {
+          "id": "a",
+          "label": "સોમનાથ મંદિર",
+          "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Somanath_mandir_%28cropped%29.jpg/1280px-Somanath_mandir_%28cropped%29.jpg?utm_source=gu.wikipedia.org&utm_campaign=index&utm_content=thumbnail"
+        },
+        {
+          "id": "b",
+          "label": "સ્ટેચ્યુ ઓફ યુનિટી",
+          "image": "https://static.abplive.com/wp-content/uploads/sites/7/2020/10/17132101/Statue-of-unity-open-today.jpg?impolicy=abp_cdn&imwidth=1200"
+        },
+        {
+          "id": "c",
+          "label": "રાણી કી વાવ",
+          "image": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Rani_ki_vav_02.jpg"
+        },
+        {
+          "id": "d",
+          "label": "એશિયાઈ સિંહ",
+          "image": "https://gujarati.opindia.com/wp-content/uploads/sites/7/2023/08/Image-10-08-23-at-7.14-PM.jpeg"
+        }
+      ],
+      "answer": ["b"]
+    },
+    {
+      "id": "q6",
+      "order": 4,
+      "type": "drag_drop",
+      "points": 1,
+      "prompt": "નીચેની ઘટનાઓને સમયક્રમ પ્રમાણે (જૂનીથી નવી) ગોઠવો.",
+      "items": [
+        { "id": "i1", "label": "ગુજરાત રાજ્યની સ્થાપના" },
+        { "id": "i2", "label": "સ્ટેચ્યુ ઓફ યુનિટીનું ઉદ્ઘાટન" },
+        { "id": "i3", "label": "સોમનાથ મંદિરનું પુનઃનિર્માણ" },
+        { "id": "i4", "label": "સરદાર સરોવર બંધનું લોકાર્પણ" }
+      ],
+      "answer": ["i3", "i1", "i4", "i2"]
+    },
+    {
+      "id": "q7",
+      "order": 5,
+      "type": "drag_into_blanks",
+      "points": 1,
+      "prompt": "નીચે આપેલા શબ્દોને યોગ્ય ખાલી જગ્યામાં ખેંચીને ગોઠવો.",
+      "segments": [
+        { "type": "text", "value": "ગુજરાતનું સૌથી મોટું શહેર" },
+        { "type": "blank", "id": "b1" },
+        { "type": "text", "value": "છે અને રાજ્યની સ્થાપના" },
+        { "type": "blank", "id": "b2" },
+        { "type": "text", "value": "માં થઈ હતી." }
+      ],
+      "bank": [
+        { "id": "w1", "label": "સુરત" },
+        { "id": "w2", "label": "અમદાવાદ" },
+        { "id": "w3", "label": "1947" },
+        { "id": "w4", "label": "1960" }
+      ],
+      "answer": { "b1": "w2", "b2": "w4" }
+    },
+    {
+      "id": "q8",
+      "order": 6,
+      "type": "single_choice",
+      "points": 1,
+      "prompt": "એશિયાઈ સિંહો માટે પ્રખ્યાત ગીર રાષ્ટ્રીય ઉદ્યાન મુખ્યત્વે કયા જિલ્લામાં આવેલું છે?",
+      "options": [
+        { "id": "a", "label": "કચ્છ" },
+        { "id": "b", "label": "ભરૂચ" },
+        { "id": "c", "label": "જૂનાગઢ" },
+        { "id": "d", "label": "વલસાડ" }
+      ],
+      "answer": ["c"]
+    }
+  ]
+}

@@ -1,0 +1,309 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Brand palette. Fixed values — identical in light and dark, so they live in a
+   plain @theme block, which also emits them as :root custom properties for the
+   semantic tokens below to reference. */
+@theme {
+  /* Navy from the product mockups — not sky-blue SaaS. */
+  --color-primary-50: #eaf2f8;
+  --color-primary-100: #d4e4f0;
+  --color-primary-200: #b3cde3;
+  --color-primary-300: #7eabd0;
+  --color-primary-400: #4d86b5;
+  --color-primary-500: #3a72a4;
+  --color-primary-600: #2c6698;
+  --color-primary-700: #245580;
+  --color-primary-800: #1c4468;
+  --color-primary-900: #143250;
+
+  --color-saffron: #d97706;
+  --color-green: #15803d;
+
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-error: #dc2626;
+
+  /* Neutral-first elevation — quieter than the old brand-tinted shadows. */
+  --shadow-m1: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 1px rgb(15 23 42 / 0.06);
+  --shadow-m2: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 4px 10px 1px rgb(15 23 42 / 0.06);
+  --shadow-m3: 0 4px 12px 2px rgb(15 23 42 / 0.08), 0 1px 3px 0 rgb(15 23 42 / 0.08);
+  --shadow-device: 0 30px 60px -20px rgb(2 6 23 / 0.45), 0 0 0 1px rgb(255 255 255 / 0.06);
+
+  /* Emitted on :root so `font-canva` / var(--font-canva) actually resolve. */
+  --font-canva: "Canva Sans", ui-sans-serif, system-ui, sans-serif;
+
+  /* Material motion. */
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --ease-decelerate: cubic-bezier(0, 0, 0, 1);
+
+  --animate-screen-in: screen-in 280ms cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-slide-up: slide-up 320ms cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-pop-in: pop-in 240ms cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-shake: shake 320ms ease-in-out both;
+  --animate-verdict-pop: verdict-pop 560ms cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-pulse-ring: pulse-ring 720ms ease-out both;
+  --animate-confetti: confetti 1.6s cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-verdict-shake: verdict-shake 560ms ease-in-out both;
+  --animate-flash-success: flash-success 680ms ease-out both;
+  --animate-flash-error: flash-error 680ms ease-out both;
+}
+
+@keyframes screen-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+@keyframes verdict-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.35);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.14);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.78);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.55);
+  }
+}
+
+@keyframes confetti {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(1);
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(0.55);
+  }
+}
+
+@keyframes verdict-shake {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  15% { transform: translateX(-10px) rotate(-1.4deg); }
+  30% { transform: translateX(10px) rotate(1.4deg); }
+  45% { transform: translateX(-7px) rotate(-0.8deg); }
+  60% { transform: translateX(7px) rotate(0.8deg); }
+  75% { transform: translateX(-3px) rotate(-0.3deg); }
+}
+
+@keyframes flash-success {
+  0% { background-color: rgb(22 163 74 / 0.32); }
+  100% { background-color: rgb(0 0 0 / 0.28); }
+}
+
+@keyframes flash-error {
+  0% { background-color: rgb(220 38 38 / 0.34); }
+  100% { background-color: rgb(0 0 0 / 0.3); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-confetti,
+  .animate-verdict-shake,
+  .animate-pulse-ring,
+  .animate-flash-success,
+  .animate-flash-error {
+    animation: none !important;
+  }
+}
+
+/* Hides the scrollbar without disabling scrolling. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility font-canva {
+  font-family: "Canva Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+@utility font-inter {
+  font-family: var(--font-inter-face), var(--font-gujarati), ui-sans-serif, sans-serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--card);
+  --color-foreground: var(--foreground);
+  /* Latin UI is Canva Sans. Keep a system-sans fallback so Latin like
+     “Submit” never drops to Times when the face is not installed. */
+  --font-canva: "Canva Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-inter: var(--font-inter-face), var(--font-gujarati), ui-sans-serif, sans-serif;
+  --font-sans: "Canva Sans", var(--font-gujarati);
+  --font-heading: "Canva Sans", var(--font-gujarati);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: #f9f9f9;
+  --foreground: #111111;
+  --card: #ffffff;
+  --card-foreground: #111111;
+  --popover: #ffffff;
+  --popover-foreground: #111111;
+  --primary: var(--color-primary-600);
+  --primary-foreground: #ffffff;
+  --secondary: var(--color-primary-50);
+  --secondary-foreground: var(--color-primary-800);
+  --muted: #f0f0f0;
+  --muted-foreground: #6b7280;
+  --accent: var(--color-primary-50);
+  --accent-foreground: var(--color-primary-800);
+  --destructive: var(--color-error);
+  --border: #ececec;
+  --input: #d8dee6;
+  --ring: var(--color-primary-400);
+  --chart-1: var(--color-primary-600);
+  --chart-2: var(--color-saffron);
+  --chart-3: var(--color-green);
+  --chart-4: var(--color-primary-300);
+  --chart-5: var(--color-primary-900);
+  --radius: 1rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #111827;
+  --sidebar-primary: var(--color-primary-600);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--color-primary-50);
+  --sidebar-accent-foreground: var(--color-primary-800);
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: var(--color-primary-400);
+}
+
+.dark {
+  --background: #0b1220;
+  --foreground: #f8fafc;
+  --card: #111827;
+  --card-foreground: #f8fafc;
+  --popover: #111827;
+  --popover-foreground: #f8fafc;
+  --primary: var(--color-primary-400);
+  --primary-foreground: var(--color-primary-900);
+  --secondary: #1f2937;
+  --secondary-foreground: #f8fafc;
+  --muted: #1f2937;
+  --muted-foreground: #9ca3af;
+  --accent: #1f2937;
+  --accent-foreground: #f8fafc;
+  --destructive: #f87171;
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: var(--color-primary-500);
+  --chart-1: var(--color-primary-400);
+  --chart-2: var(--color-saffron);
+  --chart-3: var(--color-green);
+  --chart-4: var(--color-primary-200);
+  --chart-5: var(--color-primary-700);
+  --sidebar: #111827;
+  --sidebar-foreground: #f8fafc;
+  --sidebar-primary: var(--color-primary-400);
+  --sidebar-primary-foreground: var(--color-primary-900);
+  --sidebar-accent: #1f2937;
+  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: var(--color-primary-500);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
