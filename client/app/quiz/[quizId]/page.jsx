@@ -1,10 +1,10 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "@/components/icons";
-
-import { AppButton } from "@/components/common/AppButton";
+import { LogOut } from "@/components/icons";
+import { ACTION_BUTTON_CLASS, ActionButtonRow, AppButton } from "@/components/common/AppButton";
+import { ConfirmSheet } from "@/components/common/ConfirmSheet";
 import { ErrorState, LoadingState } from "@/components/common/StateViews";
 import { AppShell } from "@/components/layout/AppShell";
 import { ContentWidth } from "@/components/layout/ContentWidth";
@@ -14,9 +14,9 @@ import { QuestionRenderer } from "@/components/quiz/QuestionRenderer";
 import { QuizHeader } from "@/components/quiz/QuizHeader";
 import { ROUTES } from "@/config/routes";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { usePracticeMode } from "@/hooks/usePracticeMode";
 import { useQuestionTimer } from "@/hooks/useQuestionTimer";
 import { isAnswered, isCorrect } from "@/lib/domain/grading";
-import { cn } from "@/lib/utils";
 import { QUIZ_PHASE, useQuizStore } from "@/store/quiz.store";
 
 /**
@@ -27,9 +27,24 @@ import { QUIZ_PHASE, useQuizStore } from "@/store/quiz.store";
  * skipped.
  */
 export default function QuizPage({ params }) {
+  return (
+    <Suspense
+      fallback={
+        <AppShell>
+          <LoadingState className="flex-1" />
+        </AppShell>
+      }
+    >
+      <QuizScreen params={params} />
+    </Suspense>
+  );
+}
+
+function QuizScreen({ params }) {
   const { quizId } = use(params);
   const router = useRouter();
-  const { ready, user } = useAuthGuard();
+  const practice = usePracticeMode();
+  const { ready, user } = useAuthGuard({ optional: practice });
   const [confirmExit, setConfirmExit] = useState(false);
   // The color-coded right/wrong styling on the answer itself waits for this,
   // so scanning ahead to green/red can't spoil the "why" you're meant to
@@ -98,7 +113,7 @@ export default function QuizPage({ params }) {
       return;
     }
     const attemptId = await finishQuiz(user);
-    if (attemptId) router.replace(ROUTES.result(attemptId));
+    if (attemptId) router.replace(ROUTES.result(attemptId, { practice }));
   };
 
   if (!ready) {
@@ -200,68 +215,38 @@ export default function QuizPage({ params }) {
         />
       ) : null}
 
-      {confirmExit ? (
-        <ExitDialog
-          onCancel={() => setConfirmExit(false)}
-          onConfirm={() => router.replace(ROUTES.home)}
-        />
-      ) : null}
+      <ConfirmSheet
+        open={confirmExit}
+        icon={LogOut}
+        title="ક્વિઝ છોડો"
+        description="શું તમે ખરેખર આ ક્વિઝ છોડવા માંગો છો?"
+        onCancel={() => setConfirmExit(false)}
+        onConfirm={() => router.replace(practice && !user ? ROUTES.root : ROUTES.home)}
+      />
     </AppShell>
   );
 }
 
 function QuizAction({ answering, answered, isLast, loading, onSubmit, onNext }) {
-  const pill =
-    "h-14 w-[86%] bg-[#2d689d] font-canva text-[1.05rem] font-bold text-white hover:bg-[#255a88]";
-  const canvaFace = {
-    fontFamily: '"Canva Sans", ui-sans-serif, system-ui, sans-serif',
-  };
-
   if (answering) {
     return (
-      <div className="flex justify-center">
-        <AppButton className={pill} style={canvaFace} onClick={onSubmit} disabled={!answered}>
+      <ActionButtonRow>
+        <AppButton className={ACTION_BUTTON_CLASS} onClick={onSubmit} disabled={!answered}>
           Submit
         </AppButton>
-      </div>
+      </ActionButtonRow>
     );
   }
 
   return (
-    <div className="flex justify-center">
+    <ActionButtonRow>
       <AppButton
-        variant={isLast ? "success" : "filled"}
-        className={cn(pill, isLast && "bg-success hover:brightness-95")}
-        style={canvaFace}
+        className={ACTION_BUTTON_CLASS}
         onClick={onNext}
         loading={loading}
       >
         {isLast ? "પરિણામ જુઓ" : "Next"}
-        {!isLast ? <ArrowLeft className="size-4 rotate-180" /> : null}
       </AppButton>
-    </div>
-  );
-}
-
-function ExitDialog({ onCancel, onConfirm }) {
-  return (
-    <div className="absolute inset-0 z-50 grid place-items-center bg-black/40 p-6 backdrop-blur-[2px]">
-      <div className="animate-pop-in w-full max-w-sm space-y-4 rounded-3xl bg-surface p-5 shadow-m3 sm:p-6">
-        <div className="space-y-1.5">
-          <h3 className="font-heading text-lg font-bold">ક્વિઝ છોડવી છે?</h3>
-          <p className="text-sm text-muted-foreground">
-            તમારી પ્રગતિ સાચવેલી રહેશે અને તમે પછીથી ત્યાંથી જ ચાલુ કરી શકશો.
-          </p>
-        </div>
-        <div className="space-y-2">
-          <AppButton block size="md" variant="outline" onClick={onCancel}>
-            ચાલુ રાખો
-          </AppButton>
-          <AppButton block size="md" variant="text" onClick={onConfirm}>
-            હા, છોડો
-          </AppButton>
-        </div>
-      </div>
-    </div>
+    </ActionButtonRow>
   );
 }

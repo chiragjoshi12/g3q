@@ -8,6 +8,7 @@
       "institute": "શ્રી સરસ્વતી વિદ્યાલય, અમદાવાદ",
       "grade": "ધોરણ 10",
       "district": "અમદાવાદ",
+      "taluka": "Daskroi",
       "phone": "+91 98765 43210",
       "joinedOn": "2025-06-12"
     },
@@ -19,6 +20,7 @@
       "institute": "સરકારી માધ્યમિક શાળા, મહેસાણા",
       "grade": "ધોરણ 12",
       "district": "મહેસાણા",
+      "taluka": "Mehsana",
       "phone": "+91 91234 56780",
       "joinedOn": "2025-07-02"
     }
@@ -32,6 +34,7 @@
       "institute": "સરકારી વિનયન કૉલેજ, ગાંધીનગર",
       "grade": "બી.એ. — સેમેસ્ટર 4",
       "district": "ગાંધીનગર",
+      "taluka": "Gandhinagar",
       "phone": "+91 99887 76655",
       "joinedOn": "2025-05-20"
     },
@@ -43,6 +46,7 @@
       "institute": "એલ. ડી. ઇજનેરી કૉલેજ, અમદાવાદ",
       "grade": "બી.ઈ. — સેમેસ્ટર 6",
       "district": "અમદાવાદ",
+      "taluka": "Ahmedabad City",
       "phone": "+91 90909 10101",
       "joinedOn": "2025-08-01"
     }

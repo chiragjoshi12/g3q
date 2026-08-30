@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { X } from "@/components/icons";
 
+import { ACTION_BUTTON_CLASS, ActionButtonRow, AppButton } from "@/components/common/AppButton";
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { ConfettiBurst } from "@/components/quiz/ConfettiBurst";
 import { useTypewriter } from "@/hooks/useTypewriter";
@@ -98,20 +99,18 @@ export function AiExplanationSheet({
 
           {bodyDone ? <VerdictMark correct={correct} /> : null}
 
-          <div className="mt-5 flex justify-center">
-            <button
-              type="button"
+          <ActionButtonRow className="mt-5">
+            <AppButton
               disabled={!bodyDone}
               onClick={bodyDone ? onContinue : undefined}
               className={cn(
-                "flex h-14 w-[68%] items-center justify-center rounded-full font-canva text-[1.05rem] font-bold transition-colors",
-                !bodyDone && "bg-[#D6E4F0] text-foreground",
-                bodyDone && "animate-pop-in bg-[#2d689d] text-white hover:bg-[#255a88]"
+                ACTION_BUTTON_CLASS,
+                !bodyDone && "bg-[#D6E4F0] text-foreground hover:bg-[#D6E4F0]"
               )}
             >
               {!bodyDone ? "Checking Answer..." : isLast ? "See Results" : "Next Question"}
-            </button>
-          </div>
+            </AppButton>
+          </ActionButtonRow>
         </div>
       </div>
     </div>

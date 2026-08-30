@@ -28,7 +28,7 @@ const toRaw = (user) => {
 };
 
 export class UserModel {
-  /** Looks a user up by their role-specific credential (UDISE code / ABC ID). */
+  /** Looks a user up by their role-specific credential (CTS Number / ABC ID). */
   static async findByCredential(role, credential) {
     const field = credentialFieldFor(role);
     const user = await prisma.user.findFirst({

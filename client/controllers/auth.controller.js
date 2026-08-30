@@ -8,7 +8,7 @@ import { validateCredential, validatePhone } from "@/lib/domain/roles";
  * plus repository orchestration, so this is portable to any UI or to a test.
  */
 export const authController = {
-  /** Step 1 → 2: resolve the UDISE/ABC code to a name, before any phone or OTP is involved. */
+  /** Step 1 → 2: resolve the CTS Number/ABC code to a name, before any phone or OTP is involved. */
   async lookupIdentity({ role, credential }) {
     const invalid = validateCredential(role, credential);
     if (invalid) {

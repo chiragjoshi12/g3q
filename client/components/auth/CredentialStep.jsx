@@ -40,18 +40,20 @@ export function CredentialStep({
 
       <div
         role="tablist"
-        className="relative grid h-14 w-full grid-cols-2 rounded-full bg-white p-1 shadow-[0_0_0_1px_#EFEFEF]"
+        className="relative grid h-15 w-full grid-cols-2 rounded-[1.5rem] bg-[linear-gradient(90deg,#f6f5f3,#edf5f2)] p-1 shadow-[0_0_0_1px_#EFEFEF]"
       >
         <span
           aria-hidden
-              className="absolute inset-y-1 left-1 rounded-full bg-[#E8EBE8] transition-transform duration-300 ease-emphasized"
+          className="absolute inset-y-1 left-1 rounded-[1.25rem] bg-white transition-transform duration-300 ease-emphasized"
           style={{
             width: "calc((100% - 0.5rem) / 2)",
             transform: `translateX(${activeIndex * 100}%)`,
           }}
         />
+
         {ROLE_TABS.map((item) => {
           const active = item.id === role;
+
           return (
             <button
               key={item.id}
@@ -60,7 +62,7 @@ export function CredentialStep({
               aria-selected={active}
               onClick={() => onRoleChange(item.id)}
               className={cn(
-                "relative z-10 rounded-full text-sm font-semibold",
+                "relative z-10 rounded-[1.25rem] text-sm font-semibold",
                 active ? "text-[#111]" : "text-[#6B7280]"
               )}
             >
@@ -94,15 +96,16 @@ export function CredentialStep({
         </div>
       ) : null}
 
-      <AppButton
-        type="submit"
-        block
-        loading={loading}
-        disabled={!credential}
-        className={AUTH_BUTTON_CLASS}
-      >
-        Next
-      </AppButton>
+      <div className="flex w-full justify-center">
+        <AppButton
+          type="submit"
+          loading={loading}
+          disabled={!credential}
+          className={AUTH_BUTTON_CLASS}
+        >
+          Next
+        </AppButton>
+      </div>
     </form>
   );
 }

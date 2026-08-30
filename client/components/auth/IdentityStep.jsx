@@ -28,7 +28,7 @@ export function IdentityStep({
         onSubmit();
       }}
     >
-      <div className="space-y-3 text-center">
+      <div className="space-y-3 text-left">
         <h2 className="text-xl font-bold text-[#111]">તમારી ID મળી</h2>
         <div className="flex items-center gap-3.5 rounded-[1.75rem] bg-white px-4 py-4">
           <div
@@ -60,7 +60,7 @@ export function IdentityStep({
           autoFocus
           className={AUTH_FIELD_CLASS}
         />
-        <p className="text-center text-xs text-muted-foreground">
+        <p className="text-left text-xs text-muted-foreground">
           આ નંબર પર {appConfig.auth.otpLength} અંકોનો OTP મોકલવામાં આવશે.
         </p>
       </div>
@@ -73,15 +73,16 @@ export function IdentityStep({
       ) : null}
 
       <div className="space-y-4 pt-1">
-        <AppButton
-          type="submit"
-          block
-          loading={loading}
-          disabled={phone.length !== appConfig.auth.phoneLength}
-          className={AUTH_BUTTON_CLASS}
-        >
-          OTP મેળવો
-        </AppButton>
+        <div className="flex w-full justify-center">
+          <AppButton
+            type="submit"
+            loading={loading}
+            disabled={phone.length !== appConfig.auth.phoneLength}
+            className={AUTH_BUTTON_CLASS}
+          >
+            Send OTP
+          </AppButton>
+        </div>
         <div className="text-center">
           <AuthLink onClick={onBack}>{identity.credentialLabel} બદલો</AuthLink>
         </div>

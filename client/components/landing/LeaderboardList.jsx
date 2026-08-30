@@ -20,7 +20,7 @@ export function LeaderboardRow({ rank, name, institute, grade, you = false }) {
       <Avatar name={name} />
       <span className="min-w-0 flex-1">
         <span className="block text-[1.05rem] font-bold text-[#111] md:text-lg">
-          {you ? "You" : name}
+          {you ? `${name} (You)` : name}
         </span>
         {institute ? (
           <span className="mt-0.5 block text-sm leading-snug text-[#374151] md:text-[15px]">
@@ -52,17 +52,20 @@ export function BoardToggle({ value, onChange }) {
   ];
 
   return (
-    <div className="mx-auto flex w-full max-w-[16.5rem] rounded-full bg-[#EEEFF2] p-[5px] md:max-w-[18rem] lg:max-w-[20rem]">
+    <div className="mx-auto flex w-[75%] rounded-[1.3rem] border border-[#D5DCE3] bg-white p-[5px]">
       {items.map((item) => {
         const active = item.id === value;
+
         return (
           <button
             key={item.id}
             type="button"
             onClick={() => onChange(item.id)}
             className={cn(
-              "flex-1 rounded-full py-2 text-center text-sm font-bold transition-colors md:py-2.5 md:text-base",
-              active ? "bg-primary-600 text-white" : "text-[#111]"
+              "flex-1 rounded-[1.3rem] py-4 text-center text-[15px] font-bold transition-colors md:py-5 md:text-base",
+              active
+                ? "bg-[#2d689d] text-white"
+                : "bg-transparent text-[#111]"
             )}
           >
             {item.label}

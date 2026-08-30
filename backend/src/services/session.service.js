@@ -8,6 +8,7 @@ import {
   toSessionSummary,
 } from '../models/QuizSessionModel.js';
 import { UserModel } from '../models/UserModel.js';
+import { aiEnhancementService } from './aiEnhancement.service.js';
 
 const normalizeOption = (value) => {
   if (value == null) return null;
@@ -26,9 +27,28 @@ const shuffle = (items) => {
   return arr;
 };
 
+const isProfileMatch = (q, district, caste) => {
+  const qDistrict = (q.district || '').trim().toLowerCase();
+  const qCaste = (q.casteCategory || '').trim().toUpperCase();
+  const isLocal = Boolean(district && qDistrict && qDistrict === district);
+  const isCaste = Boolean(
+    caste && caste !== 'GENERAL' && qCaste && qCaste !== 'GENERAL' && qCaste === caste
+  );
+  return isLocal || isCaste;
+};
+
+const personalizedTargetCount = () => {
+  const min = Math.max(0, CONFIG.QUIZ.PERSONALIZED_MIN);
+  const max = Math.max(min, CONFIG.QUIZ.PERSONALIZED_MAX);
+  if (max === min) return min;
+  return min + Math.floor(Math.random() * (max - min + 1));
+};
+
 /**
  * Pick `count` ACCEPTED bank questions the user has never seen.
- * Prefers district / caste-targeted rows when the user profile has those fields.
+ * Tries to include PERSONALIZED_MIN..MAX profile-tagged rows (district / caste);
+ * fills the rest from the general pool. Shortfalls fall back to whichever pool
+ * still has unseen questions so the session can still start.
  */
 async function allocateBankQuestions(user, count) {
   const seen = await prisma.userQuestionExposure.findMany({
@@ -43,39 +63,70 @@ async function allocateBankQuestions(user, count) {
     ...(seenIds.length ? { queId: { notIn: seenIds } } : {}),
   };
 
-  const candidates = await prisma.bankQuestion.findMany({
-    where: baseWhere,
-    take: Math.max(count * 5, 100),
+  const district = (user.district || '').trim().toLowerCase();
+  const caste = (user.socialCategory || '').trim().toUpperCase();
+  const districtRaw = (user.district || '').trim();
+  const casteRaw = (user.socialCategory || '').trim();
+
+  const personalOr = [];
+  if (districtRaw) personalOr.push({ district: districtRaw });
+  if (casteRaw && caste !== 'GENERAL') personalOr.push({ casteCategory: casteRaw });
+
+  let preferred = [];
+  if (personalOr.length) {
+    const tagged = await prisma.bankQuestion.findMany({
+      where: { ...baseWhere, OR: personalOr },
+      take: Math.max(CONFIG.QUIZ.PERSONALIZED_MAX * 30, 80),
+    });
+    preferred = tagged.filter((q) => isProfileMatch(q, district, caste));
+  }
+
+  const preferredById = new Map(preferred.map((q) => [q.queId, q]));
+  const excludeFromGeneral = [...new Set([...seenIds, ...preferredById.keys()])];
+
+  const generalPool = await prisma.bankQuestion.findMany({
+    where: {
+      reviewStatus: 'ACCEPTED',
+      correctOption: { not: null },
+      ...(excludeFromGeneral.length ? { queId: { notIn: excludeFromGeneral } } : {}),
+    },
+    take: Math.max(count * 8, 120),
   });
 
-  if (!candidates.length) {
+  // Catch profile matches the OR query missed (e.g. district casing) and keep them personalised.
+  const general = [];
+  for (const q of generalPool) {
+    if (isProfileMatch(q, district, caste)) preferredById.set(q.queId, q);
+    else general.push(q);
+  }
+  preferred = [...preferredById.values()];
+
+  if (!preferred.length && !general.length) {
     throw new AppError(
       ERROR_CODE.INVALID_REQUEST,
       'No new approved questions available for this user.'
     );
   }
 
-  const district = (user.district || '').trim().toLowerCase();
-  const caste = (user.socialCategory || '').trim().toUpperCase();
+  const targetPersonal = Math.min(personalizedTargetCount(), count);
+  const preferredShuffled = shuffle(preferred);
+  const generalShuffled = shuffle(general);
 
-  const preferred = [];
-  const general = [];
+  const personalPick = preferredShuffled.slice(
+    0,
+    Math.min(targetPersonal, preferredShuffled.length)
+  );
+  let remaining = count - personalPick.length;
+  let generalPick = generalShuffled.slice(0, remaining);
+  remaining = count - personalPick.length - generalPick.length;
 
-  for (const q of candidates) {
-    const qDistrict = (q.district || '').trim().toLowerCase();
-    const qCaste = (q.casteCategory || '').trim().toUpperCase();
-    const isLocal = district && qDistrict && qDistrict === district;
-    const isCaste =
-      caste &&
-      caste !== 'GENERAL' &&
-      q.scope === 'TARGETED' &&
-      qCaste === caste;
-
-    if (isLocal || isCaste) preferred.push(q);
-    else general.push(q);
+  // Fallback: if general is short, use leftover personalised Qs beyond the quota.
+  if (remaining > 0) {
+    const leftoverPersonal = preferredShuffled.slice(personalPick.length);
+    generalPick = [...generalPick, ...leftoverPersonal.slice(0, remaining)];
   }
 
-  const picked = [...shuffle(preferred), ...shuffle(general)].slice(0, count);
+  const picked = shuffle([...personalPick, ...generalPick]);
 
   if (picked.length < count) {
     throw new AppError(
@@ -104,6 +155,23 @@ export const sessionService = {
     const questionCount = count || CONFIG.QUIZ.QUESTION_COUNT;
     const lang = language || CONFIG.QUIZ.DEFAULT_LANGUAGE;
     const bankRows = await allocateBankQuestions(user, questionCount);
+
+    // Optional Gemini pass: reframe the 20 Qs with student profile before persist/serve.
+    let rowsForSession = bankRows;
+    let aiMeta = { aiEnhanced: false, aiEnhancementMs: 0 };
+    if (aiEnhancementService.isEnabled()) {
+      const enhanced = await aiEnhancementService.enhanceSessionQuestions({
+        user,
+        bankRows,
+        language: lang,
+      });
+      rowsForSession = enhanced.bankRows;
+      aiMeta = {
+        aiEnhanced: enhanced.aiEnhanced,
+        aiEnhancementMs: enhanced.aiEnhancementMs,
+      };
+    }
+
     const expiresAt = new Date(
       Date.now() + CONFIG.QUIZ.EXPIRY_MINUTES * 60 * 1000
     );
@@ -112,10 +180,13 @@ export const sessionService = {
       userId,
       language: lang,
       expiresAt,
-      bankRows,
+      bankRows: rowsForSession,
     });
 
-    return toSessionPlayPayload(session);
+    return {
+      ...toSessionPlayPayload(session),
+      ...aiMeta,
+    };
   },
 
   async get({ userId, sessionId }) {

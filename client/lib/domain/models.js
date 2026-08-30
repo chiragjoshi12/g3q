@@ -18,6 +18,7 @@ export function toUser(raw) {
     institute: raw.institute ?? "",
     grade: raw.grade ?? "",
     district: raw.district ?? "",
+    taluka: raw.taluka ?? "",
     phone: raw.phone ?? "",
     joinedOn: raw.joinedOn ?? null,
     credential: raw.udiseCode ?? raw.abcId ?? "",

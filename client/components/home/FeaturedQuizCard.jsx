@@ -54,7 +54,7 @@ export function FeaturedQuizCard({ quiz, onStart, resuming = false }) {
           >
             <path d="M8 5.2v13.6L19.2 12 8 5.2z" />
           </svg>
-          {resuming ? "Resume Quiz" : "Play Quiz"}
+          {resuming ? "Play Quiz" : "Play Quiz"}
         </AppButton>
       </div>
     </article>

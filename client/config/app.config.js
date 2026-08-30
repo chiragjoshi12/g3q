@@ -56,6 +56,6 @@ export const appConfig = {
   },
 
   certificate: {
-    week: Number(process.env.NEXT_PUBLIC_G3Q_WEEK || 1),
+    week: Number(process.env.NEXT_PUBLIC_G3Q_WEEK || 5),
   },
 };

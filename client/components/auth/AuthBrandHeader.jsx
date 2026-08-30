@@ -3,12 +3,11 @@ import { appConfig } from "@/config/app.config";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { cn } from "@/lib/utils";
 
-/** Next sits a little inside the field width — same height, not a skinny pill. */
-export const AUTH_BUTTON_CLASS =
-  "mx-auto h-14 w-[86%] bg-[#2d689d] text-base hover:bg-[#255a88]";
+/** Same pill as Play Quiz / Next / Submit. */
+export { ACTION_BUTTON_CLASS as AUTH_BUTTON_CLASS } from "@/components/common/AppButton";
 
 export const AUTH_FIELD_CLASS =
-  "h-14 w-full rounded-full border-0 bg-white px-5 text-base tracking-wide text-foreground shadow-[0_0_0_1px_#E5E7EB] outline-none transition-shadow placeholder:font-sans placeholder:tracking-normal placeholder:text-[#9CA3AF] focus:shadow-[0_0_0_2px_#2d689d]";
+  "h-16 w-full rounded-[1.3rem] border-0 bg-white px-5 text-base tracking-wide text-foreground shadow-[0_0_0_1px_#d9d9d9] outline-none transition-shadow placeholder:font-sans placeholder:text-sm placeholder:tracking-normal placeholder:text-[#737373] focus:shadow-[0_0_0_2px_#2d689d]";
 
 export function AuthLink({ children, className, ...props }) {
   return (

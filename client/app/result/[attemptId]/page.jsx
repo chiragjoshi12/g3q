@@ -1,10 +1,14 @@
 "use client";
 
-import { use } from "react";
+import { Suspense, use } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "@/components/icons";
 
-import { AppButton } from "@/components/common/AppButton";
+import {
+  ACTION_BUTTON_CLASS,
+  ACTION_BUTTON_SECONDARY_CLASS,
+  AppButton,
+} from "@/components/common/AppButton";
 import { ErrorState, LoadingState } from "@/components/common/StateViews";
 import { AppShell } from "@/components/layout/AppShell";
 import { ScoreSummary } from "@/components/result/ScoreSummary";
@@ -12,6 +16,7 @@ import { ROUTES } from "@/config/routes";
 import { quizController } from "@/controllers/quiz.controller";
 import { useAsyncData } from "@/hooks/useAsyncData";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { usePracticeMode } from "@/hooks/usePracticeMode";
 import { AppError, ERROR_CODE } from "@/lib/core/errors";
 import { useQuizStore } from "@/store/quiz.store";
 
@@ -19,9 +24,24 @@ import { useQuizStore } from "@/store/quiz.store";
  * Result screen: score, certificate, and retry / home actions.
  */
 export default function ResultPage({ params }) {
+  return (
+    <Suspense
+      fallback={
+        <AppShell>
+          <LoadingState className="flex-1" />
+        </AppShell>
+      }
+    >
+      <ResultScreen params={params} />
+    </Suspense>
+  );
+}
+
+function ResultScreen({ params }) {
   const { attemptId } = use(params);
   const router = useRouter();
-  const { ready } = useAuthGuard();
+  const practice = usePracticeMode();
+  const { ready, isAuthenticated } = useAuthGuard({ optional: practice });
   const resetSession = useQuizStore((state) => state.resetSession);
 
   const { status, data, error, reload } = useAsyncData(
@@ -39,11 +59,12 @@ export default function ResultPage({ params }) {
 
   const attempt = data?.attempt ?? null;
   const bundle = data?.bundle ?? null;
+  const leaveTo = practice && !isAuthenticated ? ROUTES.root : ROUTES.home;
 
   const handleRetry = () => {
     const quizId = attempt?.quizId;
     resetSession();
-    if (quizId) router.replace(ROUTES.quiz(quizId));
+    if (quizId) router.replace(ROUTES.quiz(quizId, { practice }));
   };
 
   const subtitle = bundle?.quiz?.subtitle || attempt?.quizTitle;
@@ -54,7 +75,7 @@ export default function ResultPage({ params }) {
         <div className="mx-auto flex w-full max-w-[26.5rem] items-center gap-3 md:max-w-none">
           <button
             type="button"
-            onClick={() => router.replace(ROUTES.home)}
+            onClick={() => router.replace(leaveTo)}
             aria-label="બંધ કરો"
             className="grid size-10 shrink-0 place-items-center rounded-full bg-white shadow-[0_2px_8px_rgb(15_23_42/0.08)] transition-transform active:scale-95"
           >
@@ -84,17 +105,14 @@ export default function ResultPage({ params }) {
 
       {status === "ready" && attempt ? (
         <footer className="shrink-0 px-5 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-6">
-          <div className="mx-auto flex w-full max-w-[26.5rem] flex-col items-center gap-3 md:max-w-none">
-            <AppButton
-              onClick={handleRetry}
-              className="h-14 w-[68%] bg-[#2d689d] font-canva text-[1.05rem] font-bold text-white hover:bg-[#255a88]"
-            >
+          <div className="mx-auto flex w-full max-w-[26.5rem] flex-col items-center gap-2.5 md:max-w-none">
+            <AppButton onClick={handleRetry} className={ACTION_BUTTON_CLASS}>
               Try again
             </AppButton>
             <AppButton
               variant="outline"
-              onClick={() => router.replace(ROUTES.home)}
-              className="h-14 w-[68%] border-0 bg-white font-canva text-[1.05rem] font-bold text-[#2d689d] shadow-[0_2px_8px_rgb(15_23_42/0.08)] hover:bg-white"
+              onClick={() => router.replace(leaveTo)}
+              className={ACTION_BUTTON_SECONDARY_CLASS}
             >
               Home page
             </AppButton>

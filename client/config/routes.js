@@ -1,10 +1,13 @@
 export const ROUTES = {
   root: "/",
   auth: "/auth",
+  abhiyan: "/abhiyan",
   home: "/home",
   profile: "/profile",
-  quiz: (quizId) => `/quiz/${quizId}`,
-  result: (attemptId) => `/result/${attemptId}`,
+  quiz: (quizId, { practice = false } = {}) =>
+    practice ? `/quiz/${quizId}?practice=1` : `/quiz/${quizId}`,
+  result: (attemptId, { practice = false } = {}) =>
+    practice ? `/result/${attemptId}?practice=1` : `/result/${attemptId}`,
 };
 
 /** Featured quiz launched from the landing Practice Quiz action. */

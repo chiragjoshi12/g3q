@@ -61,7 +61,7 @@ export const useAuthStore = create()(
 
       clearError: () => set({ error: null }),
 
-      /** Step 1 → 2: validate the UDISE/ABC code and resolve it to a name. */
+      /** Step 1 → 2: validate the CTS Number/ABC code and resolve it to a name. */
       lookupIdentity: async () => {
         const { role, credential } = get();
         set({ loading: true, error: null });

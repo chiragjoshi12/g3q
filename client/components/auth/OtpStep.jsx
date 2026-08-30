@@ -28,7 +28,7 @@ export function OtpStep({
   return (
     <div className="animate-screen-in space-y-7">
       <div className="space-y-4">
-        <h2 className="text-center text-xl font-bold text-[#111]">OTP અહીં નાખો</h2>
+        <h2 className="text-left text-xl font-bold text-[#111]">OTP અહીં નાખો</h2>
         <OtpInput
           length={appConfig.auth.otpLength}
           value={otp}
@@ -59,15 +59,16 @@ export function OtpStep({
       ) : null}
 
       <div className="space-y-4 pt-2">
-        <AppButton
-          block
-          loading={loading}
-          disabled={otp.length !== appConfig.auth.otpLength}
-          onClick={onVerify}
-          className={AUTH_BUTTON_CLASS}
-        >
-          Submit
-        </AppButton>
+        <div className="flex w-full justify-center">
+          <AppButton
+            loading={loading}
+            disabled={otp.length !== appConfig.auth.otpLength}
+            onClick={onVerify}
+            className={AUTH_BUTTON_CLASS}
+          >
+            Submit
+          </AppButton>
+        </div>
         <div className="text-center">
           <AuthLink onClick={onBack}>મોબાઈલ નંબર બદલો</AuthLink>
         </div>

@@ -1,11 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-import { AppButton } from "@/components/common/AppButton";
+import {
+  ACTION_BUTTON_CLASS,
+  ACTION_BUTTON_SECONDARY_CLASS,
+  AppButton,
+} from "@/components/common/AppButton";
 import { BrandIcon } from "@/components/common/BrandIcon";
+import { BannerSlider } from "@/components/landing/BannerSlider";
 import {
   BoardToggle,
   LeaderboardGap,
@@ -24,22 +28,34 @@ import { ROLE } from "@/lib/domain/roles";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { useAuthStore } from "@/store/auth.store";
 
-const ABOUT = {
-  lead: "ગુજરાત જ્ઞાન ગુરુ ક્વિઝ (G3Q 2.0) એ શિક્ષણ, જ્ઞાન અને સ્પર્ધાને જોડતી અનોખી પ્રવૃત્તિ છે. રાજ્યના તમામ વિદ્યાર્થીઓ સ્થાન, બોર્ડ, માધ્યમ કે લિંગ ભેદ વગર આ ક્વિઝમાં ભાગ લઈ શકે છે.",
-  more: " આ ક્વિઝનો ઉદ્દેશ વિદ્યાર્થીઓમાં ઉત્સાહ વધારવાનો, ભાગીદારી વધારવાનો અને જ્ઞાન તથા જાગૃતિને પ્રોત્સાહન આપવાનો છે.",
-};
+const ABOUT_LEAD =
+  "ગુજરાત જ્ઞાન ગુરુ ક્વિઝ (G3Q 2.0) એ શિક્ષણ, જ્ઞાન અને સ્પર્ધાને જોડતી અનોખી પ્રવૃત્તિ છે. રાજ્યના તમામ વિદ્યાર્થીઓ સ્થાન, બોર્ડ, માધ્યમ કે લિંગ ભેદ વગર આ ક્વિઝમાં ભાગ લઈ શકે છે.";
+
+const LANDING_BANNERS = ["/landing/hero.png", "/q3quiz.png"];
+
+const DEFAULT_TALUKA = "Palanpur";
+
+function formatTalukaName(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return DEFAULT_TALUKA;
+  return raw.replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+}
 
 function resolveYou(board, user) {
   if (user) {
     const match = board.find((row) => row.name === user.name);
+    if (match) return { ...match, inTop10: true };
     return {
-      rank: match?.rank ?? 2,
+      rank: user.rank,
       name: user.name,
       institute: user.institute,
       grade: user.grade,
+      inTop10: false,
     };
   }
-  return board[1] ?? board[0];
+
+  const demo = board[1] ?? board[0];
+  return demo ? { ...demo, inTop10: true } : null;
 }
 
 /**
@@ -51,13 +67,14 @@ export default function LandingPage() {
   const hydrated = useStoreHydrated(useAuthStore);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
-  const [expanded, setExpanded] = useState(false);
   const [board, setBoard] = useState(() =>
     user?.role === ROLE.COLLEGE ? "college" : "school"
   );
 
   const rows = board === "college" ? COLLEGE_LEADERBOARD : SCHOOL_LEADERBOARD;
   const you = useMemo(() => resolveYou(rows, hydrated ? user : null), [rows, hydrated, user]);
+  const taluka = formatTalukaName(hydrated ? user?.taluka : null);
+  const week = Number.isFinite(appConfig.certificate.week) ? appConfig.certificate.week : 5;
 
   const go = (path) => {
     if (hydrated && isAuthenticated) {
@@ -87,31 +104,27 @@ export default function LandingPage() {
         </header>
 
         <main className="no-scrollbar relative z-0 min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <div className="px-4 pt-4 pb-36">
-            <div className="overflow-hidden rounded-[1.35rem]">
-              <Image
-                src="/landing/hero.png"
-                alt="Ready for a Quiz?"
-                width={1536}
-                height={1024}
-                priority
-                className="h-auto w-full object-cover"
-              />
-            </div>
+          <div className="px-4 pt-4 pb-40">
+            <BannerSlider
+              slides={LANDING_BANNERS}
+              className="aspect-[3/2] w-full rounded-[1.35rem] bg-[#ddd]"
+              sizes="(max-width: 768px) 100vw, 26.5rem"
+            >
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-10 bg-gradient-to-t from-black/30 to-transparent" />
+            </BannerSlider>
 
             <p className="mt-5 text-[15px] leading-[1.65] text-[#4B5563]">
-              {ABOUT.lead}
-              {expanded ? ABOUT.more : null}
+              {ABOUT_LEAD}
             </p>
             <button
               type="button"
-              onClick={() => setExpanded((open) => !open)}
+              onClick={() => router.push(ROUTES.abhiyan)}
               className="mx-auto mt-3 block text-[15px] font-medium text-[#2563EB] underline underline-offset-2"
             >
-              {expanded ? "View Less" : "View More"}
+              View More
             </button>
 
-            <div className="mt-5 rounded-[1.75rem] bg-gradient-to-b from-[#fffcf5] to-[#d8d5ca] px-5 py-8 text-center">
+            <div className="mx-auto mt-5 w-[82%] rounded-[1.75rem] bg-gradient-to-b from-[#fffcf5] to-[#d8d5ca] px-5 py-8 text-center">
               <p className="inline-block bg-gradient-to-b from-[#731919] to-[#e52b2b] bg-clip-text font-[family-name:var(--font-archivo)] text-[2.65rem] leading-none text-transparent">
                 {new Intl.NumberFormat("en-IN").format(LANDING_PLAYS_COUNT)}
               </p>
@@ -124,6 +137,9 @@ export default function LandingPage() {
               <h2 className="text-center text-[1.45rem] font-bold text-[#111]">
                 ક્વિઝ લીડરબોર્ડ
               </h2>
+              <p className="mt-1 text-center text-[13px] font-medium text-[#6B7280]">
+                ({taluka} - week {week})
+              </p>
               <p className="mt-2 text-center text-[13px] leading-relaxed text-[#6B7280]">
                 અહીં તમારા તાલુકાના ટોપ 10 વિદ્યાર્થીઓનો લાઈવ રેન્ક બતાવેલ છે.
               </p>
@@ -139,33 +155,43 @@ export default function LandingPage() {
 
               <ul>
                 {rows.map((row) => (
-                  <LeaderboardRow key={`${board}-${row.rank}`} {...row} />
+                  <LeaderboardRow
+                    key={`${board}-${row.rank}`}
+                    {...row}
+                    you={Boolean(you?.inTop10 && you.name === row.name)}
+                  />
                 ))}
-                <LeaderboardGap />
-                <LeaderboardRow {...you} you />
+                {you && !you.inTop10 ? (
+                  <>
+                    <LeaderboardGap />
+                    <LeaderboardRow {...you} you />
+                  </>
+                ) : null}
               </ul>
             </section>
           </div>
         </main>
 
         <footer className="pointer-events-none absolute inset-x-0 bottom-0 z-30">
-          <div className="h-6 bg-gradient-to-b from-transparent to-[#F3F3F3]/80" />
-          <div className="pointer-events-auto mx-auto flex w-[82%] flex-col gap-3 px-0 pt-1 pb-[max(0.85rem,env(safe-area-inset-bottom))]">
-            <AppButton
-              block
-              onClick={() => go(ROUTES.home)}
-              className="h-16 bg-[#2d689d] hover:bg-[#255a88]"
-            >
-              Play Quiz
-            </AppButton>
-            <AppButton
-              block
-              variant="tonal"
-              onClick={() => go(ROUTES.quiz(FEATURED_QUIZ_ID))}
-              className="h-16 bg-[#f5f5f5] text-[#2d689d] hover:bg-[#ececec]"
-            >
-              Practice Quiz
-            </AppButton>
+          <div
+            className="pointer-events-auto px-5 pt-14 pb-[max(0.85rem,env(safe-area-inset-bottom))]"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0) 0%, #ffffff 50%, #ffffff 100%)",
+            }}
+          >
+            <div className="relative z-10 mx-auto flex w-full flex-col items-center gap-2.5">
+              <AppButton onClick={() => go(ROUTES.home)} className={ACTION_BUTTON_CLASS}>
+                Play Quiz
+              </AppButton>
+              <AppButton
+                variant="outline"
+                onClick={() => router.push(ROUTES.quiz(FEATURED_QUIZ_ID, { practice: true }))}
+                className={ACTION_BUTTON_SECONDARY_CLASS}
+              >
+                Practice Quiz
+              </AppButton>
+            </div>
           </div>
         </footer>
       </div>

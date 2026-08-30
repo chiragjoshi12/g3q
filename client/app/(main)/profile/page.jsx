@@ -9,6 +9,7 @@ import {
 } from "@/components/icons";
 
 import { CertificateViewer } from "@/components/certificate/CertificateViewer";
+import { ConfirmSheet } from "@/components/common/ConfirmSheet";
 import { EmptyState, LoadingState } from "@/components/common/StateViews";
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { AuroraWash } from "@/components/layout/AuroraWash";
@@ -27,7 +28,6 @@ const PANEL = {
   MENU: "menu",
   ATTEMPTS: "attempts",
   CERTIFICATES: "certificates",
-  ABOUT: "about",
   HELPLINE: "helpline",
 };
 
@@ -39,6 +39,7 @@ export default function ProfilePage() {
   const logout = useAuthStore((state) => state.logout);
   const resetSession = useQuizStore((state) => state.resetSession);
   const [panel, setPanel] = useState(PANEL.MENU);
+  const [confirmLogout, setConfirmLogout] = useState(false);
 
   const userId = user?.id;
 
@@ -65,6 +66,7 @@ export default function ProfilePage() {
   const initial = user?.name?.trim()?.[0] ?? "?";
 
   return (
+    <>
     <main className="no-scrollbar animate-screen-in relative flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F5F7F9]">
       <div className="relative overflow-hidden px-5 pt-4 pb-[3.75rem] sm:px-6">
         <AuroraWash className="inset-0 h-full" />
@@ -75,7 +77,7 @@ export default function ProfilePage() {
             </h1>
             <button
               type="button"
-              onClick={handleLogout}
+              onClick={() => setConfirmLogout(true)}
               aria-label="લોગ આઉટ"
               className="ml-auto grid size-10 place-items-center rounded-full border border-[#E8ECF0] bg-white transition-transform active:scale-95"
             >
@@ -123,7 +125,7 @@ export default function ProfilePage() {
                 iconSrc={BRAND_ICONS.aboutAbhinyan}
                 iconBg="bg-[#f6f8e5]"
                 label="About Abhinyan"
-                onClick={() => setPanel(PANEL.ABOUT)}
+                onClick={() => router.push(ROUTES.abhiyan)}
               />
               <MenuRow
                 iconSrc={BRAND_ICONS.helpline}
@@ -161,13 +163,21 @@ export default function ProfilePage() {
                 />
               ) : null}
 
-              {panel === PANEL.ABOUT ? <AboutPanel /> : null}
               {panel === PANEL.HELPLINE ? <HelplinePanel /> : null}
             </div>
           )}
         </section>
       </div>
     </main>
+      <ConfirmSheet
+        open={confirmLogout}
+        icon={LogOut}
+        title="લોગઆઉટ કરો"
+        description="શું તમે ખરેખર તમારા એકાઉન્ટમાંથી લોગ આઉટ કરવા માંગો છો?"
+        onCancel={() => setConfirmLogout(false)}
+        onConfirm={handleLogout}
+      />
+    </>
   );
 }
 
@@ -294,18 +304,6 @@ function CertificatesPanel({ loading, certificates, user }) {
         payload={payload}
         onClose={() => setSelected(null)}
       />
-    </div>
-  );
-}
-
-function AboutPanel() {
-  return (
-    <div className="space-y-2">
-      <h3 className="font-heading text-base font-bold">About Abhinyan</h3>
-      <p className="text-sm leading-relaxed text-muted-foreground">
-        {appConfig.name} ગુજરાત સરકાર માન્ય પ્રશ્નોત્તરી મંચ છે. વિદ્યાર્થીઓ અને કૉલેજો અહીં
-        અભ્યાસલક્ષી ક્વિઝ રમી શકે છે, AI સમજૂતી વાંચી શકે છે અને પોતાનું પ્રદર્શન જોઈ શકે છે.
-      </p>
     </div>
   );
 }

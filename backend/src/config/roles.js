@@ -11,10 +11,10 @@ export const ROLE = {
 export const CREDENTIAL = {
   [ROLE.STUDENT]: {
     key: 'udiseCode',
-    label: 'UDISE કોડ',
-    // School UDISE is 11 digits; student-level codes from roster are 18 digits.
+    label: 'CTS Number',
+    // School CTS Number is 11 digits; student-level codes from roster are 18 digits.
     pattern: /^\d{11}$|^\d{18}$/,
-    error: 'UDISE કોડ 11 અથવા 18 અંકનો હોવો જોઈએ.',
+    error: 'CTS Number 11 અથવા 18 અંકનો હોવો જોઈએ.',
   },
   [ROLE.COLLEGE]: {
     key: 'abcId',

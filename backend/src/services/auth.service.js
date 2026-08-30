@@ -23,7 +23,7 @@ async function resolveUser(role, credential) {
 }
 
 export const authService = {
-  /** Step 1 → 2: resolve the UDISE/ABC code to a name, before phone or OTP. */
+  /** Step 1 → 2: resolve the CTS Number/ABC code to a name, before phone or OTP. */
   async lookupIdentity({ role, credential }) {
     return resolveUser(role, credential);
   },

@@ -20,6 +20,7 @@ export function ScoreSummary({ attempt, quiz }) {
   const user = useAuthStore((state) => state.user);
   const [open, setOpen] = useState(false);
   const earnedCertificate = attemptEarnsCertificate(attempt);
+  const named = Boolean(user?.name || attempt?.userName);
   const payload = useMemo(
     () => buildCertificatePayload(user, attempt, { week: quiz?.week }),
     [user, attempt, quiz?.week]
@@ -62,7 +63,7 @@ export function ScoreSummary({ attempt, quiz }) {
         </div>
       </div>
 
-      {earnedCertificate ? (
+      {named && earnedCertificate ? (
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -74,7 +75,7 @@ export function ScoreSummary({ attempt, quiz }) {
           <BrandIcon src={BRAND_ICONS.resultCertificate} alt="" className="size-9 shrink-0" />
           <span className="font-canva text-[1.05rem] font-bold text-[#2C6698]">Certificate</span>
         </button>
-      ) : (
+      ) : named ? (
         <div
           className={cn(
             "flex items-center gap-3 rounded-[1.35rem] bg-white px-5 py-4 opacity-55",
@@ -84,7 +85,7 @@ export function ScoreSummary({ attempt, quiz }) {
           <BrandIcon src={BRAND_ICONS.resultCertificate} alt="" className="size-9 shrink-0" />
           <span className="font-canva text-[1.05rem] font-bold text-[#2C6698]">Certificate</span>
         </div>
-      )}
+      ) : null}
 
       <CertificateViewer open={open} payload={payload} onClose={() => setOpen(false)} />
     </section>

@@ -5,8 +5,8 @@ import { createPortal } from "react-dom";
 
 import { ParticipationCertificate } from "@/components/certificate/ParticipationCertificate";
 import { downloadCertificatePng } from "@/components/certificate/draw-certificate";
-import { AppButton } from "@/components/common/AppButton";
-import { Download, X } from "@/components/icons";
+import { ACTION_BUTTON_CLASS, ActionButtonRow, AppButton } from "@/components/common/AppButton";
+import { X } from "@/components/icons";
 import { certificateFileName } from "@/lib/domain/certificate";
 
 /**
@@ -58,10 +58,11 @@ export function CertificateViewer({ open, payload, onClose }) {
 
       <footer className="shrink-0 px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] md:px-6">
         <div className="mx-auto w-full max-w-5xl">
-          <AppButton block loading={downloading} onClick={handleDownload}>
-            <Download className="size-5" />
-            Download certificate
-          </AppButton>
+          <ActionButtonRow>
+            <AppButton loading={downloading} onClick={handleDownload} className={ACTION_BUTTON_CLASS}>
+              Download certificate
+            </AppButton>
+          </ActionButtonRow>
         </div>
       </footer>
     </div>,

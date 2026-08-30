@@ -1,7 +1,7 @@
 // Gujarat Quiz backend.
 //
 // Flows:
-//   1. Login: identity lookup (UDISE/ABC) -> OTP -> JWT
+//   1. Login: identity lookup (CTS Number/ABC) -> OTP -> JWT
 //   2. Bank play: start session (allocate unseen ACCEPTED bank Qs) -> submit -> stats
 //   3. Admin: bilingual bank review (separate /api/v1/admin)
 //   4. Legacy fixed quizzes/attempts kept for compatibility
@@ -32,7 +32,7 @@ enum QuestionType {
   drag_into_blanks
 }
 
-/// A student or college login identity — resolved by UDISE/ABC code, never by
+/// A student or college login identity — resolved by CTS Number/ABC code, never by
 /// email or password. There is no self-signup flow: rows are provisioned
 /// (seeded / admin-imported) ahead of time, matching data/users.json.
 model User {
