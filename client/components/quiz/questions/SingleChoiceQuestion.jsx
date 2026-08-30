@@ -2,7 +2,7 @@
 
 import { ChoiceOption } from "@/components/quiz/questions/ChoiceOption";
 
-export function SingleChoiceQuestion({ question, value, onChange, disabled, revealed, celebrate }) {
+export function SingleChoiceQuestion({ question, value, onChange, disabled, revealed }) {
   const selected = value ?? [];
 
   return (
@@ -13,9 +13,7 @@ export function SingleChoiceQuestion({ question, value, onChange, disabled, reve
           index={index}
           label={option.label}
           selected={selected.includes(option.id)}
-          isCorrectOption={question.answer.includes(option.id)}
           revealed={revealed}
-          celebrate={celebrate}
           disabled={disabled}
           onToggle={() => onChange([option.id])}
         />

@@ -9,7 +9,6 @@ import { ErrorState, LoadingState } from "@/components/common/StateViews";
 import { AppShell } from "@/components/layout/AppShell";
 import { ContentWidth } from "@/components/layout/ContentWidth";
 import { AiExplanationSheet } from "@/components/quiz/AiExplanationSheet";
-import { AnswerVerdict } from "@/components/quiz/AnswerVerdict";
 import { QuestionRenderer } from "@/components/quiz/QuestionRenderer";
 import { QuizHeader } from "@/components/quiz/QuizHeader";
 import { ROUTES } from "@/config/routes";
@@ -63,7 +62,6 @@ function QuizScreen({ params }) {
   const questions = useQuizStore((state) => state.questions);
   const explanations = useQuizStore((state) => state.explanations);
   const answers = useQuizStore((state) => state.answers);
-  const timings = useQuizStore((state) => state.timings);
   const currentIndex = useQuizStore((state) => state.currentIndex);
   const phase = useQuizStore((state) => state.phase);
   const loading = useQuizStore((state) => state.loading);
@@ -167,18 +165,8 @@ function QuizScreen({ params }) {
                   onChange={setAnswer}
                   disabled={!answering}
                   revealed={reviewing && verdictRevealed}
-                  celebrate={reviewing && verdictRevealed && !explanationOpen}
                 />
               </div>
-
-              {verdictRevealed && !explanationOpen ? (
-                <div className="mt-5">
-                <AnswerVerdict
-                  correct={isCorrect(question, value)}
-                  timeSpentMs={timings[question.id] ?? 0}
-                />
-                </div>
-              ) : null}
 
               <div className="mt-5 hidden pt-2 md:block">
                 {!explanationOpen ? (

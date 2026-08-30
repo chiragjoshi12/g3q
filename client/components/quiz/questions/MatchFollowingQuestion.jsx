@@ -74,8 +74,6 @@ export function MatchFollowingQuestion({ question, value, onChange, disabled, re
       <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
         {question.left.map((left) => {
           const pairedTo = pairs[left.id];
-          const correctPair = revealed && question.answer[left.id] === pairedTo;
-          const correctLabel = labelOfRight(question.answer[left.id]);
           const isOverTarget = overLeftId === left.id;
 
           return (
@@ -84,7 +82,7 @@ export function MatchFollowingQuestion({ question, value, onChange, disabled, re
                 onClick={() => handleLeftClick(left.id)}
                 {...dropHandlers(left.id)}
                 className={cn(
-                  "flex min-h-12 items-center rounded-[1.15rem] border border-[#E2E8F0] bg-white px-3.5 py-3 text-sm font-medium",
+                  "flex min-h-[4.2rem] items-center rounded-[1.15rem] border border-[#E2E8F0] bg-white px-3.5 py-3 text-sm font-medium",
                   !disabled && "cursor-pointer"
                 )}
               >
@@ -97,28 +95,14 @@ export function MatchFollowingQuestion({ question, value, onChange, disabled, re
                 onClick={() => handleSlotClick(left.id)}
                 {...dropHandlers(left.id)}
                 className={cn(
-                  "flex min-h-12 items-center justify-center rounded-[1.15rem] border-2 px-3.5 py-3 text-center text-sm font-semibold transition-all",
-                  !pairedTo && !isOverTarget && !revealed && "border-dashed border-[#C5D0DA] text-muted-foreground/60",
+                  "flex min-h-12 items-center justify-center rounded-[1.15rem] border px-3.5 py-3 text-center text-sm font-semibold transition-all",
+                  !pairedTo && !isOverTarget && "border-dashed border-[#C5D0DA] text-muted-foreground/60",
                   isOverTarget && "border-primary-500 bg-primary-50 text-primary-700",
-                  pairedTo && !revealed && !isOverTarget && "border-primary-700 bg-primary-700 text-white",
-                  revealed && correctPair && "border-success bg-success text-white",
-                  revealed && pairedTo && !correctPair && "border-error bg-error text-white",
-                  revealed && !pairedTo && "border-dashed border-error/40 text-error"
+                  pairedTo && !isOverTarget && "border-primary-700 bg-primary-700 text-white"
                 )}
               >
-                <span className="flex items-center gap-1.5">
-                  {pairedTo ? labelOfRight(pairedTo) : "અહીં મૂકો"}
-                  {revealed && correctPair ? (
-                    <BrandIcon src={BRAND_ICONS.correct} alt="" className="size-4" />
-                  ) : null}
-                  {revealed && pairedTo && !correctPair ? (
-                    <BrandIcon src={BRAND_ICONS.incorrect} alt="" className="size-4" />
-                  ) : null}
-                </span>
+                {pairedTo ? labelOfRight(pairedTo) : "અહીં મૂકો"}
               </button>
-              {revealed && !correctPair ? (
-                <p className="col-span-2 -mt-1 text-[11px] text-success">✓ {correctLabel}</p>
-              ) : null}
             </Fragment>
           );
         })}
@@ -126,7 +110,7 @@ export function MatchFollowingQuestion({ question, value, onChange, disabled, re
 
       {!revealed ? (
         <>
-          <p className="flex items-center gap-1.5 text-sm font-medium text-primary-600">
+          <p className="flex items-center gap-1.5 pt-5 pb-5 text-sm font-medium text-primary-600">
             <BrandIcon src={BRAND_ICONS.drag} alt="" className="size-4 shrink-0" />
             વિકલ્પ પસંદ કરીને ડાબી બાજુ પર ટૅપ કરો, અથવા ખેંચીને મૂકો
           </p>
@@ -147,7 +131,7 @@ export function MatchFollowingQuestion({ question, value, onChange, disabled, re
                   }}
                   onClick={() => setSelected((current) => (current === right.id ? null : right.id))}
                   className={cn(
-                    "rounded-full border px-4 py-2 font-heading text-sm font-medium transition-all",
+                    "rounded-full h-[3.2rem] border px-4 py-2 font-heading text-sm font-medium transition-all",
                     !disabled && "cursor-grab active:scale-95 active:cursor-grabbing",
                     used && "border-dashed border-[#C5D0DA] bg-[#EEF1F4] text-muted-foreground/50",
                     !used && selected === right.id

@@ -1,3 +1,17 @@
 - Home Page Slider Image Banner
 - Static Page Creation For the Abhiyan info from PDF
+- Option Height increase
+- Option Gap decrease
+- Question & Option gap more
+- Try Again button remove
+- Certificate don't depend on result
+- Leave Quiz Result Page
+- ગુજરાત ક્વિઝ Header Update
+- All option height increase
+- Profile Page top backgroun
+- Home Page Quiz Info With shade
+- result page new background
+- Certificate button in result page
+
+- પ્રશ્ન સમીક્ષા
 - 

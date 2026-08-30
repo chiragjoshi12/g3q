@@ -134,22 +134,21 @@
 }
 
 @keyframes verdict-shake {
-  0%, 100% { transform: translateX(0) rotate(0); }
-  15% { transform: translateX(-10px) rotate(-1.4deg); }
-  30% { transform: translateX(10px) rotate(1.4deg); }
-  45% { transform: translateX(-7px) rotate(-0.8deg); }
-  60% { transform: translateX(7px) rotate(0.8deg); }
-  75% { transform: translateX(-3px) rotate(-0.3deg); }
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
 }
 
 @keyframes flash-success {
-  0% { background-color: rgb(22 163 74 / 0.32); }
+  0% { background-color: rgb(22 163 74 / 0.14); }
   100% { background-color: rgb(0 0 0 / 0.28); }
 }
 
 @keyframes flash-error {
-  0% { background-color: rgb(220 38 38 / 0.34); }
-  100% { background-color: rgb(0 0 0 / 0.3); }
+  0% { background-color: rgb(220 38 38 / 0.12); }
+  100% { background-color: rgb(0 0 0 / 0.28); }
 }
 
 @media (prefers-reduced-motion: reduce) {

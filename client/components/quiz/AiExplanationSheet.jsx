@@ -61,8 +61,7 @@ export function AiExplanationSheet({
       <div className="animate-slide-up relative w-full">
         <div
           className={cn(
-            "relative flex max-h-[78dvh] min-h-[48%] w-full flex-col overflow-visible rounded-t-[2rem] bg-white px-6 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-m3",
-            bodyDone && !correct && "animate-verdict-shake"
+            "relative flex max-h-[78dvh] min-h-[48%] w-full flex-col overflow-visible rounded-t-[2rem] bg-white px-6 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-m3"
           )}
         >
           <div className="relative mb-4 flex items-center justify-center">
@@ -125,7 +124,7 @@ function VerdictMark({ correct }) {
           aria-hidden
           className={cn(
             "absolute inset-0 rounded-full animate-pulse-ring",
-            correct ? "bg-success/35" : "bg-error/35"
+            correct ? "bg-success/18" : "bg-error/14"
           )}
         />
         {correct ? <ConfettiBurst /> : null}
