@@ -112,7 +112,7 @@ export default function QuestionsPage() {
   const isMaster = role === "master";
 
   return (
-    <AdminShell title={isMaster ? "Question Bank" : "Review questions"}>
+    <AdminShell title="Question Bank">
       {isMaster ? (
       <section className="stats-row">
         <article>

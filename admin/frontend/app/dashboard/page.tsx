@@ -97,18 +97,12 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [role, setRole] = useState("admin");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const [quotaAdminId, setQuotaAdminId] = useState("");
   const [dailyQuota, setDailyQuota] = useState("50");
   const [quotaNotes, setQuotaNotes] = useState("");
-
-  const [newUsername, setNewUsername] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [newFullName, setNewFullName] = useState("");
-  const [newQuota, setNewQuota] = useState("50");
 
   const isMaster = role === "master";
 
@@ -143,11 +137,9 @@ export default function DashboardPage() {
         acc.quota += r.daily_quota;
         acc.reviewed += r.reviewed_today;
         acc.remaining += r.remaining_today;
-        acc.assigned += r.assigned_today;
-        acc.lifetime += r.lifetime_reviewed;
         return acc;
       },
-      { quota: 0, reviewed: 0, remaining: 0, assigned: 0, lifetime: 0 }
+      { quota: 0, reviewed: 0, remaining: 0 }
     );
   }, [activeReviewers]);
 
@@ -155,39 +147,6 @@ export default function DashboardPage() {
     setQuotaAdminId(String(r.admin_id));
     setDailyQuota(String(r.daily_quota || 50));
     setQuotaNotes(r.quota_notes || "");
-  }
-
-  async function onCreateReviewer(e: FormEvent) {
-    e.preventDefault();
-    setCreating(true);
-    setError(null);
-    setOk(null);
-    try {
-      const created = await api<{ id: number; username: string }>(
-        "/api/v1/admin/users",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            username: newUsername,
-            password: newPassword,
-            full_name: newFullName || null,
-            daily_quota: newQuota ? Number(newQuota) : undefined,
-          }),
-        }
-      );
-      setNewUsername("");
-      setNewPassword("");
-      setNewFullName("");
-      setNewQuota("50");
-      setQuotaAdminId(String(created.id));
-      setDailyQuota(newQuota || "50");
-      setOk(`Reviewer ${created.username} created and allocated today’s questions.`);
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create reviewer");
-    } finally {
-      setCreating(false);
-    }
   }
 
   async function onSaveQuota(e: FormEvent) {
@@ -235,20 +194,6 @@ export default function DashboardPage() {
     }
   }
 
-  async function toggleActive(r: WorkReviewer) {
-    setError(null);
-    setOk(null);
-    try {
-      await api(`/api/v1/admin/users/${r.admin_id}/active?active=${!r.is_active}`, {
-        method: "PATCH",
-      });
-      setOk(r.is_active ? `Deactivated ${r.username}` : `Reactivated ${r.username}`);
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Update failed");
-    }
-  }
-
   const me = data?.me;
   const remaining = me?.remaining_today ?? 0;
   const queueHref = "/questions?assigned=mine";
@@ -274,10 +219,10 @@ export default function DashboardPage() {
               <section className="work-hero master">
                 <div>
                   <p className="work-kicker">{formatDay(data.date)}</p>
-                  <h2>Create reviewers, then allocate questions</h2>
+                  <h2>Allocate questions to reviewers</h2>
                   <p>
-                    Add a sub-admin and set how many questions they should review each
-                    day. Pending questions are reserved for them automatically.
+                    Set how many questions each sub-admin should review each day.
+                    Create accounts on the Admins page first.
                   </p>
                 </div>
               </section>
@@ -301,73 +246,14 @@ export default function DashboardPage() {
                 </article>
               </section>
 
-              <section className="alloc-flow">
-                <form className="panel-block work-quota-form" onSubmit={onCreateReviewer}>
-                  <div className="panel-head">
-                    <div>
-                      <p className="alloc-step">Step 1</p>
-                      <h2>Create reviewer</h2>
-                      <p>New sub-admin account, with an optional daily quota.</p>
-                    </div>
+              <form className="panel-block work-quota-form" onSubmit={onSaveQuota}>
+                <div className="panel-head">
+                  <div>
+                    <h2>Set questions / day</h2>
+                    <p>Change the daily target for an existing sub-admin.</p>
                   </div>
-                  <div className="work-form-grid two">
-                    <label>
-                      Username
-                      <input
-                        value={newUsername}
-                        onChange={(e) => setNewUsername(e.target.value)}
-                        required
-                        minLength={3}
-                        maxLength={64}
-                        autoComplete="off"
-                      />
-                    </label>
-                    <label>
-                      Temporary password
-                      <input
-                        type="password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        required
-                        minLength={8}
-                        maxLength={128}
-                        autoComplete="new-password"
-                      />
-                    </label>
-                  </div>
-                  <label>
-                    Full name
-                    <input
-                      value={newFullName}
-                      onChange={(e) => setNewFullName(e.target.value)}
-                      maxLength={128}
-                    />
-                  </label>
-                  <label>
-                    Questions / day
-                    <input
-                      type="number"
-                      min={1}
-                      max={2000}
-                      value={newQuota}
-                      onChange={(e) => setNewQuota(e.target.value)}
-                    />
-                  </label>
-                  <div className="form-actions">
-                    <button type="submit" disabled={creating}>
-                      {creating ? "Creating…" : "Create reviewer"}
-                    </button>
-                  </div>
-                </form>
-
-                <form className="panel-block work-quota-form" onSubmit={onSaveQuota}>
-                  <div className="panel-head">
-                    <div>
-                      <p className="alloc-step">Step 2</p>
-                      <h2>Set questions / day</h2>
-                      <p>Change the daily target for an existing reviewer.</p>
-                    </div>
-                  </div>
+                </div>
+                <div className="work-form-grid two">
                   <label>
                     Sub-admin
                     <select
@@ -394,22 +280,22 @@ export default function DashboardPage() {
                       required
                     />
                   </label>
-                  <label>
-                    Notes
-                    <input
-                      value={quotaNotes}
-                      onChange={(e) => setQuotaNotes(e.target.value)}
-                      maxLength={500}
-                      placeholder="Optional — shift, subject area…"
-                    />
-                  </label>
-                  <div className="form-actions">
-                    <button type="submit" disabled={saving || !quotaAdminId}>
-                      {saving ? "Saving…" : "Save & allocate today"}
-                    </button>
-                  </div>
-                </form>
-              </section>
+                </div>
+                <label>
+                  Notes
+                  <input
+                    value={quotaNotes}
+                    onChange={(e) => setQuotaNotes(e.target.value)}
+                    maxLength={500}
+                    placeholder="Optional — shift, subject area…"
+                  />
+                </label>
+                <div className="form-actions">
+                  <button type="submit" disabled={saving || !quotaAdminId}>
+                    {saving ? "Saving…" : "Save & allocate today"}
+                  </button>
+                </div>
+              </form>
 
               <section className="table-wrap">
                 <table className="q-table">
@@ -428,7 +314,9 @@ export default function DashboardPage() {
                   <tbody>
                     {reviewers.length === 0 ? (
                       <tr className="no-click">
-                        <td colSpan={8}>No reviewers yet. Create one in step 1.</td>
+                        <td colSpan={8}>
+                          No reviewers yet. Create a sub-admin on the Admins page.
+                        </td>
                       </tr>
                     ) : (
                       reviewers.map((r) => (
@@ -483,13 +371,6 @@ export default function DashboardPage() {
                                   {r.quota_active ? "Pause" : "Resume"}
                                 </button>
                               ) : null}
-                              <button
-                                type="button"
-                                className="ghost compact"
-                                onClick={() => toggleActive(r)}
-                              >
-                                {r.is_active ? "Deactivate" : "Activate"}
-                              </button>
                             </div>
                           </td>
                         </tr>

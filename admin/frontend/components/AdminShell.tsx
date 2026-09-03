@@ -35,15 +35,18 @@ export function AdminShell({
   const nav = useMemo(() => {
     if (isMaster) {
       return [
-        { href: "/dashboard", label: "Questions Allocation", short: "QA" },
-        { href: "/questions", label: "Question Bank", short: "QB" },
         { href: "/analytics", label: "Analytics", short: "AN" },
+        { href: "/questions", label: "Question Bank", short: "QB" },
+        { href: "/admins", label: "Admins", short: "AD" },
+        { href: "/dashboard", label: "Questions Allocation", short: "QA" },
         { href: "/account", label: "Account", short: "AC" },
       ];
     }
     return [
+      { href: "/analytics", label: "Analytics", short: "AN" },
+      { href: "/questions", label: "Question Bank", short: "QB" },
       { href: "/dashboard", label: "My work", short: "MW" },
-      { href: "/questions", label: "Review questions", short: "RQ" },
+      { href: "/account", label: "Account", short: "AC" },
     ];
   }, [isMaster]);
 
@@ -63,10 +66,8 @@ export function AdminShell({
         setFullName(profile.full_name);
         setRole(profile.role);
         setAuth(token, profile.username, profile.role);
-        if (profile.role !== "master") {
-          if (pathname.startsWith("/analytics") || pathname.startsWith("/account") || pathname.startsWith("/admins")) {
-            router.replace("/dashboard");
-          }
+        if (profile.role !== "master" && pathname.startsWith("/admins")) {
+          router.replace("/questions");
         }
       })
       .catch(() => {
@@ -127,9 +128,7 @@ export function AdminShell({
                 ? pathname === "/questions" || pathname.startsWith("/questions/")
                 : item.href === "/analytics"
                   ? pathname === "/analytics" || pathname.startsWith("/analytics/")
-                  : item.href === "/dashboard"
-                    ? pathname === "/dashboard" || pathname.startsWith("/admins")
-                : pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  : pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
               <Link
                 key={item.href}

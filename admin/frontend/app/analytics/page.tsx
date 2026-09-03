@@ -10,9 +10,8 @@ import {
   type ActiveElement,
 } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
-import { useRouter } from "next/navigation";
 import { AdminShell } from "@/components/AdminShell";
-import { AnalyticsDashboard, api, getRole, getToken } from "@/lib/api";
+import { AnalyticsDashboard, api, getToken } from "@/lib/api";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -188,7 +187,6 @@ function InteractivePie({
 }
 
 export default function AnalyticsPage() {
-  const router = useRouter();
   const [data, setData] = useState<AnalyticsDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -210,12 +208,9 @@ export default function AnalyticsPage() {
   }, []);
 
   useEffect(() => {
-    if (getRole() && getRole() !== "master") {
-      router.replace("/dashboard");
-      return;
-    }
+    if (!getToken()) return;
     load();
-  }, [load, router]);
+  }, [load]);
 
   const o = data?.overview;
 
