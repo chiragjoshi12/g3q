@@ -5,6 +5,7 @@ import {
   adminLoginSchema,
   adminProfileUpdateSchema,
   adminCreateUserSchema,
+  adminWorkQuotaSchema,
   questionUpdateSchema,
   questionReviewSchema,
   questionCommentSchema,
@@ -18,6 +19,8 @@ import {
   adminAnalyticsGeo,
   adminAnalyticsWeekly,
   adminAnalyticsCaste,
+  adminWorkDashboard,
+  adminSetWorkQuota,
   adminListQuestions,
   adminGetQuestion,
   adminUpdateQuestion,
@@ -38,6 +41,8 @@ router.get('/me', adminMe);
 router.patch('/me', validateRequest(adminProfileUpdateSchema), adminUpdateMe);
 
 router.get('/stats', adminStats);
+router.get('/work/dashboard', adminWorkDashboard);
+router.post('/work/quota', requireMaster, validateRequest(adminWorkQuotaSchema), adminSetWorkQuota);
 router.get('/analytics', adminAnalyticsDashboard);
 router.get('/analytics/geo', adminAnalyticsGeo);
 router.get('/analytics/weekly', adminAnalyticsWeekly);

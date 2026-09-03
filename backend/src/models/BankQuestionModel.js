@@ -1,4 +1,5 @@
 import { prisma } from '../config/prisma.client.js';
+import { ymdFromDate } from '../utils/istDate.js';
 
 const OPTION_GU = {
   A: 'optionAGu',
@@ -43,6 +44,11 @@ const toListItem = (row) => {
     reviewed_at: row.reviewedAt ? row.reviewedAt.toISOString() : null,
     last_edited_by_username: row.lastEditedBy?.username ?? null,
     last_edited_at: row.lastEditedAt ? row.lastEditedAt.toISOString() : null,
+    assigned_to_id: row.assignment?.adminId ?? row.assignment?.admin?.id ?? null,
+    assigned_to_username: row.assignment?.admin?.username ?? null,
+    assignment_date: row.assignment?.assignmentDate
+      ? ymdFromDate(row.assignment.assignmentDate)
+      : null,
   };
 };
 
@@ -87,6 +93,9 @@ const toDetail = (row) => {
 const auditInclude = {
   reviewedBy: { select: { username: true } },
   lastEditedBy: { select: { username: true } },
+  assignment: {
+    include: { admin: { select: { id: true, username: true } } },
+  },
 };
 
 const detailInclude = {

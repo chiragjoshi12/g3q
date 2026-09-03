@@ -323,6 +323,10 @@ model AdminUser {
   editedQuestions   BankQuestion[] @relation("QuestionEditedBy")
   comments          BankQuestionComment[]
   activities        BankQuestionActivity[]
+  workQuota         AdminWorkQuota?
+  quotasCreated     AdminWorkQuota[] @relation("QuotaSetter")
+  assignedWork      AdminQuestionAssignment[] @relation("AssignedAdmin")
+  assignmentsMade   AdminQuestionAssignment[] @relation("AssignmentCreator")
 
   @@map("admin_users")
 }
@@ -367,6 +371,7 @@ model BankQuestion {
   activities BankQuestionActivity[]
   sessionQuestions QuizSessionQuestion[]
   exposures  UserQuestionExposure[]
+  assignment AdminQuestionAssignment?
 
   @@index([correctOption])
   @@index([scope])
@@ -406,4 +411,42 @@ model BankQuestionActivity {
   @@index([queId])
   @@index([createdAt])
   @@map("bank_question_activities")
+}
+
+/// Daily review target for a sub-admin. Master sets questions/day; the
+/// allocator fills that many unassigned PENDING bank rows each IST day.
+model AdminWorkQuota {
+  id          Int      @id @default(autoincrement())
+  adminId     Int      @unique @map("admin_id")
+  dailyQuota  Int      @map("daily_quota")
+  isActive    Boolean  @default(true) @map("is_active")
+  notes       String?  @db.VarChar(500)
+  createdById Int      @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  admin     AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  createdBy AdminUser @relation("QuotaSetter", fields: [createdById], references: [id])
+
+  @@map("admin_work_quotas")
+}
+
+/// One bank question reserved for one reviewer. Unique on que_id so two
+/// sub-admins never share the same pending row.
+model AdminQuestionAssignment {
+  id             Int      @id @default(autoincrement())
+  adminId        Int      @map("admin_id")
+  queId          String   @map("que_id") @db.VarChar(32)
+  assignmentDate DateTime @map("assignment_date") @db.Date
+  assignedById   Int      @map("assigned_by_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  admin      AdminUser    @relation("AssignedAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+  assignedBy AdminUser    @relation("AssignmentCreator", fields: [assignedById], references: [id])
+  question   BankQuestion @relation(fields: [queId], references: [queId], onDelete: Cascade)
+
+  @@unique([queId])
+  @@index([adminId, assignmentDate])
+  @@index([assignmentDate])
+  @@map("admin_question_assignments")
 }

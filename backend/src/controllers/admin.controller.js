@@ -2,6 +2,7 @@ import { asyncHandler } from '../middlewares/error.middleware.js';
 import { adminAuthService } from '../services/adminAuth.service.js';
 import { adminQuestionService } from '../services/adminQuestion.service.js';
 import { adminAnalyticsService } from '../services/adminAnalytics.service.js';
+import { adminWorkService } from '../services/adminWork.service.js';
 import { questionListQuerySchema } from '../validators/admin.validator.js';
 import {
   analyticsQuerySchema,
@@ -52,9 +53,19 @@ export const adminAnalyticsCaste = asyncHandler(async (req, res) => {
   return res.status(200).json(data);
 });
 
+export const adminWorkDashboard = asyncHandler(async (req, res) => {
+  const data = await adminWorkService.dashboard(req.admin);
+  return res.status(200).json(data);
+});
+
+export const adminSetWorkQuota = asyncHandler(async (req, res) => {
+  const result = await adminWorkService.setQuota(req.body, req.admin);
+  return res.status(200).json(result);
+});
+
 export const adminListQuestions = asyncHandler(async (req, res) => {
   const query = questionListQuerySchema.parse(req.query);
-  const result = await adminQuestionService.list(query);
+  const result = await adminQuestionService.list(query, req.admin);
   return res.status(200).json(result);
 });
 
@@ -85,6 +96,16 @@ export const adminListUsers = asyncHandler(async (req, res) => {
 
 export const adminCreateUser = asyncHandler(async (req, res) => {
   const user = await adminAuthService.createUser(req.body);
+  if (req.body.daily_quota && user.role === 'admin') {
+    await adminWorkService.setQuota(
+      {
+        admin_id: user.id,
+        daily_quota: req.body.daily_quota,
+        is_active: true,
+      },
+      req.admin
+    );
+  }
   return res.status(201).json(user);
 });
 

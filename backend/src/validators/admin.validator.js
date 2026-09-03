@@ -19,6 +19,17 @@ export const adminCreateUserSchema = z.object({
   university: z.string().trim().max(255).nullable().optional(),
   mobile_number: z.string().trim().max(20).nullable().optional(),
   role: z.enum([ADMIN_ROLE.ADMIN, ADMIN_ROLE.MASTER]).optional().default(ADMIN_ROLE.ADMIN),
+  daily_quota: z.preprocess(
+    (v) => (v === '' || v == null ? undefined : v),
+    z.coerce.number().int().min(1).max(2000).optional()
+  ),
+});
+
+export const adminWorkQuotaSchema = z.object({
+  admin_id: z.coerce.number().int().positive(),
+  daily_quota: z.coerce.number().int().min(1).max(2000),
+  is_active: z.boolean().optional().default(true),
+  notes: z.string().trim().max(500).nullable().optional(),
 });
 
 export const questionUpdateSchema = z
@@ -73,4 +84,9 @@ export const questionListQuerySchema = z.object({
     .regex(/^[ABCD]?$/)
     .optional()
     .transform((v) => (v ? v : undefined)),
+  assigned_to: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v && v !== '' ? v : undefined)),
 });
