@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  AdminUserItem,
   api,
   DashboardStats,
+  getRole,
   getToken,
   QuestionListItem,
   QuestionListResponse,
@@ -24,6 +26,10 @@ export default function QuestionsPage() {
   const [language, setLanguage] = useState("all");
   const [correctOption, setCorrectOption] = useState("");
   const [reviewStatus, setReviewStatus] = useState("all");
+  const [assignedTo, setAssignedTo] = useState("all");
+  const [filtersReady, setFiltersReady] = useState(false);
+  const [reviewers, setReviewers] = useState<AdminUserItem[]>([]);
+  const [role, setRole] = useState("admin");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -45,6 +51,7 @@ export default function QuestionsPage() {
       });
       if (query.trim()) params.set("q", query.trim());
       if (correctOption) params.set("correct_option", correctOption);
+      if (assignedTo && assignedTo !== "all") params.set("assigned_to", assignedTo);
       const data = await api<QuestionListResponse>(
         `/api/v1/admin/questions?${params}`
       );
@@ -56,17 +63,40 @@ export default function QuestionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, query, language, correctOption, reviewStatus]);
+  }, [page, query, language, correctOption, reviewStatus, assignedTo]);
 
   useEffect(() => {
     if (!getToken()) return;
-    loadStats().catch(console.error);
+    const currentRole = getRole() || "admin";
+    setRole(currentRole);
+    const params = new URLSearchParams(window.location.search);
+    const assigned = params.get("assigned");
+    const review = params.get("review_status");
+    if (assigned) setAssignedTo(assigned);
+    else if (currentRole !== "master") setAssignedTo("mine");
+    if (review) setReviewStatus(review);
+    else if (currentRole !== "master" && !assigned) setReviewStatus("PENDING");
+    if (currentRole === "master") {
+      api<{ items: AdminUserItem[] }>("/api/v1/admin/users")
+        .then((data) =>
+          setReviewers(data.items.filter((u) => u.role === "admin"))
+        )
+        .catch(() => undefined);
+    }
+    setFiltersReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!getToken()) return;
+    if ((getRole() || "admin") === "master") {
+      loadStats().catch(console.error);
+    }
   }, [loadStats]);
 
   useEffect(() => {
-    if (!getToken()) return;
+    if (!getToken() || !filtersReady) return;
     loadQuestions();
-  }, [loadQuestions]);
+  }, [filtersReady, loadQuestions]);
 
   function onSearch() {
     setPage(1);
@@ -79,9 +109,11 @@ export default function QuestionsPage() {
   }
 
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const isMaster = role === "master";
 
   return (
-    <AdminShell title="Question Bank">
+    <AdminShell title={isMaster ? "Question Bank" : "Review questions"}>
+      {isMaster ? (
       <section className="stats-row">
         <article>
           <span>Total</span>
@@ -100,8 +132,9 @@ export default function QuestionsPage() {
           <strong>{stats?.review_rejected?.toLocaleString() ?? "—"}</strong>
         </article>
       </section>
+      ) : null}
 
-      <section className="toolbar bank-toolbar">
+      <section className={`toolbar bank-toolbar ${isMaster ? "with-assign" : "reviewer-toolbar"}`}>
         <input
           type="search"
           placeholder="Search ID, question, department…"
@@ -130,10 +163,38 @@ export default function QuestionsPage() {
             setPage(1);
           }}
         >
-          <option value="all">All review status</option>
-          <option value="PENDING">Pending</option>
-          <option value="ACCEPTED">Accepted</option>
-          <option value="REJECTED">Rejected</option>
+          {isMaster ? (
+            <>
+              <option value="all">All review status</option>
+              <option value="PENDING">Pending</option>
+              <option value="ACCEPTED">Accepted</option>
+              <option value="REJECTED">Rejected</option>
+            </>
+          ) : (
+            <>
+              <option value="PENDING">Pending</option>
+              <option value="ACCEPTED">Accepted by me</option>
+              <option value="REJECTED">Rejected by me</option>
+            </>
+          )}
+        </select>
+        {isMaster ? (
+          <>
+        <select
+          value={assignedTo}
+          onChange={(e) => {
+            setAssignedTo(e.target.value);
+            setPage(1);
+          }}
+        >
+          <option value="all">All assignments</option>
+          <option value="mine">Assigned to me</option>
+          <option value="unassigned">Unassigned</option>
+          {reviewers.map((u) => (
+            <option key={u.id} value={String(u.id)}>
+              Assigned to {u.full_name || u.username}
+            </option>
+          ))}
         </select>
         <select
           value={correctOption}
@@ -148,6 +209,8 @@ export default function QuestionsPage() {
           <option value="C">Correct C</option>
           <option value="D">Correct D</option>
         </select>
+          </>
+        ) : null}
         <button type="button" onClick={onSearch}>
           Search
         </button>
@@ -161,21 +224,26 @@ export default function QuestionsPage() {
               <th>Question</th>
               <th>Status</th>
               <th>Ans</th>
-              <th>Reviewed by</th>
+              {isMaster ? (
+                <>
+                  <th>Assigned</th>
+                  <th>Reviewed by</th>
+                </>
+              ) : null}
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5}>Loading…</td>
+                <td colSpan={isMaster ? 6 : 4}>Loading…</td>
               </tr>
             ) : error ? (
               <tr>
-                <td colSpan={5}>{error}</td>
+                <td colSpan={isMaster ? 6 : 4}>{error}</td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={5}>No questions found.</td>
+                <td colSpan={isMaster ? 6 : 4}>No questions found.</td>
               </tr>
             ) : (
               items.map((item) => (
@@ -190,9 +258,14 @@ export default function QuestionsPage() {
                     <ReviewStatusBadge status={item.review_status} />
                   </td>
                   <td className="ans">{item.correct_option || "—"}</td>
-                  <td className="reviewed-by">
-                    {item.reviewed_by_username || "—"}
-                  </td>
+                  {isMaster ? (
+                    <>
+                      <td>{item.assigned_to_username || "—"}</td>
+                      <td className="reviewed-by">
+                        {item.reviewed_by_username || "—"}
+                      </td>
+                    </>
+                  ) : null}
                 </tr>
               ))
             )}

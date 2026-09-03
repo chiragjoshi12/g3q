@@ -66,6 +66,9 @@ export type QuestionListItem = {
   reviewed_at?: string | null;
   last_edited_by_username?: string | null;
   last_edited_at?: string | null;
+  assigned_to_id?: number | null;
+  assigned_to_username?: string | null;
+  assignment_date?: string | null;
 };
 
 export type QuestionCommentItem = {
@@ -131,6 +134,66 @@ export type QuestionListResponse = {
   items: QuestionListItem[];
 };
 
+export type WorkDayCount = {
+  date: string;
+  assigned: number;
+  reviewed: number;
+  accepted: number;
+  rejected: number;
+  remaining?: number;
+};
+
+export type WorkReviewer = {
+  admin_id: number;
+  username: string;
+  full_name: string | null;
+  role: string;
+  is_active: boolean;
+  daily_quota: number;
+  quota_active: boolean;
+  quota_notes: string | null;
+  assigned_today: number;
+  reviewed_today: number;
+  accepted_today: number;
+  rejected_today: number;
+  remaining_today: number;
+  queue_pending: number;
+  backlog_pending: number;
+  lifetime_accepted: number;
+  lifetime_rejected: number;
+  lifetime_reviewed: number;
+  progress_pct: number;
+  status: string;
+  recent_days?: WorkDayCount[];
+};
+
+export type WorkQueueItem = {
+  que_id: string;
+  question_en: string | null;
+  question_gu: string | null;
+  department_en: string | null;
+  department_gu: string | null;
+  review_status: string;
+  assignment_date: string | null;
+};
+
+export type WorkDashboard = {
+  date: string;
+  timezone: string;
+  bank: {
+    total: number;
+    pending: number;
+    accepted: number;
+    rejected: number;
+    unassigned_pending: number;
+  };
+  me: WorkReviewer;
+  my_queue: WorkQueueItem[];
+  reviewers?: WorkReviewer[];
+  recent_days?: WorkDayCount[];
+  warnings?: string[];
+};
+
 export type AnalyticsGeoItem = {
   label: string;
   school_id?: string | null;
@@ -193,7 +256,11 @@ export type AnalyticsDashboard = {
   by_caste: AnalyticsCasteItem[];
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4000";
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === "production"
+    ? "https://g3q-backend.azurewebsites.net"
+    : "http://127.0.0.1:4000");
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;

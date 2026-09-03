@@ -1,10 +1,12 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AdminShell } from "@/components/AdminShell";
-import { AdminProfile, api } from "@/lib/api";
+import { AdminProfile, api, getRole } from "@/lib/api";
 
 export default function AccountPage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<AdminProfile | null>(null);
   const [fullName, setFullName] = useState("");
   const [university, setUniversity] = useState("");
@@ -15,6 +17,10 @@ export default function AccountPage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    if (getRole() && getRole() !== "master") {
+      router.replace("/dashboard");
+      return;
+    }
     api<AdminProfile>("/api/v1/admin/me")
       .then((data) => {
         setProfile(data);
@@ -26,7 +32,7 @@ export default function AccountPage() {
         setError(err instanceof Error ? err.message : "Failed to load profile")
       )
       .finally(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

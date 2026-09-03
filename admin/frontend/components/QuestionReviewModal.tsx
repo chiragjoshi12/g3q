@@ -246,6 +246,14 @@ export function QuestionReviewModal({
                       : "No edits yet"}
                   </strong>
                 </div>
+                <div>
+                  <span>Assigned to</span>
+                  <strong>
+                    {item.assigned_to_username
+                      ? `${item.assigned_to_username}${item.assignment_date ? ` · ${item.assignment_date}` : ""}`
+                      : "Unassigned"}
+                  </strong>
+                </div>
               </div>
 
               {editing && form ? (

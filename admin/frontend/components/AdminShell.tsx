@@ -13,12 +13,6 @@ import {
   setAuth,
 } from "@/lib/api";
 
-const BASE_NAV = [
-  { href: "/analytics", label: "Analytics", short: "AN" },
-  { href: "/questions", label: "Question Bank", short: "QB" },
-  { href: "/account", label: "Account", short: "AC" },
-];
-
 const SIDEBAR_KEY = "g3q_sidebar_collapsed";
 
 export function AdminShell({
@@ -36,17 +30,22 @@ export function AdminShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
+  const isMaster = role === "master";
+
   const nav = useMemo(() => {
-    if (role === "master") {
+    if (isMaster) {
       return [
-        BASE_NAV[0],
-        BASE_NAV[1],
-        { href: "/admins", label: "Admins", short: "AD" },
-        ...BASE_NAV.slice(2),
+        { href: "/dashboard", label: "Questions Allocation", short: "QA" },
+        { href: "/questions", label: "Question Bank", short: "QB" },
+        { href: "/analytics", label: "Analytics", short: "AN" },
+        { href: "/account", label: "Account", short: "AC" },
       ];
     }
-    return BASE_NAV;
-  }, [role]);
+    return [
+      { href: "/dashboard", label: "My work", short: "MW" },
+      { href: "/questions", label: "Review questions", short: "RQ" },
+    ];
+  }, [isMaster]);
 
   useEffect(() => {
     const token = getToken();
@@ -64,11 +63,16 @@ export function AdminShell({
         setFullName(profile.full_name);
         setRole(profile.role);
         setAuth(token, profile.username, profile.role);
+        if (profile.role !== "master") {
+          if (pathname.startsWith("/analytics") || pathname.startsWith("/account") || pathname.startsWith("/admins")) {
+            router.replace("/dashboard");
+          }
+        }
       })
       .catch(() => {
         /* 401 handled by api helper */
       });
-  }, [router]);
+  }, [pathname, router]);
 
   function toggleCollapsed() {
     setCollapsed((prev) => {
@@ -83,16 +87,20 @@ export function AdminShell({
     router.replace("/login");
   }
 
-  const roleLabel = role === "master" ? "Master Admin" : "Admin";
+  const roleLabel = isMaster ? "Master Admin" : "Sub Admin";
 
   return (
-    <div className={`admin-layout ${collapsed ? "sidebar-collapsed" : ""}`}>
+    <div
+      className={`admin-layout ${collapsed ? "sidebar-collapsed" : ""} ${
+        isMaster ? "" : "has-mobile-tabs"
+      }`}
+    >
       <aside className={`sidebar ${mobileOpen ? "open" : ""}`}>
         <div className="sidebar-brand">
           <span className="brand-mark">G3Q</span>
           <div className="sidebar-brand-text">
             <strong>G3Q Admin</strong>
-            <p>Intelligence Layer</p>
+            <p>{isMaster ? "Master console" : "Question review"}</p>
           </div>
           <button
             type="button"
@@ -103,6 +111,14 @@ export function AdminShell({
           >
             {collapsed ? "»" : "«"}
           </button>
+          <button
+            type="button"
+            className="ghost compact sidebar-close"
+            onClick={() => setMobileOpen(false)}
+            aria-label="Close menu"
+          >
+            Close
+          </button>
         </div>
         <nav className="sidebar-nav" aria-label="Main">
           {nav.map((item) => {
@@ -111,6 +127,8 @@ export function AdminShell({
                 ? pathname === "/questions" || pathname.startsWith("/questions/")
                 : item.href === "/analytics"
                   ? pathname === "/analytics" || pathname.startsWith("/analytics/")
+                  : item.href === "/dashboard"
+                    ? pathname === "/dashboard" || pathname.startsWith("/admins")
                 : pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
               <Link
@@ -154,9 +172,13 @@ export function AdminShell({
             type="button"
             className="ghost menu-btn"
             onClick={() => setMobileOpen(true)}
-            aria-label="Open navigation"
+            aria-label="Open menu"
           >
-            Menu
+            <span className="menu-icon" aria-hidden>
+              <i />
+              <i />
+              <i />
+            </span>
           </button>
           {collapsed ? (
             <button
@@ -168,12 +190,32 @@ export function AdminShell({
               Show menu
             </button>
           ) : null}
-          <div>
+          <div className="topbar-title">
             <h1>{title}</h1>
           </div>
         </header>
         <div className="admin-main">{children}</div>
       </div>
+
+      {!isMaster ? (
+        <nav className="mobile-tabbar" aria-label="Reviewer shortcuts">
+          {nav.map((item) => {
+            const active =
+              item.href === "/questions"
+                ? pathname === "/questions" || pathname.startsWith("/questions/")
+                : pathname === item.href || pathname.startsWith(`${item.href}/`);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={active ? "tab-link active" : "tab-link"}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      ) : null}
     </div>
   );
 }
