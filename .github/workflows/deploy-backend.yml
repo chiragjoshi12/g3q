@@ -1,0 +1,42 @@
+name: Deploy backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install and generate Prisma client
+        working-directory: backend
+        run: npm ci
+
+      - name: Apply Prisma migrations to Azure MySQL
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.AZURE_DATABASE_URL }}
+        run: npx prisma migrate deploy --schema=src/prisma/schema.prisma
+
+      - name: Omit node_modules so Azure Oryx installs on the app
+        working-directory: backend
+        run: rm -rf node_modules
+
+      - name: Deploy backend folder to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: g3q-backend
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: backend

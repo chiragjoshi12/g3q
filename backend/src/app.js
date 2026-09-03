@@ -20,7 +20,11 @@ const app = express();
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || CONFIG.FRONTEND_ORIGINS.includes(origin)) {
+      if (
+        !origin ||
+        CONFIG.CORS_ALLOW_ALL ||
+        CONFIG.FRONTEND_ORIGINS.includes(origin)
+      ) {
         return callback(null, true);
       }
       return callback(new Error(`CORS blocked for origin: ${origin}`));

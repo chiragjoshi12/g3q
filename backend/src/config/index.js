@@ -30,6 +30,8 @@ export const CONFIG = {
   FRONTEND_DOMAIN: process.env.FRONTEND_DOMAIN || 'http://localhost:3000',
   ADMIN_FRONTEND_DOMAIN: process.env.ADMIN_FRONTEND_DOMAIN || 'http://localhost:3001',
   FRONTEND_ORIGINS: parseOrigins(),
+  // When true, reflect any Origin (needed for credentials; * is not allowed).
+  CORS_ALLOW_ALL: parseBool(process.env.CORS_ALLOW_ALL, false),
 
   ADMIN: {
     USERNAME: process.env.ADMIN_USERNAME || 'admin',
