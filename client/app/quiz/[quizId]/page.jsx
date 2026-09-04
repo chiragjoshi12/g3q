@@ -16,6 +16,7 @@ import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { usePracticeMode } from "@/hooks/usePracticeMode";
 import { useQuestionTimer } from "@/hooks/useQuestionTimer";
 import { isAnswered, isCorrect } from "@/lib/domain/grading";
+import { unlockQuizSounds } from "@/lib/quiz-sounds";
 import { QUIZ_PHASE, useQuizStore } from "@/store/quiz.store";
 
 const QUIZ_PLAY_BG = "/quiz/play-bg.png";
@@ -88,6 +89,7 @@ function QuizScreen({ params }) {
   }, [question?.id]);
 
   const handleSubmit = () => {
+    unlockQuizSounds();
     if (submitAnswer()) setExplanationOpen(true);
   };
 

@@ -16,6 +16,7 @@ export const ROUTES = {
 export const FEATURED_QUIZ_ID = "quiz_gujarat_gk";
 
 const POST_AUTH_KEY = "ggq:post-auth";
+const LOGIN_TOAST_KEY = "ggq:login-toast";
 
 export function setPostAuthPath(path) {
   if (typeof window === "undefined") return;
@@ -27,6 +28,21 @@ export function consumePostAuthPath() {
   const next = sessionStorage.getItem(POST_AUTH_KEY);
   sessionStorage.removeItem(POST_AUTH_KEY);
   return next || ROUTES.home;
+}
+
+export function markLoginToast() {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(LOGIN_TOAST_KEY, "1");
+}
+
+export function hasLoginToast() {
+  if (typeof window === "undefined") return false;
+  return sessionStorage.getItem(LOGIN_TOAST_KEY) === "1";
+}
+
+export function clearLoginToast() {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(LOGIN_TOAST_KEY);
 }
 
 /** Routes that require an authenticated session. */

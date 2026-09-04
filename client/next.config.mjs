@@ -2,6 +2,13 @@ import { resolveBackendOrigin } from "./config/backend-origin.mjs";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  transpilePackages: [
+    "@capacitor/core",
+    "@capacitor/app",
+    "@capacitor/status-bar",
+    "@capacitor/splash-screen",
+    "@capacitor/keyboard",
+  ],
   images: {
     // Quiz banners come from whatever URL an admin pastes into the JSON/CMS
     // data (imgbb, imgur, etc.), so the host isn't known ahead of time —

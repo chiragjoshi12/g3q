@@ -5,12 +5,15 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { ChatMarkdown } from "@/components/g3q-ai/ChatMarkdown";
+import { BrandIcon } from "@/components/common/BrandIcon";
 import { AppShell } from "@/components/layout/AppShell";
 import { useSmoothStream } from "@/hooks/useSmoothStream";
+import { BRAND_ICONS } from "@/lib/brand-icons";
 import { streamG3qAiChat } from "@/lib/g3q-ai-api";
 import { cn } from "@/lib/utils";
 
 const TITLE_GRADIENT = "linear-gradient(90deg, #8c52ff 0%, #ff914d 100%)";
+const BOTTOM_THRESHOLD_PX = 72;
 
 /**
  * G3Q AI chat — Canva mock layout, markdown replies, smooth streamed text.
@@ -21,9 +24,13 @@ export default function G3qAiPage() {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+  const [inputVisible, setInputVisible] = useState(true);
+  const [copiedIndex, setCopiedIndex] = useState(null);
+  const copiedTimerRef = useRef(0);
   const listRef = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
+  const nearBottomRef = useRef(true);
 
   const setAssistantContent = useCallback((content) => {
     setMessages((prev) => {
@@ -38,14 +45,40 @@ export default function G3qAiPage() {
 
   const smooth = useSmoothStream(setAssistantContent);
 
+  const updateNearBottom = useCallback(() => {
+    const el = listRef.current;
+    if (!el) return true;
+    // Empty / short threads always count as "at bottom".
+    if (el.scrollHeight <= el.clientHeight + 4) {
+      nearBottomRef.current = true;
+      setInputVisible(true);
+      return true;
+    }
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const atBottom = distance <= BOTTOM_THRESHOLD_PX;
+    nearBottomRef.current = atBottom;
+    setInputVisible(atBottom);
+    return atBottom;
+  }, []);
+
+  const onListScroll = useCallback(() => {
+    updateNearBottom();
+  }, [updateNearBottom]);
+
   useEffect(() => {
     const el = listRef.current;
     if (!el) return;
+    // Only stick to the bottom while the user is already near it.
+    if (!nearBottomRef.current) return;
     el.scrollTop = el.scrollHeight;
-  }, [messages, sending]);
+    updateNearBottom();
+  }, [messages, sending, updateNearBottom]);
 
   useEffect(() => {
-    return () => abortRef.current?.abort();
+    return () => {
+      abortRef.current?.abort();
+      if (copiedTimerRef.current) window.clearTimeout(copiedTimerRef.current);
+    };
   }, []);
 
   const resetChat = () => {
@@ -56,7 +89,49 @@ export default function G3qAiPage() {
     setDraft("");
     setError(null);
     setSending(false);
+    setCopiedIndex(null);
+    nearBottomRef.current = true;
+    setInputVisible(true);
     inputRef.current?.focus();
+  };
+
+  const getPrecedingQuestion = (assistantIndex) => {
+    let userIndex = assistantIndex - 1;
+    while (userIndex >= 0 && messages[userIndex]?.role !== "user") userIndex -= 1;
+    return userIndex >= 0 ? messages[userIndex].content : "";
+  };
+
+  const copyResponse = async (text, index) => {
+    if (!text?.trim()) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedIndex(index);
+      if (copiedTimerRef.current) window.clearTimeout(copiedTimerRef.current);
+      copiedTimerRef.current = window.setTimeout(() => setCopiedIndex(null), 1600);
+    } catch {
+      setError("Copy failed. Try again.");
+    }
+  };
+
+  const shareExchange = async (assistantIndex) => {
+    const response = messages[assistantIndex]?.content?.trim();
+    if (!response) return;
+    const question = getPrecedingQuestion(assistantIndex).trim() || "—";
+    const text = `Questions : ${question}\nResponse : ${response}`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ text });
+        return;
+      }
+      await navigator.clipboard.writeText(text);
+      setCopiedIndex(assistantIndex);
+      if (copiedTimerRef.current) window.clearTimeout(copiedTimerRef.current);
+      copiedTimerRef.current = window.setTimeout(() => setCopiedIndex(null), 1600);
+    } catch (err) {
+      if (err?.name === "AbortError") return;
+      setError("Share failed. Try again.");
+    }
   };
 
   const send = async () => {
@@ -68,21 +143,29 @@ export default function G3qAiPage() {
     abortRef.current = controller;
 
     smooth.reset();
+    nearBottomRef.current = true;
+    setInputVisible(true);
     const history = [...messages, { role: "user", content: text }];
     setMessages([...history, { role: "assistant", content: "" }]);
     setDraft("");
     setError(null);
     setSending(true);
 
+    // Jump to bottom so the new reply and input stay in view.
+    requestAnimationFrame(() => {
+      const el = listRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    });
+
     try {
       await streamG3qAiChat(history, {
         signal: controller.signal,
         onChunk: (chunk) => smooth.push(chunk),
       });
-      smooth.flush();
+      await smooth.drain();
     } catch (err) {
       if (err?.name === "AbortError") return;
-      smooth.flush();
+      await smooth.drain();
       setError(err?.message || "Something went wrong. Try again.");
       setMessages((prev) => {
         const withoutEmptyAssistant =
@@ -150,22 +233,37 @@ export default function G3qAiPage() {
 
         <main
           ref={listRef}
-          className="relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-1"
+          onScroll={onListScroll}
+          className={cn(
+            "relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-1 transition-[padding] duration-300",
+            inputVisible ? "pb-[11.5rem]" : "pb-6"
+          )}
         >
           {showEmpty ? null : (
             <ul className="flex flex-col gap-3 pb-2">
               {messages.map((m, i) => {
                 const isStreamingAssistant =
                   sending && i === messages.length - 1 && m.role === "assistant";
+                const showActions =
+                  m.role === "assistant" && Boolean(m.content) && !isStreamingAssistant;
+
                 return (
                   <li
                     key={`${m.role}-${i}`}
                     className={cn(
-                      "max-w-[88%] rounded-[1.25rem] px-3.5 py-2.5 text-[14px] leading-relaxed",
+                      "max-w-[92%] text-[18px] leading-relaxed",
                       m.role === "user"
-                        ? "ml-auto bg-[#2d689d] text-white"
-                        : "mr-auto bg-white/90 text-[#111] shadow-[0_1px_8px_rgb(15_23_42/0.06)] backdrop-blur-sm"
+                        ? "ml-auto rounded-[1.25rem] bg-[#2d689d] px-3.5 py-2.5 text-white"
+                        : "mr-auto w-full max-w-[92%] px-0.5 py-1 text-[#111]"
                     )}
+                    style={
+                      m.role === "assistant"
+                        ? {
+                            fontFamily: 'var(--font-gujarati), "Noto Sans Gujarati", sans-serif',
+                            fontSize: 18,
+                          }
+                        : undefined
+                    }
                   >
                     {m.role === "user" ? (
                       <p className="whitespace-pre-wrap">{m.content}</p>
@@ -176,9 +274,42 @@ export default function G3qAiPage() {
                           <span className="ml-0.5 inline-block h-[1em] w-[2px] animate-pulse bg-[#8c52ff] align-[-0.15em]" />
                         ) : null}
                       </div>
-                    ) : (
-                      <p className="text-[13px] text-[#6B7280]">Thinking…</p>
-                    )}
+                    ) : isStreamingAssistant ? (
+                      <span className="inline-block h-[1.1em] w-[2px] animate-pulse bg-[#8c52ff]" />
+                    ) : null}
+
+                    {showActions ? (
+                      <div className="mt-2.5 flex items-center gap-3.5">
+                        <button
+                          type="button"
+                          aria-label={copiedIndex === i ? "Copied" : "Copy response"}
+                          onClick={() => copyResponse(m.content, i)}
+                          className="grid size-8 place-items-center active:opacity-60"
+                        >
+                          {copiedIndex === i ? (
+                            <CopiedCheckIcon className="size-[1.15rem] text-[#111]" />
+                          ) : (
+                            <BrandIcon
+                              src={BRAND_ICONS.copyResponse}
+                              alt=""
+                              className="size-[1.2rem]"
+                            />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Share question and response"
+                          onClick={() => shareExchange(i)}
+                          className="grid size-8 place-items-center active:opacity-60"
+                        >
+                          <BrandIcon
+                            src={BRAND_ICONS.shareQuiz}
+                            alt=""
+                            className="size-[1.2rem]"
+                          />
+                        </button>
+                      </div>
+                    ) : null}
                   </li>
                 );
               })}
@@ -189,8 +320,14 @@ export default function G3qAiPage() {
           ) : null}
         </main>
 
-        {/* Edge-to-edge input tray — flush to bottom & sides */}
-        <div className="relative z-10 shrink-0 bg-white pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3.5 shadow-[0_-8px_28px_rgb(15_23_42/0.06)] [border-top-left-radius:1.75rem] [border-top-right-radius:1.75rem]">
+        {/* Slides away while reading older messages; returns at bottom */}
+        <div
+          className={cn(
+            "absolute inset-x-0 bottom-0 z-20 bg-white pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3.5 shadow-[0_-8px_28px_rgb(15_23_42/0.06)] transition-transform duration-300 ease-out [border-top-left-radius:1.75rem] [border-top-right-radius:1.75rem]",
+            inputVisible ? "translate-y-0" : "pointer-events-none translate-y-full"
+          )}
+          aria-hidden={!inputVisible}
+        >
           <div className="px-5">
             <textarea
               ref={inputRef}
@@ -199,7 +336,8 @@ export default function G3qAiPage() {
               onKeyDown={onKeyDown}
               rows={3}
               placeholder="Ask here..."
-              disabled={sending}
+              disabled={sending || !inputVisible}
+              tabIndex={inputVisible ? 0 : -1}
               className="w-full resize-none bg-transparent text-[15px] leading-snug text-[#111] outline-none placeholder:text-[#B0B5BD] disabled:opacity-60"
             />
             <div className="mt-1 flex items-center justify-between">
@@ -216,9 +354,9 @@ export default function G3qAiPage() {
                 onClick={send}
                 disabled={sending || !draft.trim()}
                 aria-label="Send"
-                className="grid size-10 place-items-center rounded-full bg-[#8c52ff] text-white disabled:opacity-35 active:scale-[0.97]"
+                className="grid size-10 place-items-center rounded-full bg-black text-white disabled:opacity-35 active:scale-[0.97]"
               >
-                <SendIcon className="size-[1.05rem]" />
+                <SendIcon className="size-[1.15rem]" />
               </button>
             </div>
           </div>
@@ -285,8 +423,28 @@ function HistoryIcon({ className }) {
 
 function SendIcon({ className }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
-      <path d="M3.4 20.6 21 12 3.4 3.4 3 10.2 14 12 3 13.8z" />
+    <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden>
+      <path
+        d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function CopiedCheckIcon({ className }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden>
+      <path
+        d="M5 12.5 10 17.5 19 7.5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

@@ -5,6 +5,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 
 import { authController } from "@/controllers/auth.controller";
 import { appConfig } from "@/config/app.config";
+import { markLoginToast } from "@/config/routes";
 import { toMessage } from "@/lib/core/errors";
 import { ROLE } from "@/lib/domain/roles";
 import { STORAGE_KEYS, zustandStorage } from "@/lib/storage/storage";
@@ -117,6 +118,7 @@ export const useAuthStore = create()(
             token,
             isAuthenticated: true,
           });
+          markLoginToast();
           return true;
         } catch (error) {
           set({ loading: false, error: toMessage(error) });

@@ -27,4 +27,5 @@ export const BRAND_ICONS = {
   questionsCount: "/icons/questions-count.png",
   rankStars: "/icons/rank-stars.png",
   shareQuiz: "/icons/share-quiz.png",
+  copyResponse: "/icons/copy-response.png",
 };

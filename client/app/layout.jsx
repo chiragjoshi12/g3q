@@ -1,5 +1,6 @@
 import { Archivo_Black, Inter, Noto_Sans_Gujarati } from "next/font/google";
 
+import { NativeAppBootstrap } from "@/components/native/NativeAppBootstrap";
 import { appConfig } from "@/config/app.config";
 import "./globals.css";
 
@@ -60,6 +61,7 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }) {
@@ -68,7 +70,10 @@ export default function RootLayout({ children }) {
       lang="gu"
       className={`${notoSansGujarati.variable} ${archivoBlack.variable} ${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        <NativeAppBootstrap />
+        {children}
+      </body>
     </html>
   );
 }

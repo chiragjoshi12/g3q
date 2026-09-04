@@ -4,6 +4,7 @@ import { Loader2 } from "@/components/icons";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { LoginToast } from "@/components/common/LoginToast";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 
 /**
@@ -22,6 +23,7 @@ export default function MainLayout({ children }) {
           <Loader2 className="size-8 animate-spin text-primary-600" />
         </div>
       )}
+      <LoginToast />
       <BottomNav />
     </AppShell>
   );

@@ -8,6 +8,7 @@ import { BrandIcon } from "@/components/common/BrandIcon";
 import { ConfettiBurst } from "@/components/quiz/ConfettiBurst";
 import { useTypewriter } from "@/hooks/useTypewriter";
 import { BRAND_ICONS } from "@/lib/brand-icons";
+import { playAnswerSound } from "@/lib/quiz-sounds";
 import { cn } from "@/lib/utils";
 
 /**
@@ -32,7 +33,9 @@ export function AiExplanationSheet({
   });
 
   useEffect(() => {
-    if (bodyDone) onDone?.();
+    if (!bodyDone) return;
+    onDone?.();
+    playAnswerSound(Boolean(correct));
     // Fires once, right when typing finishes — `onDone` is a fresh closure
     // each render, not a value this effect should re-run for.
     // eslint-disable-next-line react-hooks/exhaustive-deps
