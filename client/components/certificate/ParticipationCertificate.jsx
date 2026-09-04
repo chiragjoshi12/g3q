@@ -3,7 +3,7 @@
 import { CERT_LAYOUT, CERT_NATIVE } from "@/lib/domain/certificate";
 import { cn } from "@/lib/utils";
 
-const CERT_FONT = '"Canva Sans", var(--font-gujarati), sans-serif';
+const CERT_FONT = 'var(--font-gujarati), var(--font-noto), "Noto Sans Gujarati", "Noto Sans", sans-serif';
 
 /**
  * Official G3Q certificate: background artwork plus the dynamic fields

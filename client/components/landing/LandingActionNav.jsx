@@ -18,7 +18,7 @@ const NOTCH_OFFSET_Y = PLAY_TOP + PLAY_SIZE / 2 - TRAY_PAD_TOP;
 
 /**
  * Bottom bar: Practice | raised Play Quiz (notch) | G3Q AI.
- * Raised zone is transparent — soft gray shadow only, so list text stays visible.
+ * Notch disc behind Play Quiz is #f5f5f5; the blue Play pill sits on top.
  */
 export function LandingActionNav({
   onPractice,
@@ -78,17 +78,30 @@ export function LandingActionNav({
           >
             <div className="flex h-[4.05rem] items-center justify-between">
               <SideAction onClick={onPractice} label="Practice">
-                <BrandIcon src={BRAND_ICONS.navPractice} alt="" className="size-[2.05rem]" priority />
+                <BrandIcon src={BRAND_ICONS.navPractice} alt="" className="size-[1.5rem]" priority />
               </SideAction>
 
               <div className="w-[6.25rem] shrink-0" aria-hidden />
 
               <SideAction onClick={onG3qAi} label="G3Q AI">
-                <BrandIcon src={BRAND_ICONS.navG3qAi} alt="" className="size-[2.1rem]" priority />
+                <BrandIcon src={BRAND_ICONS.navG3qAi} alt="" className="size-[1.5rem]" priority />
               </SideAction>
             </div>
           </nav>
         </div>
+
+        {/* Solid #f5f5f5 ring behind Play Quiz (outside overflow clip — fully opaque) */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 z-[5] -translate-x-1/2 rounded-full"
+          style={{
+            top: PLAY_TOP - CUT_GAP,
+            width: CUT_DIAMETER,
+            height: CUT_DIAMETER,
+            backgroundColor: SIDE_BG,
+            opacity: 1,
+          }}
+        />
 
         <button
           type="button"

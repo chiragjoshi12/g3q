@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, Sparkles } from "@/components/icons";
 
+import { ChatMarkdown } from "@/components/g3q-ai/ChatMarkdown";
 import { useTypewriter } from "@/hooks/useTypewriter";
 import { cn } from "@/lib/utils";
 
@@ -80,12 +81,14 @@ export function AiExplanationCard({ explanation, defaultOpen = false, animated =
       >
         <div className="overflow-hidden">
           <div className="space-y-3 border-t border-border px-3.5 pt-3 pb-3.5">
-            <p className="text-[13px] leading-relaxed text-foreground/80">
-              {animated ? body : explanation.body}
+            <div className="relative text-foreground/80">
+              <ChatMarkdown className="text-foreground/80" style={{ fontSize: 13 }}>
+                {animated ? body : explanation.body}
+              </ChatMarkdown>
               {animated && !bodyDone ? (
                 <span className="ml-0.5 inline-block h-3.5 w-[2px] animate-pulse bg-primary-600 align-middle" />
               ) : null}
-            </p>
+            </div>
 
             {showKeyPoints && explanation.keyPoints?.length ? (
               <ul className="space-y-1.5">
@@ -99,7 +102,11 @@ export function AiExplanationCard({ explanation, defaultOpen = false, animated =
                     style={animated ? { animationDelay: `${index * 120}ms` } : undefined}
                   >
                     <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary-500" />
-                    <span className="text-foreground/80">{point}</span>
+                    <span className="text-foreground/80">
+                      <ChatMarkdown className="text-foreground/80" style={{ fontSize: 13 }}>
+                        {point}
+                      </ChatMarkdown>
+                    </span>
                   </li>
                 ))}
               </ul>

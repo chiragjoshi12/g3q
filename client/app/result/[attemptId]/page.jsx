@@ -4,7 +4,7 @@ import { Suspense, use } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "@/components/icons";
 
-import { AppButton } from "@/components/common/AppButton";
+import { ACTION_BUTTON_CLASS, ActionButtonRow, AppButton } from "@/components/common/AppButton";
 import { ErrorState, LoadingState } from "@/components/common/StateViews";
 import { AppShell } from "@/components/layout/AppShell";
 import { AuroraWash } from "@/components/layout/AuroraWash";
@@ -99,10 +99,12 @@ function ResultScreen({ params }) {
               {status === "ready" && attempt ? (
                 <>
                   <ScoreSummary attempt={attempt} quiz={bundle?.quiz} />
-                  <footer className="mt-auto flex justify-center pt-8 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
-                    <AppButton block onClick={() => router.replace(leaveTo)}>
-                      Home page
-                    </AppButton>
+                  <footer className="mt-auto pt-8 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
+                    <ActionButtonRow>
+                      <AppButton className={ACTION_BUTTON_CLASS} onClick={() => router.replace(leaveTo)}>
+                        Home page
+                      </AppButton>
+                    </ActionButtonRow>
                   </footer>
                 </>
               ) : null}

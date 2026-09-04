@@ -1,9 +1,9 @@
 /**
- * Capacitor preview APK for the live Vercel client:
+ * Capacitor preview app for the live Vercel client:
  * https://g3q.vercel.app/
  *
  * This file must live next to package.json so `npx cap` can find it.
- * The native project, offline page, icons, and APK script all live in android/.
+ * Native projects: android/ and ios/. Shared offline page: android/www.
  */
 
 /** @type {import('@capacitor/cli').CapacitorConfig} */
@@ -18,9 +18,17 @@ const config = {
     webContentsDebuggingEnabled: true,
     appendUserAgent: " G3QPreview/1.0",
   },
+  ios: {
+    backgroundColor: "#2C6698",
+    contentInset: "automatic",
+    preferredContentMode: "mobile",
+    scheme: "G3Q",
+    appendUserAgent: " G3QPreview/1.0",
+  },
   server: {
     url: "https://g3q.vercel.app",
     androidScheme: "https",
+    iosScheme: "https",
     errorPath: "offline.html",
     allowNavigation: [
       "g3q.vercel.app",

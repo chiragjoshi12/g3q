@@ -20,12 +20,14 @@
 # production
 /build
 
-# Capacitor / Android (generated locally — do not commit)
+# Capacitor (generated locally — do not commit)
 /android/
 /ios/
 *.apk
 *.aab
 *.ap_
+*.ipa
+*.app
 *.jks
 *.keystore
 

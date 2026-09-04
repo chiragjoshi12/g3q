@@ -108,3 +108,47 @@ export const Target = createIcon(TargetSrc, "Target");
 export const Trash2 = createIcon(Trash2Src, "Trash2");
 export const Smartphone = createIcon(SmartPhone01Icon, "Smartphone");
 export const Download = createIcon(Download04Icon, "Download");
+
+/** Straight `>` chevron for list rows. Not the back-button icon. */
+export function LineArrowRight({ className, ...props }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden
+      {...props}
+    >
+      <path
+        d="M9 5l9 7-9 7"
+        stroke="currentColor"
+        strokeWidth="2.25"
+        strokeLinecap="square"
+        strokeLinejoin="miter"
+      />
+    </svg>
+  );
+}
+
+/** Larger straight `<` chevron for back — no shaft, bigger than the row arrow. */
+export function BackArrow({ className, ...props }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden
+      {...props}
+    >
+      <path
+        d="M15 5l-9 7 9 7"
+        stroke="currentColor"
+        strokeWidth="2.7"
+        strokeLinecap="square"
+        strokeLinejoin="miter"
+      />
+    </svg>
+  );
+}

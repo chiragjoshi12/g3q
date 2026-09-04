@@ -28,4 +28,10 @@ export const BRAND_ICONS = {
   rankStars: "/icons/rank-stars.png",
   shareQuiz: "/icons/share-quiz.png",
   copyResponse: "/icons/copy-response.png",
+  aiNewChat: "/icons/ai/New Chat Icon.png",
+  aiHistory: "/icons/ai/AI History Icon.png",
+  aiSend: "/icons/ai/Send Message Icon.png",
+  aiCopyResponse: "/icons/ai/Copy Response Icon.png",
+  aiLikeResponse: "/icons/ai/Like Response Icon.png",
+  aiDislikeResponse: "/icons/ai/Dislike Response Icon.png",
 };

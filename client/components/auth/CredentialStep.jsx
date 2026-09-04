@@ -62,8 +62,8 @@ export function CredentialStep({
               aria-selected={active}
               onClick={() => onRoleChange(item.id)}
               className={cn(
-                "relative z-10 rounded-[1.25rem] text-sm font-semibold",
-                active ? "text-[#111]" : "text-[#6B7280]"
+                "relative z-10 rounded-[1.25rem] text-sm",
+                active ? "text-[#000000] font-semibold" : "text-[#000000]"
               )}
             >
               {item.label}
@@ -72,8 +72,8 @@ export function CredentialStep({
         })}
       </div>
 
-      <div className="space-y-2">
-        <label htmlFor="credential" className="block text-sm font-bold text-[#111]">
+      <div className="space-y-5">
+        <label htmlFor="credential" className="block text-[16px] font-bold text-[#000000]">
           {rule.label}
         </label>
         <input
@@ -96,7 +96,7 @@ export function CredentialStep({
         </div>
       ) : null}
 
-      <div className="flex w-full justify-center">
+      <div className="mt-12 flex w-full justify-center">
         <AppButton
           type="submit"
           loading={loading}

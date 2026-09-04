@@ -9,7 +9,7 @@ import {
 } from "@/components/landing/LeaderboardList";
 import { LandingActionNav } from "@/components/landing/LandingActionNav";
 import { AppShell } from "@/components/layout/AppShell";
-import { ChevronLeft } from "@/components/icons";
+import { BackArrow } from "@/components/icons";
 import { appConfig } from "@/config/app.config";
 import { FEATURED_QUIZ_ID, ROUTES, setPostAuthPath } from "@/config/routes";
 import {
@@ -58,15 +58,15 @@ export default function LeaderboardPage() {
             className="absolute left-3 grid size-10 place-items-center rounded-full text-[#374151] active:bg-[#F3F4F6]"
             aria-label="Back"
           >
-            <ChevronLeft className="size-6" strokeWidth={2.2} />
+            <BackArrow className="size-7 text-[#111]" />
           </button>
-          <h1 className="text-[1.35rem] font-bold tracking-tight text-[#2d689d]">લીડરબોર્ડ</h1>
+          <h1 className="translate-y-1 text-[1.35rem] font-bold tracking-tight text-[#2d689d]">લીડરબોર્ડ</h1>
         </header>
 
         <main className="no-scrollbar relative z-0 min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <div className="px-4 pb-28 pt-5">
             <div className="flex justify-center">
-              <span className="inline-flex max-w-full items-center rounded-full bg-[#2d689d] px-5 py-2.5 text-center text-[14px] font-bold leading-snug text-white">
+              <span className="inline-flex max-w-full items-center rounded-full bg-[#2d689d] px-5 py-2.5 text-center text-[16px] font-bold leading-snug text-white">
                 {talukaLabel} તાલુકો - {week} મું અઠવાડિયું
               </span>
             </div>

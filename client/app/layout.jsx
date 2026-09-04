@@ -1,14 +1,20 @@
-import { Archivo_Black, Inter, Noto_Sans_Gujarati } from "next/font/google";
+import { Archivo_Black, Noto_Sans, Noto_Sans_Gujarati } from "next/font/google";
 
 import { NativeAppBootstrap } from "@/components/native/NativeAppBootstrap";
 import { appConfig } from "@/config/app.config";
 import "./globals.css";
 
-// Renders Gujarati script. Latin UI uses Canva Sans. Font order in
-// --font-sans/--font-heading decides which face wins for a given glyph.
+// Gujarati + Latin UI: Noto Sans Gujarati first, Noto Sans for English glyphs.
 const notoSansGujarati = Noto_Sans_Gujarati({
   variable: "--font-gujarati",
   subsets: ["gujarati"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+const notoSans = Noto_Sans({
+  variable: "--font-noto",
+  subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
 });
@@ -18,13 +24,6 @@ const archivoBlack = Archivo_Black({
   variable: "--font-archivo",
   subsets: ["latin"],
   weight: "400",
-  display: "swap",
-});
-
-const inter = Inter({
-  variable: "--font-inter-face",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -68,9 +67,9 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="gu"
-      className={`${notoSansGujarati.variable} ${archivoBlack.variable} ${inter.variable} h-full antialiased`}
+      className={`${notoSansGujarati.variable} ${notoSans.variable} ${archivoBlack.variable} h-full antialiased`}
     >
-      <body className="min-h-full">
+      <body className="min-h-full font-sans">
         <NativeAppBootstrap />
         {children}
       </body>

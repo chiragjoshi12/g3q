@@ -41,7 +41,7 @@ export function QuestionReviewCard({ index, question, row }) {
         />
         <ChevronDown
           className={cn(
-            "size-4 shrink-0 text-[#9CA3AF] transition-transform duration-300 ease-emphasized",
+            "size-4 shrink-0 text-black transition-transform duration-300 ease-emphasized",
             open && "rotate-180"
           )}
         />

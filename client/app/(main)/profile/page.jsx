@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
-  ChevronLeft,
+  BackArrow,
+  LineArrowRight,
   LogOut,
   Trash2,
 } from "@/components/icons";
@@ -155,7 +156,7 @@ export default function ProfilePage() {
                 onClick={() => setPanel(PANEL.MENU)}
                 className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground"
               >
-                <ChevronLeft className="size-4" />
+                <BackArrow className="size-5 text-[#111]" />
                 પાછળ
               </button>
 
@@ -210,7 +211,7 @@ function MenuRow({ iconSrc, iconBg, label, onClick, last = false }) {
       <span className="min-w-0 flex-1 font-heading text-[1.05rem] font-semibold text-[#111]">
         {label}
       </span>
-      <ChevronLeft className="size-4 shrink-0 rotate-180 text-[#C4C9D1]" strokeWidth={2.2} />
+      <LineArrowRight className="size-4 shrink-0 text-black" />
     </button>
   );
 }
@@ -232,7 +233,7 @@ function AttemptsPanel({ loading, attempts, onOpen, onClear }) {
             <button
               type="button"
               onClick={() => onOpen(attempt.attemptId)}
-              className="flex w-full items-center gap-3 rounded-2xl bg-[#F8FAFC] p-3 text-left"
+              className="flex w-full items-start gap-3 rounded-2xl bg-[#F8FAFC] p-3 text-left"
             >
               <span
                 className={cn(
@@ -252,7 +253,7 @@ function AttemptsPanel({ loading, attempts, onOpen, onClear }) {
                   {formatDate(new Date(attempt.completedAt).toISOString())}
                 </span>
               </span>
-              <ChevronLeft className="size-4 shrink-0 rotate-180 text-muted-foreground" />
+              <LineArrowRight className="mt-0.5 size-4 shrink-0 text-black" />
             </button>
           </li>
         ))}
@@ -294,7 +295,7 @@ function CertificatesPanel({ loading, certificates, user }) {
             <button
               type="button"
               onClick={() => setSelected(attempt)}
-              className="flex w-full items-center gap-3 rounded-2xl bg-[#F8FAFC] p-3 text-left"
+              className="flex w-full items-start gap-3 rounded-2xl bg-[#F8FAFC] p-3 text-left"
             >
               <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#FFF1E6]">
                 <BrandIcon src={BRAND_ICONS.certificates} alt="" className="size-6" />
@@ -307,7 +308,7 @@ function CertificatesPanel({ loading, certificates, user }) {
                   {attempt.percentage}% · {formatDate(new Date(attempt.completedAt).toISOString())}
                 </span>
               </span>
-              <ChevronLeft className="size-4 shrink-0 rotate-180 text-muted-foreground" />
+              <LineArrowRight className="mt-0.5 size-4 shrink-0 text-black" />
             </button>
           </li>
         ))}

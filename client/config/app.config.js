@@ -29,12 +29,10 @@ export const appConfig = {
   },
 
   /**
-   * The JSON source resolves after a small delay on purpose. It forces the UI to
-   * handle loading/error states from day one, so swapping in a real network call
-   * later changes timing but never behaviour.
+   * Optional delay for local JSON auth calls. Quiz reads are sync (no delay).
    */
   json: {
-    simulatedLatencyMs: 320,
+    simulatedLatencyMs: 0,
   },
 
   auth: {

@@ -144,8 +144,9 @@ vite.config.ts.timestamp-*
 .DS_Store
 **/.DS_Store
 
-# Capacitor / Android (generated in client/)
+# Capacitor (generated in client/)
 client/android/
 client/ios/
 *.apk
 *.aab
+*.ipa

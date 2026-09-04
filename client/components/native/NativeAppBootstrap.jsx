@@ -3,8 +3,8 @@
 import { useEffect } from "react";
 
 /**
- * Applies Capacitor plugins when the quiz app is running inside the Android
- * WebView. On the regular website this is a no-op.
+ * Applies Capacitor plugins when the quiz app is running inside the
+ * Android / iOS WebView. On the regular website this is a no-op.
  */
 export function NativeAppBootstrap() {
   useEffect(() => {
@@ -24,6 +24,8 @@ export function NativeAppBootstrap() {
       await StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
       await Keyboard.setResizeMode({ mode: KeyboardResize.Body }).catch(() => {});
       await SplashScreen.hide().catch(() => {});
+
+      if (Capacitor.getPlatform() !== "android") return;
 
       const back = await App.addListener("backButton", ({ canGoBack }) => {
         if (canGoBack || window.history.length > 1) {

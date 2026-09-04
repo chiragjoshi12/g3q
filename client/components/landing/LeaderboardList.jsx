@@ -3,6 +3,7 @@
 import Image from "next/image";
 
 import { BrandGlyph, BrandIcon } from "@/components/common/BrandIcon";
+import { LineArrowRight } from "@/components/icons";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { cn } from "@/lib/utils";
 
@@ -33,17 +34,15 @@ function Avatar({ name, avatar, className }) {
 /** Gold score with Rank Stars artwork (matches Canva). */
 export function LeaderboardScoreBadge({ score }) {
   return (
-    <div className="relative flex h-[3.85rem] w-[3.7rem] shrink-0 items-center justify-center">
-      <span className="relative z-[1] mt-[-1.1rem] text-[1.22rem] font-bold leading-none tracking-tight text-[#D4A017]">
+    <div className="relative h-[3.85rem] w-[3.7rem] shrink-0">
+      <span className="absolute inset-x-0 top-1 z-[1] text-center text-[1.22rem] font-bold leading-none tracking-tight text-[#D4A017]">
         {score}
       </span>
       <BrandIcon
         src={BRAND_ICONS.rankStars}
         alt=""
-        className="pointer-events-none absolute inset-0 size-full"
+        className="pointer-events-none absolute inset-0 size-full -translate-y-2"
       />
-      {/* Move this text down to open gap from the bottom star: increase mt-* */}
-
     </div>
   );
 }
@@ -58,23 +57,27 @@ export function LeaderboardDetailRow({
   you = false,
 }) {
   return (
-    <li className="flex items-center gap-3 px-1 py-3.5">
-      <span className="w-6 shrink-0 text-center text-[1.05rem] font-bold text-[#1F2937]">
-        {rank}
-      </span>
-      <Avatar name={name} avatar={avatar} />
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[0.98rem] font-bold leading-snug text-[#2d689d]">
-          {you ? `${name} (You)` : name}
-        </p>
-        {institute ? (
-          <p className="mt-0.5 truncate text-[12px] leading-snug text-[#4B5563]">{institute}</p>
-        ) : null}
-        {grade ? (
-          <span className="mt-1.5 inline-block rounded-full bg-[#E8EEF4] px-2.5 py-0.5 text-[11px] font-medium text-[#4B5563]">
-            {grade}
+    <li className="flex items-start gap-3 px-1 py-3.5">
+      <div className="-ml-2 flex min-w-0 flex-1 items-start gap-3">
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="w-6 text-center text-[1.05rem] leading-none text-[#1F2937]">
+            {rank}
           </span>
-        ) : null}
+          <Avatar name={name} avatar={avatar} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[0.98rem] font-bold leading-snug text-[#2d689d]">
+            {you ? `${name} (You)` : name}
+          </p>
+          {institute ? (
+            <p className="mt-0.5 truncate text-[12px] leading-snug text-[#000000]">{institute}</p>
+          ) : null}
+          {grade ? (
+            <span className="mt-1.5 inline-block rounded-full bg-[#e5ebf8] px-3.5 py-1 text-[11px] font-medium text-[#000000]">
+              {grade}
+            </span>
+          ) : null}
+        </div>
       </div>
       {score != null ? <LeaderboardScoreBadge score={score} /> : null}
     </li>
@@ -113,7 +116,7 @@ export function LeaderboardCategoryTabs({ value, onChange }) {
             {active ? (
               <span
                 aria-hidden
-                className="absolute inset-x-0 bottom-0 h-[1.5px] rounded-full bg-[#2d689d]"
+                className="absolute left-[-8px] right-[-8px] bottom-0 h-[1.8px] rounded-full bg-[#2d689d]"
               />
             ) : null}
           </button>
@@ -123,17 +126,20 @@ export function LeaderboardCategoryTabs({ value, onChange }) {
   );
 }
 
-export function LeaderboardPreviewCard({ talukaLabel, week, onClick, iconColor = "#2d689d" }) {
+export function LeaderboardPreviewCard({ talukaLabel, week, onClick, iconColor = "#2d689d", className }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-[5.75rem] w-full items-center gap-3.5 rounded-[1.5rem] bg-white px-5 py-5 shadow-[0_1px_3px_rgb(0_0_0/0.06)] active:bg-[#fafafa]"
+      className={cn(
+        "flex min-h-[5.75rem] w-full items-start gap-6 rounded-[2rem] bg-white px-9 pt-7 pb-5 shadow-[0_1px_3px_rgb(0_0_0/0.06)] active:bg-[#fafafa]",
+        className
+      )}
     >
       <BrandGlyph
         src={BRAND_ICONS.leaderboard}
         color={iconColor}
-        className="size-10 shrink-0"
+        className="size-9 shrink-0"
       />
       <div className="min-w-0 flex-1 text-left">
         <p className="text-[1.35rem] font-bold leading-tight" style={{ color: iconColor }}>
@@ -143,9 +149,7 @@ export function LeaderboardPreviewCard({ talukaLabel, week, onClick, iconColor =
           {talukaLabel} તાલુકો - {week} મું અઠવાડિયું
         </p>
       </div>
-      <span className="shrink-0 text-[1.5rem] font-light leading-none text-[#C4C9D0]" aria-hidden>
-        ›
-      </span>
+      <LineArrowRight className="size-5 shrink-0 text-black" />
     </button>
   );
 }

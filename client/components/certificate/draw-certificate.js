@@ -31,7 +31,7 @@ function cssFont(varName, fallback) {
 }
 
 function certificateFontFamily() {
-  return `"Canva Sans", ${cssFont("--font-gujarati", "Noto Sans Gujarati")}, sans-serif`;
+  return `${cssFont("--font-gujarati", "Noto Sans Gujarati")}, ${cssFont("--font-noto", "Noto Sans")}, sans-serif`;
 }
 
 async function ensureFonts() {

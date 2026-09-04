@@ -96,12 +96,10 @@ export const jsonSource = {
   },
 
   async listQuizzes() {
-    await delay();
     return clone(quizzesJson);
   },
 
   async getQuizById(quizId) {
-    await delay();
     const quiz = quizzesJson.find((item) => item.id === quizId);
     if (!quiz) {
       throw new AppError(ERROR_CODE.NOT_FOUND, "ક્વિઝ મળી નથી.");
@@ -110,7 +108,6 @@ export const jsonSource = {
   },
 
   async getQuestionsByQuizId(quizId) {
-    await delay();
     const questions = questionsJson[quizId];
     if (!questions) {
       throw new AppError(ERROR_CODE.NOT_FOUND, "પ્રશ્નો મળ્યા નથી.");
@@ -119,7 +116,6 @@ export const jsonSource = {
   },
 
   async getExplanationsByQuizId(quizId) {
-    await delay();
     const questions = questionsJson[quizId] || [];
     const map = {};
     questions.forEach((question) => {

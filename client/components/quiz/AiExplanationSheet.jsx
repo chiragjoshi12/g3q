@@ -5,6 +5,7 @@ import { X } from "@/components/icons";
 
 import { ACTION_BUTTON_CLASS, ActionButtonRow, AppButton } from "@/components/common/AppButton";
 import { BrandIcon } from "@/components/common/BrandIcon";
+import { ChatMarkdown } from "@/components/g3q-ai/ChatMarkdown";
 import { ConfettiBurst } from "@/components/quiz/ConfettiBurst";
 import { useTypewriter } from "@/hooks/useTypewriter";
 import { BRAND_ICONS } from "@/lib/brand-icons";
@@ -91,12 +92,14 @@ export function AiExplanationSheet({
           </div>
 
           <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain">
-            <p className="text-[15px] leading-relaxed text-[#1F2937]">
-              {body}
+            <div className="relative text-[#1F2937]">
+              <ChatMarkdown className="text-[#1F2937]" style={{ fontSize: 15 }}>
+                {body}
+              </ChatMarkdown>
               {!bodyDone ? (
                 <span className="ml-0.5 inline-block h-3.5 w-[2px] animate-pulse bg-[#8c52ff] align-middle" />
               ) : null}
-            </p>
+            </div>
           </div>
 
           {bodyDone ? <VerdictMark correct={correct} /> : null}
@@ -107,7 +110,7 @@ export function AiExplanationSheet({
               onClick={bodyDone ? onContinue : undefined}
               className={cn(
                 ACTION_BUTTON_CLASS,
-                !bodyDone && "bg-[#D6E4F0] text-foreground hover:bg-[#D6E4F0]"
+                !bodyDone && "bg-[#D6E4F0] text-foreground shadow-none hover:bg-[#D6E4F0]"
               )}
             >
               {!bodyDone ? "Checking Answer..." : isLast ? "See Results" : "Next Question"}

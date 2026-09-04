@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight } from "@/components/icons";
+import { BackArrow } from "@/components/icons";
 
 import { ContentWidth } from "@/components/layout/ContentWidth";
 import { cn } from "@/lib/utils";
@@ -41,7 +41,7 @@ export function TopAppBar({
               onPrimary ? "hover:bg-white/15" : "hover:bg-muted"
             )}
           >
-            <ArrowRight className="size-5 rotate-180" />
+            <BackArrow className="size-7" />
           </button>
         ) : (
           <span className="w-2" />

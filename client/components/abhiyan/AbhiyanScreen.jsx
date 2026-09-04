@@ -11,7 +11,7 @@ import { BrandIcon } from "@/components/common/BrandIcon";
 import { SegmentedToggle } from "@/components/common/SegmentedToggle";
 import { AppShell } from "@/components/layout/AppShell";
 import {
-  ArrowRight,
+  BackArrow,
   Award,
   Building2,
   CalendarDays,
@@ -79,7 +79,7 @@ export function AbhiyanScreen() {
               aria-label="પાછળ જાઓ"
               className="grid size-10 shrink-0 place-items-center rounded-full hover:bg-[#F3F3F3] active:scale-95"
             >
-              <ArrowRight className="size-5 rotate-180 text-[#111]" />
+              <BackArrow className="size-7 text-[#111]" />
             </button>
             <BrandIcon
               src={BRAND_ICONS.logo}

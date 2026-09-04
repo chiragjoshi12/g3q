@@ -4,7 +4,6 @@ import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-import { ErrorState, LoadingState } from "@/components/common/StateViews";
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { FeaturedQuizCard } from "@/components/home/FeaturedQuizCard";
 import { QuestionTypeGuide } from "@/components/home/QuestionTypeGuide";
@@ -12,27 +11,26 @@ import { QuestionTypeGrid } from "@/components/home/QuestionTypeGrid";
 import { LeaderboardPreviewCard } from "@/components/landing/LeaderboardList";
 import { appConfig } from "@/config/app.config";
 import { FEATURED_QUIZ_ID, ROUTES } from "@/config/routes";
-import { quizController } from "@/controllers/quiz.controller";
-import { useAsyncData } from "@/hooks/useAsyncData";
+import quizzesJson from "@/data/quizzes.json";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { formatTalukaLabel, formatTalukaWeekPill } from "@/lib/format-taluka";
 import { useAuthStore } from "@/store/auth.store";
+
+function pickFeaturedQuiz(list) {
+  return (
+    list?.find((item) => item.featured) ??
+    list?.find((item) => item.id === FEATURED_QUIZ_ID) ??
+    list?.[0] ??
+    null
+  );
+}
 
 export default function HomePage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const [guideType, setGuideType] = useState(null);
-
-  const { status, data: quizzes, error, reload } = useAsyncData(
-    () => quizController.listQuizzes(),
-    []
-  );
-
-  const quiz =
-    quizzes?.find((item) => item.featured) ??
-    quizzes?.find((item) => item.id === FEATURED_QUIZ_ID) ??
-    quizzes?.[0] ??
-    null;
+  // Bundled local JSON — no async load / spinner on Home.
+  const quiz = pickFeaturedQuiz(quizzesJson);
 
   const week = Number.isFinite(appConfig.certificate.week) ? appConfig.certificate.week : 5;
   const startQuiz = () => {
@@ -74,11 +72,7 @@ export default function HomePage() {
           </div>
 
           <div className="mt-5">
-            {status === "loading" ? <LoadingState /> : null}
-            {status === "error" ? <ErrorState message={error} onRetry={reload} /> : null}
-            {status === "ready" && quiz ? (
-              <FeaturedQuizCard quiz={quiz} onStart={startQuiz} />
-            ) : null}
+            {quiz ? <FeaturedQuizCard quiz={quiz} onStart={startQuiz} /> : null}
           </div>
         </div>
       </section>

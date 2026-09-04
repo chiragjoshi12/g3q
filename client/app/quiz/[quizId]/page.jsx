@@ -20,6 +20,19 @@ import { unlockQuizSounds } from "@/lib/quiz-sounds";
 import { QUIZ_PHASE, useQuizStore } from "@/store/quiz.store";
 
 const QUIZ_PLAY_BG = "/quiz/play-bg.png";
+const QUIZ_QUESTION_BGS = [
+  QUIZ_PLAY_BG,
+  "/quiz-bg/q2.jpeg",
+  "/quiz-bg/q3.jpeg",
+  "/quiz-bg/q4.jpeg",
+  "/quiz-bg/q5.jpeg",
+  "/quiz-bg/q6.jpeg",
+];
+
+function quizPlayBackground(index) {
+  const src = QUIZ_QUESTION_BGS[index] ?? QUIZ_PLAY_BG;
+  return { src, faded: index > 0 };
+}
 
 /**
  * Quiz runner — glass header, illustrated backdrop, one question at a time.
@@ -122,18 +135,26 @@ function QuizScreen({ params }) {
     );
   }
 
+  const { src: playBg, faded: playBgFaded } = quizPlayBackground(currentIndex);
+
   return (
     <AppShell className="font-canva">
-      {/* Full-bleed play backdrop */}
+      {/* Full-bleed play backdrop — question 1 keeps the original art; 2–6 use quiz-bg at 50%. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-[#EEF2F6]" />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[#EEF2F6] bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url('${QUIZ_PLAY_BG}')` }}
+        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: `url('${playBg}')`,
+          opacity: playBgFaded ? 0.5 : 1,
+        }}
       />
-      <div
-        aria-hidden
-            className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/20 via-white/35 to-white/65"
-      />
+      {playBgFaded ? null : (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/20 via-white/35 to-white/65"
+        />
+      )}
 
       <div className="relative z-10 flex h-full min-h-0 flex-col">
         <QuizHeader
@@ -238,7 +259,7 @@ function QuizAction({ answering, answered, isLast, loading, onSubmit, onNext }) 
     return (
       <ActionButtonRow>
         <AppButton
-          className={`${ACTION_BUTTON_CLASS} shadow-[0_10px_28px_rgb(60_100_150/0.35)] disabled:opacity-45`}
+          className={ACTION_BUTTON_CLASS}
           onClick={onSubmit}
           disabled={!answered}
         >
@@ -251,7 +272,7 @@ function QuizAction({ answering, answered, isLast, loading, onSubmit, onNext }) 
   return (
     <ActionButtonRow>
       <AppButton
-        className={`${ACTION_BUTTON_CLASS} shadow-[0_10px_28px_rgb(60_100_150/0.35)]`}
+        className={ACTION_BUTTON_CLASS}
         onClick={onNext}
         loading={loading}
       >
