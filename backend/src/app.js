@@ -13,6 +13,7 @@ import userRoutes from './routes/user.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import sessionRoutes from './routes/session.routes.js';
 import leaderboardRoutes from './routes/leaderboard.routes.js';
+import g3qAiRoutes from './routes/g3qAi.routes.js';
 
 const app = express();
 
@@ -55,6 +56,7 @@ app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/quizzes', quizRoutes);
 app.use('/api/attempts', attemptRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/g3q-ai', g3qAiRoutes);
 // Admin console paths kept under /api/v1/admin to match the Next.js client.
 app.use('/api/v1/admin', adminRoutes);
 
