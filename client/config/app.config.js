@@ -5,7 +5,14 @@
  * Flip it to REST (or set NEXT_PUBLIC_DATA_SOURCE=rest) and every repository
  * starts talking to the HTTP source instead of the bundled JSON — no component,
  * controller or store changes required.
+ *
+ * API calls default to same-origin `/api`, which Next rewrites to:
+ * - local: http://localhost:4000
+ * - production: https://g3q-backend.azurewebsites.net
+ * Override with NEXT_PUBLIC_API_BASE_URL or BACKEND_ORIGIN as needed.
  */
+
+import { resolveApiBaseUrl } from "@/config/backend-origin.mjs";
 
 export const DATA_SOURCE = {
   JSON: "json",
@@ -17,7 +24,7 @@ export const appConfig = {
   dataSource: process.env.NEXT_PUBLIC_DATA_SOURCE || DATA_SOURCE.JSON,
 
   api: {
-    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "/api",
+    baseUrl: resolveApiBaseUrl(),
     timeoutMs: 15000,
   },
 

@@ -1,3 +1,5 @@
+import { resolveBackendOrigin } from "./config/backend-origin.mjs";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -16,11 +18,14 @@ const nextConfig = {
     dangerouslyAllowLocalIP: true,
   },
   async rewrites() {
-    const backend = process.env.BACKEND_ORIGIN || "http://localhost:4000";
+    // Local (`next dev`) → http://localhost:4000
+    // Production (Vercel build) → https://g3q-backend.azurewebsites.net
+    // Override anytime with BACKEND_ORIGIN.
+    const backend = resolveBackendOrigin();
     return [
       {
-        source: "/api/g3q-ai/:path*",
-        destination: `${backend}/api/g3q-ai/:path*`,
+        source: "/api/:path*",
+        destination: `${backend}/api/:path*`,
       },
     ];
   },
