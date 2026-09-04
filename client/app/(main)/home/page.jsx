@@ -1,75 +1,103 @@
 "use client";
 
+import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { ErrorState, LoadingState } from "@/components/common/StateViews";
+import { BrandIcon } from "@/components/common/BrandIcon";
 import { FeaturedQuizCard } from "@/components/home/FeaturedQuizCard";
-import { AuroraWash } from "@/components/layout/AuroraWash";
-import { BrandHeader } from "@/components/layout/BrandHeader";
-import { ContentWidth } from "@/components/layout/ContentWidth";
-import { ROUTES } from "@/config/routes";
+import { QuestionTypeGuide } from "@/components/home/QuestionTypeGuide";
+import { QuestionTypeGrid } from "@/components/home/QuestionTypeGrid";
+import { LeaderboardPreviewCard } from "@/components/landing/LeaderboardList";
+import { appConfig } from "@/config/app.config";
+import { FEATURED_QUIZ_ID, ROUTES } from "@/config/routes";
 import { quizController } from "@/controllers/quiz.controller";
 import { useAsyncData } from "@/hooks/useAsyncData";
-import { QUIZ_PHASE, useQuizStore } from "@/store/quiz.store";
+import { BRAND_ICONS } from "@/lib/brand-icons";
+import { formatTalukaLabel, formatTalukaWeekPill } from "@/lib/format-taluka";
+import { useAuthStore } from "@/store/auth.store";
 
 export default function HomePage() {
   const router = useRouter();
-
-  const savedQuizId = useQuizStore((state) => state.quizId);
-  const savedPhase = useQuizStore((state) => state.phase);
+  const user = useAuthStore((state) => state.user);
+  const [guideType, setGuideType] = useState(null);
 
   const { status, data: quizzes, error, reload } = useAsyncData(
     () => quizController.listQuizzes(),
     []
   );
 
-  const list = quizzes ?? [];
+  const quiz =
+    quizzes?.find((item) => item.featured) ??
+    quizzes?.find((item) => item.id === FEATURED_QUIZ_ID) ??
+    quizzes?.[0] ??
+    null;
+
+  const week = Number.isFinite(appConfig.certificate.week) ? appConfig.certificate.week : 5;
+  const startQuiz = () => {
+    if (!quiz) return;
+    router.push(ROUTES.quiz(quiz.id));
+  };
 
   return (
-    <main className="no-scrollbar animate-screen-in flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F5F7F9]">
-      <div className="relative overflow-hidden">
-        <AuroraWash className="inset-0 h-full" />
-        <BrandHeader priority plain />
-      </div>
-
-      <div
-        className="px-5 pt-5 pb-4 sm:px-6"
-        style={{
-          backgroundImage:
-            "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(255,255,255,0.28) 50%, #e6ebeb 100%)",
-        }}
-      >
-        <h2 className="font-heading text-[1.2rem] font-bold text-[#111]">
-          Today&apos;s special Quiz
-        </h2>
-      </div>
-
-      <div className="bg-[#e6ebeb]">
-        <ContentWidth
-          size="phone"
-          className="px-5 pb-8 sm:px-6 md:max-w-none"
-        >
-          {status === "loading" ? <LoadingState /> : null}
-          {status === "error" ? <ErrorState message={error} onRetry={reload} /> : null}
-
-          {status === "ready" ? (
-            <div className="grid gap-4 md:gap-5">
-              {list.map((quiz) => {
-                const resuming =
-                  savedQuizId === quiz.id && savedPhase !== QUIZ_PHASE.COMPLETED;
-
-                return (
-                  <FeaturedQuizCard
-                    key={quiz.id}
-                    quiz={quiz}
-                    resuming={resuming}
-                    onStart={() => router.push(ROUTES.quiz(quiz.id))}
-                  />
-                );
-              })}
+    <main className="no-scrollbar animate-screen-in flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F2F2F2] pb-6">
+      <section className="relative mx-1 mt-1 overflow-hidden rounded-[1.75rem]">
+        <Image
+          src="/new-gradient-bg.png"
+          alt=""
+          width={414}
+          height={658}
+          priority
+          sizes="100vw"
+          className="pointer-events-none absolute inset-x-0 top-0 h-auto w-full select-none"
+        />
+        <div className="relative z-10 flex flex-col px-3 pt-6 pb-3">
+          <div className="flex flex-col items-center">
+            <div className="grid size-[4.75rem] place-items-center overflow-hidden rounded-full bg-white shadow-[0_4px_14px_rgb(15_23_42/0.10)]">
+              <BrandIcon
+                src={BRAND_ICONS.logo}
+                alt="G3Q 2.0"
+                priority
+                className="size-[4.4rem]"
+              />
             </div>
-          ) : null}
-        </ContentWidth>
+            <h1
+              className="mt-3 font-heading text-[1.85rem] leading-none font-bold tracking-tight text-white"
+              style={{ textShadow: "0 1px 10px rgb(0 0 0 / 0.22)" }}
+            >
+              {appConfig.name}
+            </h1>
+            <p className="mt-2.5 rounded-full bg-white/55 px-3.5 py-1.5 font-heading text-[13px] font-medium text-[#111] backdrop-blur-[6px]">
+              {formatTalukaWeekPill(user?.taluka, week)}
+            </p>
+          </div>
+
+          <div className="mt-5">
+            {status === "loading" ? <LoadingState /> : null}
+            {status === "error" ? <ErrorState message={error} onRetry={reload} /> : null}
+            {status === "ready" && quiz ? (
+              <FeaturedQuizCard quiz={quiz} onStart={startQuiz} />
+            ) : null}
+          </div>
+        </div>
+      </section>
+
+      <div className="px-3.5">
+        <QuestionTypeGrid onSelect={setGuideType} />
+        <QuestionTypeGuide
+          typeId={guideType}
+          open={Boolean(guideType)}
+          onClose={() => setGuideType(null)}
+        />
+        <div className="mt-3.5">
+          <LeaderboardPreviewCard
+            talukaLabel={formatTalukaLabel(user?.taluka)}
+            week={week}
+            iconColor="#000000"
+            onClick={() => router.push(ROUTES.leaderboard)}
+          />
+        </div>
       </div>
     </main>
   );

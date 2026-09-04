@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 /**
  * Shared option row for single-choice questions.
  *
- * After submit the pick stays as-is (locked). Correct vs incorrect is shown
- * on the explanation sheet, not by recoloring options.
+ * Selected = thick blue ring on white pill (Canva play mock).
+ * Correct/incorrect styling lives on the explanation sheet, not here.
  */
 export function ChoiceOption({
   label,
@@ -22,15 +22,16 @@ export function ChoiceOption({
       onClick={onToggle}
       aria-pressed={selected}
       className={cn(
-        "flex min-h-[4.5rem] w-full items-center rounded-[1.40rem] border bg-white px-5 py-5 text-left font-canva text-sm leading-snug font-medium transition-colors duration-200 ease-emphasized sm:min-h-[5rem] sm:py-6 sm:text-base",
-        !disabled && "active:scale-[0.99]",
-        selected && "border-primary-600 bg-primary-50",
-        !selected && "border-[#E8ECF0]",
-        !revealed && !selected && "hover:border-primary-300",
-        revealed && !selected && "opacity-60"
+        "flex min-h-[3.85rem] w-full items-center justify-center rounded-[1.35rem] bg-white px-5 py-4 text-center font-canva text-[0.98rem] leading-snug font-semibold text-[#111] transition-[transform,box-shadow,border-color] duration-200 ease-emphasized sm:min-h-[4.25rem] sm:text-[1.05rem]",
+        "shadow-[0_4px_16px_rgb(15_23_42/0.08)]",
+        !disabled && "active:scale-[0.985]",
+        selected
+          ? "border-[3px] border-[#3C6496] shadow-[0_6px_18px_rgb(60_100_150/0.18)]"
+          : "border-[3px] border-transparent",
+        revealed && !selected && "opacity-55"
       )}
     >
-      <span className="min-w-0 flex-1">{label}</span>
+      <span className="min-w-0">{label}</span>
     </button>
   );
 }

@@ -2,6 +2,8 @@ export const ROUTES = {
   root: "/",
   auth: "/auth",
   abhiyan: "/abhiyan",
+  leaderboard: "/leaderboard",
+  g3qAi: "/g3q-ai",
   home: "/home",
   profile: "/profile",
   quiz: (quizId, { practice = false } = {}) =>

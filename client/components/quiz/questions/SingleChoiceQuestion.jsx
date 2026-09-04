@@ -6,7 +6,7 @@ export function SingleChoiceQuestion({ question, value, onChange, disabled, reve
   const selected = value ?? [];
 
   return (
-    <div className="mx-auto w-full space-y-1.5">
+    <div className="mx-auto w-full space-y-3">
       {question.options.map((option, index) => (
         <ChoiceOption
           key={option.id}

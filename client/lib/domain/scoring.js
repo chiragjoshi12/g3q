@@ -67,6 +67,16 @@ export function buildAttemptResult({
   };
 }
 
+/**
+ * Result-card headline above the percentage.
+ * 80%+ Great Job, 60%+ Well Done, otherwise Keep Trying.
+ */
+export function scorePraise(percentage) {
+  if (percentage >= 80) return "Great Job !";
+  if (percentage >= 60) return "Well Done !";
+  return "Keep Trying !";
+}
+
 /** Gujarati verdict bands used on the result screen. */
 export function gradeBand(percentage) {
   if (percentage >= 85) return { id: "excellent", label: "ઉત્તમ!", tone: "success" };

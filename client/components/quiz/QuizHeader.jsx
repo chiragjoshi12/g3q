@@ -2,48 +2,58 @@
 
 import { Clock, X } from "@/components/icons";
 
+import { BrandIcon } from "@/components/common/BrandIcon";
 import { formatClock } from "@/lib/domain/format";
+import { BRAND_ICONS } from "@/lib/brand-icons";
 import { cn } from "@/lib/utils";
 
-const CHIP =
-  "h-11 rounded-full bg-white shadow-[0_1px_4px_rgb(15_23_42/0.08)]";
-
-/** Close, question count and timer — white chips on light grey, matching the play mock. */
+/**
+ * Apple-style liquid-glass quiz top bar — close, question progress, timer.
+ */
 export function QuizHeader({ index, total, elapsedMs, paused, onExit }) {
   return (
-    <header className="relative z-20 shrink-0 bg-[#F2F2F2] px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 sm:px-5">
-      <div className="mx-auto grid w-full max-w-[26.5rem] grid-cols-[1fr_auto_1fr] items-center md:max-w-none">
+    <header className="relative z-30 shrink-0 px-3.5 pt-[max(0.55rem,env(safe-area-inset-top))] pb-1.5 sm:px-5">
+      <div
+        className={cn(
+          "relative mx-auto flex w-fit items-center gap-[3.5rem] overflow-hidden rounded-full px-2.5 py-2.5",
+          "border border-white/50 bg-white/25",
+          "shadow-[0_8px_28px_rgb(15_23_42/0.10),inset_0_1px_1px_rgb(255_255_255/0.75),inset_0_-1px_0_rgb(255_255_255/0.18)]",
+          "backdrop-blur-[40px] backdrop-saturate-[1.8]",
+          "supports-[backdrop-filter]:bg-white/[0.14]"
+        )}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/55 to-transparent"
+        />
+
         <button
           type="button"
           onClick={onExit}
           aria-label="ક્વિઝ છોડો"
-          className={cn(
-            CHIP,
-            "grid size-11 shrink-0 place-items-center justify-self-start transition-transform active:scale-95"
-          )}
+          className="relative grid size-10 shrink-0 place-items-center rounded-full bg-white shadow-[0_1px_4px_rgb(15_23_42/0.08)] transition-transform active:scale-95"
         >
-          <X className="size-[1.15rem] text-[#111]" strokeWidth={1.8} />
+          <X className="size-[18px] text-[#111]" strokeWidth={2.1} />
         </button>
 
-        <span
-          className={cn(
-            CHIP,
-            "flex items-center px-5 font-canva text-[0.95rem] font-bold whitespace-nowrap text-[#2C6698]"
-          )}
-        >
-          પ્રશ્ન {index + 1} / {total}
-        </span>
+        <div className="relative flex flex-col items-center justify-center gap-0.5">
+          <BrandIcon src={BRAND_ICONS.questionsCount} alt="" className="size-5" />
+          <span className="font-canva text-[0.95rem] leading-none font-bold tracking-tight text-[#111]">
+            પ્રશ્ન {index + 1}/{total || "–"}
+          </span>
+        </div>
 
         <div
           className={cn(
-            CHIP,
-            "flex min-w-11 items-center justify-center gap-1.5 justify-self-end px-3.5 font-canva text-[0.95rem] font-semibold tabular-nums text-[#111]",
-            paused && "text-[#111]/70"
+            "relative flex flex-col items-center justify-center gap-0.5",
+            paused && "opacity-65"
           )}
           title={paused ? "જવાબ સબમિટ થયો — સમય થંભેલો છે" : "સમય ચાલુ છે"}
         >
-          <Clock className="size-[1.05rem] shrink-0" strokeWidth={1.8} />
-          {formatClock(elapsedMs)}
+          <Clock className="size-5 text-[#1F2937]" strokeWidth={1.85} />
+          <span className="font-canva text-[0.95rem] leading-none font-normal tabular-nums text-[#111]">
+            {formatClock(elapsedMs)}
+          </span>
         </div>
       </div>
     </header>

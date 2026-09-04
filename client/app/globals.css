@@ -50,6 +50,7 @@
   --animate-verdict-shake: verdict-shake 560ms ease-in-out both;
   --animate-flash-success: flash-success 680ms ease-out both;
   --animate-flash-error: flash-error 680ms ease-out both;
+  --animate-timer-paused: timer-paused 720ms ease-out 2 both;
 }
 
 @keyframes screen-in {
@@ -151,12 +152,28 @@
   100% { background-color: rgb(0 0 0 / 0.28); }
 }
 
+@keyframes timer-paused {
+  0% {
+    box-shadow: 0 0 0 0 rgb(245 158 11 / 0.55);
+    transform: scale(1);
+  }
+  40% {
+    box-shadow: 0 0 0 10px rgb(245 158 11 / 0);
+    transform: scale(1.08);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(245 158 11 / 0);
+    transform: scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-confetti,
   .animate-verdict-shake,
   .animate-pulse-ring,
   .animate-flash-success,
-  .animate-flash-error {
+  .animate-flash-error,
+  .animate-timer-paused {
     animation: none !important;
   }
 }

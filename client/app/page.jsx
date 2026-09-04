@@ -1,30 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import {
-  ACTION_BUTTON_CLASS,
-  ACTION_BUTTON_SECONDARY_CLASS,
-  AppButton,
-} from "@/components/common/AppButton";
+import { BrandIcon } from "@/components/common/BrandIcon";
 import { BannerSlider } from "@/components/landing/BannerSlider";
-import {
-  BoardToggle,
-  LeaderboardGap,
-  LeaderboardRow,
-} from "@/components/landing/LeaderboardList";
+import { LandingActionNav } from "@/components/landing/LandingActionNav";
+import { LeaderboardPreviewCard } from "@/components/landing/LeaderboardList";
 import { AppShell } from "@/components/layout/AppShell";
 import { BrandHeader } from "@/components/layout/BrandHeader";
 import { appConfig } from "@/config/app.config";
 import { FEATURED_QUIZ_ID, ROUTES, setPostAuthPath } from "@/config/routes";
-import {
-  COLLEGE_LEADERBOARD,
-  LANDING_PLAYS_COUNT,
-  SCHOOL_LEADERBOARD,
-} from "@/data/leaderboard";
+import { LANDING_PLAYS_COUNT, LANDING_WEEK_PLAYS_COUNT } from "@/data/leaderboard";
+import { BRAND_ICONS } from "@/lib/brand-icons";
+import { formatTalukaLabel } from "@/lib/format-taluka";
 import { useStoreHydrated } from "@/hooks/useStoreHydrated";
-import { ROLE } from "@/lib/domain/roles";
 import { useAuthStore } from "@/store/auth.store";
 
 const ABOUT_LEAD =
@@ -32,47 +21,13 @@ const ABOUT_LEAD =
 
 const LANDING_BANNERS = ["/landing/hero.png", "/q3quiz.png"];
 
-const DEFAULT_TALUKA = "Palanpur";
-
-function formatTalukaName(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return DEFAULT_TALUKA;
-  return raw.replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
-}
-
-function resolveYou(board, user) {
-  if (user) {
-    const match = board.find((row) => row.name === user.name);
-    if (match) return { ...match, inTop10: true };
-    return {
-      rank: user.rank,
-      name: user.name,
-      institute: user.institute,
-      grade: user.grade,
-      inTop10: false,
-    };
-  }
-
-  const demo = board[1] ?? board[0];
-  return demo ? { ...demo, inTop10: true } : null;
-}
-
-/**
- * Launch screen. First paint matches the hero mockup. Scroll reveals the
- * leaderboard behind the pinned Play/Practice buttons.
- */
 export default function LandingPage() {
   const router = useRouter();
   const hydrated = useStoreHydrated(useAuthStore);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
-  const [board, setBoard] = useState(() =>
-    user?.role === ROLE.COLLEGE ? "college" : "school"
-  );
 
-  const rows = board === "college" ? COLLEGE_LEADERBOARD : SCHOOL_LEADERBOARD;
-  const you = useMemo(() => resolveYou(rows, hydrated ? user : null), [rows, hydrated, user]);
-  const taluka = formatTalukaName(hydrated ? user?.taluka : null);
+  const talukaLabel = formatTalukaLabel(hydrated ? user?.taluka : null);
   const week = Number.isFinite(appConfig.certificate.week) ? appConfig.certificate.week : 5;
 
   const go = (path) => {
@@ -85,101 +40,81 @@ export default function LandingPage() {
   };
 
   return (
-    <AppShell className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F3F3F3]">
-      <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[26.5rem] flex-col bg-[#F3F3F3] md:max-w-none">
+    <AppShell className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F2F2F2]">
+      <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[26.5rem] flex-col bg-[#F2F2F2] md:max-w-none">
         <BrandHeader priority />
 
         <main className="no-scrollbar relative z-0 min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <div className="px-4 pt-4 pb-40">
-            <BannerSlider
-              slides={LANDING_BANNERS}
-              className="aspect-[3/2] w-full rounded-[1.35rem] bg-[#ddd]"
-              sizes="(max-width: 768px) 100vw, 26.5rem"
-            >
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-10 bg-gradient-to-t from-black/30 to-transparent" />
-            </BannerSlider>
-
-            <p className="mt-5 text-[15px] leading-[1.65] text-[#4B5563]">
-              {ABOUT_LEAD}
-            </p>
-            <button
-              type="button"
-              onClick={() => router.push(ROUTES.abhiyan)}
-              className="mx-auto mt-3 block text-[15px] font-medium text-[#2563EB] underline underline-offset-2"
-            >
-              View More
-            </button>
-
-            <div className="mx-auto mt-5 w-[82%] rounded-[1.75rem] bg-gradient-to-b from-[#fffcf5] to-[#d8d5ca] px-5 py-8 text-center">
-              <p className="inline-block bg-gradient-to-b from-[#731919] to-[#e52b2b] bg-clip-text font-[family-name:var(--font-archivo)] text-[2.65rem] leading-none text-transparent">
-                {new Intl.NumberFormat("en-IN").format(LANDING_PLAYS_COUNT)}
-              </p>
-              <p className="mt-3 text-lg font-bold text-[#1F3A5F]">
-                વખત ક્વિઝ રમાઈ
-              </p>
-            </div>
-
-            <section className="mt-5 rounded-t-[1.85rem] bg-white px-5 pt-6 pb-4">
-              <h2 className="text-center text-[1.45rem] font-bold text-[#111]">
-                ક્વિઝ લીડરબોર્ડ
-              </h2>
-              <p className="mt-1 text-center text-[1rem] font-medium text-[#000000]">
-                ({taluka} - week {week})
-              </p>
-              <p className="mt-2 text-center text-[13px] leading-relaxed text-[#000000]">
-                અહીં તમારા તાલુકાના ટોપ 10 વિદ્યાર્થીઓનો લાઈવ રેન્ક બતાવેલ છે.
-              </p>
-
-              <div className="mt-5">
-                <BoardToggle value={board} onChange={setBoard} />
-              </div>
-
-              <div className="mt-6 flex text-[14px] text-black">
-                <span className="w-8 shrink-0 text-center">રેન્ક</span>
-                <span className="ml-8 md:ml-10">વિદ્યાર્થી</span>
-              </div>
-
-              <ul>
-                {rows.map((row) => (
-                  <LeaderboardRow
-                    key={`${board}-${row.rank}`}
-                    {...row}
-                    you={Boolean(you?.inTop10 && you.name === row.name)}
+          <div className="flex flex-col gap-3.5 px-3.5 pt-3.5 pb-32">
+            {/* Card 1 — white box contains inset banner + text */}
+            <section className="rounded-[2rem] bg-white px-2 pt-2 pb-4 shadow-[0_1px_3px_rgb(0_0_0/0.06)] sm:px-3 sm:pt-3 sm:pb-5">
+              <div className="relative overflow-hidden rounded-t-[1.6rem]">
+                <BannerSlider
+                  slides={LANDING_BANNERS}
+                  className="aspect-[2/1] w-full bg-[#ddd]"
+                  sizes="(max-width: 768px) 100vw, 26.5rem"
+                >
+                  {/* Soft fade stays inside the image — does not cover text */}
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-10"
+                    style={{
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.55) 55%, #ffffff 100%)",
+                    }}
                   />
-                ))}
-                {you && !you.inTop10 ? (
-                  <>
-                    <LeaderboardGap />
-                    <LeaderboardRow {...you} you />
-                  </>
-                ) : null}
-              </ul>
+                </BannerSlider>
+              </div>
+
+              <div className="relative z-[1] px-1.5 pt-3 sm:px-2">
+                <p className="text-[14px] leading-[1.65] text-black">{ABOUT_LEAD}</p>
+                <button
+                  type="button"
+                  onClick={() => router.push(ROUTES.abhiyan)}
+                  className="mx-auto mt-3 block text-[15px] font-medium text-[#2d689d] underline underline-offset-2"
+                >
+                  View More
+                </button>
+              </div>
             </section>
+
+            {/* Card 2 — plays count: 3 lines, same left edge */}
+            <section className="rounded-[1.5rem] bg-white px-6 py-6 shadow-[0_1px_3px_rgb(0_0_0/0.06)]">
+              <div className="flex items-start gap-2.5">
+                <BrandIcon
+                  src={BRAND_ICONS.playedQuizCount}
+                  alt=""
+                  priority
+                  className="mt-1.5 size-9 shrink-0"
+                />
+                <div className="min-w-0">
+                  <p className="font-[family-name:var(--font-archivo)] text-[2.35rem] leading-none tracking-tight text-[#2d689d]">
+                    {new Intl.NumberFormat("en-IN").format(LANDING_PLAYS_COUNT)}
+                  </p>
+                  <p className="mt-2.5 text-[1.15rem] font-bold text-black">વખત ક્વિઝ રમાઈ</p>
+                  <span className="mt-2.5 inline-block rounded-full bg-[#e8f8ed] px-3.5 py-1 text-[13px] font-medium text-black">
+                    {new Intl.NumberFormat("en-IN").format(LANDING_WEEK_PLAYS_COUNT)} in {week}
+                    <sup>th</sup> week
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            {/* Card 3 — leaderboard shortcut */}
+            <LeaderboardPreviewCard
+              talukaLabel={talukaLabel}
+              week={week}
+              onClick={() => router.push(ROUTES.leaderboard)}
+            />
           </div>
         </main>
 
-        <footer className="pointer-events-none absolute inset-x-0 bottom-0 z-30">
-          <div
-            className="pointer-events-auto px-5 pt-14 pb-[max(0.85rem,env(safe-area-inset-bottom))]"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,0) 0%, #ffffff 50%, #ffffff 100%)",
-            }}
-          >
-            <div className="relative z-10 mx-auto flex w-full flex-col items-center gap-2.5">
-              <AppButton onClick={() => go(ROUTES.home)} className={ACTION_BUTTON_CLASS}>
-                Play Quiz
-              </AppButton>
-              <AppButton
-                variant="outline"
-                onClick={() => router.push(ROUTES.quiz(FEATURED_QUIZ_ID, { practice: true }))}
-                className={ACTION_BUTTON_SECONDARY_CLASS}
-              >
-                Practice Quiz
-              </AppButton>
-            </div>
-          </div>
-        </footer>
+        <LandingActionNav
+          floating
+          onPractice={() => router.push(ROUTES.quiz(FEATURED_QUIZ_ID, { practice: true }))}
+          onPlayQuiz={() => go(ROUTES.home)}
+          onG3qAi={() => router.push(ROUTES.g3qAi)}
+        />
       </div>
     </AppShell>
   );

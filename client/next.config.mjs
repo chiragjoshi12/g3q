@@ -15,6 +15,15 @@ const nextConfig = {
     // ever accepts image URLs from untrusted users.
     dangerouslyAllowLocalIP: true,
   },
+  async rewrites() {
+    const backend = process.env.BACKEND_ORIGIN || "http://localhost:4000";
+    return [
+      {
+        source: "/api/g3q-ai/:path*",
+        destination: `${backend}/api/g3q-ai/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -70,9 +70,9 @@ export default function ProfilePage() {
     <main className="no-scrollbar animate-screen-in relative flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F5F7F9]">
       <div className="relative overflow-hidden pb-[3.75rem]">
         <AuroraWash
-          src="/gradient-bg-profile.png"
+          src="/new-gradient-bg.png"
           className="inset-0 h-full"
-          imageClassName="object-cover object-center"
+          imageClassName="object-cover object-top"
         />
         <div className="relative">
           <BrandHeader

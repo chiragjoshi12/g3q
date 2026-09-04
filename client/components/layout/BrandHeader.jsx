@@ -22,7 +22,12 @@ export function BrandHeader({ trailing = null, priority = false, plain = false }
           priority={priority}
           className="size-12 shrink-0"
         />
-        <h1 className="font-heading min-w-0 flex-1 text-center text-[1.7rem] leading-none font-bold tracking-tight text-primary-600">
+        <h1
+          className={cn(
+            "font-heading min-w-0 flex-1 text-center text-[1.7rem] leading-none font-bold tracking-tight",
+            plain ? "text-white" : "text-primary-600"
+          )}
+        >
           {appConfig.name}
         </h1>
         {trailing ? (

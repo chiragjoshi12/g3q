@@ -42,7 +42,7 @@ const appButtonVariants = cva(
       },
       size: {
         md: "h-12 px-5 text-sm",
-        lg: "h-14 px-6 text-[1.05rem]",
+        lg: "h-14 px-4 text-[1.05rem]",
       },
       block: {
         true: "w-full",

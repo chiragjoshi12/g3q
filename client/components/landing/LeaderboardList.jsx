@@ -1,18 +1,174 @@
 "use client";
 
+import Image from "next/image";
+
+import { BrandGlyph, BrandIcon } from "@/components/common/BrandIcon";
+import { BRAND_ICONS } from "@/lib/brand-icons";
 import { cn } from "@/lib/utils";
 
-function Avatar({ name, className }) {
+const DEFAULT_AVATAR = BRAND_ICONS.profilePhoto;
+
+function Avatar({ name, avatar, className }) {
+  const src = avatar || DEFAULT_AVATAR;
   const initial = name?.trim()?.[0] ?? "?";
+
   return (
     <span
       className={cn(
-        "grid size-11 shrink-0 place-items-center rounded-full bg-primary-600 text-base font-bold text-white md:size-12",
+        "relative size-[3.15rem] shrink-0 overflow-hidden rounded-full bg-[#DCE6F0]",
         className
       )}
     >
-      {initial}
+      {src ? (
+        <Image src={src} alt="" fill sizes="52px" className="object-cover" />
+      ) : (
+        <span className="grid size-full place-items-center text-base font-bold text-[#2d689d]">
+          {initial}
+        </span>
+      )}
     </span>
+  );
+}
+
+/** Gold score with Rank Stars artwork (matches Canva). */
+export function LeaderboardScoreBadge({ score }) {
+  return (
+    <div className="relative flex h-[3.85rem] w-[3.7rem] shrink-0 items-center justify-center">
+      <span className="relative z-[1] mt-[-1.1rem] text-[1.22rem] font-bold leading-none tracking-tight text-[#D4A017]">
+        {score}
+      </span>
+      <BrandIcon
+        src={BRAND_ICONS.rankStars}
+        alt=""
+        className="pointer-events-none absolute inset-0 size-full"
+      />
+      {/* Move this text down to open gap from the bottom star: increase mt-* */}
+
+    </div>
+  );
+}
+
+export function LeaderboardDetailRow({
+  rank,
+  name,
+  institute,
+  grade,
+  score,
+  avatar,
+  you = false,
+}) {
+  return (
+    <li className="flex items-center gap-3 px-1 py-3.5">
+      <span className="w-6 shrink-0 text-center text-[1.05rem] font-bold text-[#1F2937]">
+        {rank}
+      </span>
+      <Avatar name={name} avatar={avatar} />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[0.98rem] font-bold leading-snug text-[#2d689d]">
+          {you ? `${name} (You)` : name}
+        </p>
+        {institute ? (
+          <p className="mt-0.5 truncate text-[12px] leading-snug text-[#4B5563]">{institute}</p>
+        ) : null}
+        {grade ? (
+          <span className="mt-1.5 inline-block rounded-full bg-[#E8EEF4] px-2.5 py-0.5 text-[11px] font-medium text-[#4B5563]">
+            {grade}
+          </span>
+        ) : null}
+      </div>
+      {score != null ? <LeaderboardScoreBadge score={score} /> : null}
+    </li>
+  );
+}
+
+export function LeaderboardCategoryTabs({ value, onChange }) {
+  const items = [
+    { id: "school", label: "સ્કૂલ" },
+    { id: "college", label: "કોલેજ" },
+    { id: "citizen", label: "નાગરિક" },
+  ];
+
+  return (
+    <div
+      role="tablist"
+      aria-label="Leaderboard category"
+      className="flex w-full items-end justify-center gap-x-20 px-1"
+    >
+      {items.map((item) => {
+        const active = item.id === value;
+
+        return (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(item.id)}
+            className={cn(
+              "relative pb-2 text-[1.05rem] leading-none",
+              active ? "font-bold text-[#2d689d]" : "font-normal text-black"
+            )}
+          >
+            {item.label}
+            {active ? (
+              <span
+                aria-hidden
+                className="absolute inset-x-0 bottom-0 h-[1.5px] rounded-full bg-[#2d689d]"
+              />
+            ) : null}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+export function LeaderboardPreviewCard({ talukaLabel, week, onClick, iconColor = "#2d689d" }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex min-h-[5.75rem] w-full items-center gap-3.5 rounded-[1.5rem] bg-white px-5 py-5 shadow-[0_1px_3px_rgb(0_0_0/0.06)] active:bg-[#fafafa]"
+    >
+      <BrandGlyph
+        src={BRAND_ICONS.leaderboard}
+        color={iconColor}
+        className="size-10 shrink-0"
+      />
+      <div className="min-w-0 flex-1 text-left">
+        <p className="text-[1.35rem] font-bold leading-tight" style={{ color: iconColor }}>
+          લીડરબોર્ડ
+        </p>
+        <p className="mt-1 truncate text-[15px] leading-snug font-medium text-black">
+          {talukaLabel} તાલુકો - {week} મું અઠવાડિયું
+        </p>
+      </div>
+      <span className="shrink-0 text-[1.5rem] font-light leading-none text-[#C4C9D0]" aria-hidden>
+        ›
+      </span>
+    </button>
+  );
+}
+
+export function PodiumIcon({ className }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M12 3.5 13.1 6.2 16 6.6 13.9 8.6 14.5 11.4 12 10 9.5 11.4 10.1 8.6 8 6.6 10.9 6.2 12 3.5Z" />
+      <path d="M5 20v-5.5h4.5V20" />
+      <path d="M9.5 20V9.5H14.5V20" />
+      <path d="M14.5 20v-3.5H19V20" />
+      <path d="M4 20h16" />
+    </svg>
   );
 }
 
@@ -43,17 +199,16 @@ export function LeaderboardRow({ rank, name, institute, grade, you = false }) {
 export function LeaderboardGap() {
   return (
     <li aria-hidden className="flex justify-center py-1">
-      <span className="text-2xl leading-none font-bold tracking-tighter text-[#111]">
-        :
-      </span>
+      <span className="text-2xl leading-none font-bold tracking-tighter text-[#111]">:</span>
     </li>
   );
 }
 
 export function BoardToggle({ value, onChange }) {
   const items = [
-    { id: "school", label: "સ્કૂલ" },
-    { id: "college", label: "કોલેજ" },
+    { id: "school", label: "School" },
+    { id: "college", label: "College" },
+    { id: "citizen", label: "People" },
   ];
 
   return (

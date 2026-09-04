@@ -18,12 +18,10 @@ import { useQuestionTimer } from "@/hooks/useQuestionTimer";
 import { isAnswered, isCorrect } from "@/lib/domain/grading";
 import { QUIZ_PHASE, useQuizStore } from "@/store/quiz.store";
 
+const QUIZ_PLAY_BG = "/quiz/play-bg.png";
+
 /**
- * Quiz runner.
- *
- * One question at a time. The timer runs while answering and freezes on submit;
- * Next stays locked until an answer is submitted, so a question can never be
- * skipped.
+ * Quiz runner — glass header, illustrated backdrop, one question at a time.
  */
 export default function QuizPage({ params }) {
   return (
@@ -46,10 +44,6 @@ function QuizScreen({ params }) {
   const { ready, user } = useAuthGuard({ optional: practice });
   const [confirmExit, setConfirmExit] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  // The color-coded right/wrong styling on the answer itself waits for this,
-  // so scanning ahead to green/red can't spoil the "why" you're meant to
-  // read first — it flips true once the AI explanation finishes writing (or
-  // immediately, if resuming a session that was already past that point).
   const [verdictRevealed, setVerdictRevealed] = useState(false);
   const [explanationOpen, setExplanationOpen] = useState(false);
 
@@ -82,23 +76,14 @@ function QuizScreen({ params }) {
   });
 
   const value = question ? answers[question.id] : null;
-  // Derived from subscribed state, not store.getState(), so Submit appears the
-  // moment the answer becomes valid.
   const answered = Boolean(question) && isAnswered(question, value);
 
-  // Resets for each new question. If a session resumes straight into review
-  // (app closed right after submitting), skip the reveal ceremony rather
-  // than replaying it — but never re-open a popup for something already
-  // answered in a past session.
   useEffect(() => {
     const reset = (revealed) => {
       setVerdictRevealed(revealed);
       setExplanationOpen(false);
     };
     reset(reviewing);
-    // Deliberately only re-runs when the question itself changes; `reviewing`
-    // is read for its value at that moment, not tracked afterwards — the
-    // in-session submit → review transition is handled by handleSubmit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [question?.id]);
 
@@ -136,69 +121,83 @@ function QuizScreen({ params }) {
   }
 
   return (
-    <AppShell className="bg-[#F2F2F2] font-canva">
-      <QuizHeader
-        index={currentIndex}
-        total={questions.length}
-        elapsedMs={elapsedMs}
-        paused={!answering}
-        onExit={() => setConfirmExit(true)}
+    <AppShell className="font-canva">
+      {/* Full-bleed play backdrop */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[#EEF2F6] bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url('${QUIZ_PLAY_BG}')` }}
+      />
+      <div
+        aria-hidden
+            className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/20 via-white/35 to-white/65"
       />
 
-      <main className="no-scrollbar flex-1 overflow-y-auto overscroll-contain bg-[#F2F2F2]">
-        <ContentWidth size="phone" className="px-4 py-4 sm:px-6 sm:py-5 md:max-w-none md:px-5 md:py-5">
-          {loading && !question ? <LoadingState label="ક્વિઝ તૈયાર થઈ રહી છે…" /> : null}
-          {error ? (
-            <ErrorState message={error} onRetry={() => loadQuiz(quizId, { restart: true })} />
-          ) : null}
+      <div className="relative z-10 flex h-full min-h-0 flex-col">
+        <QuizHeader
+          index={currentIndex}
+          total={questions.length}
+          elapsedMs={elapsedMs}
+          paused={!answering}
+          onExit={() => setConfirmExit(true)}
+        />
 
-          {question ? (
-            <div key={question.id} className="animate-screen-in">
-              <h2 className="font-canva text-lg leading-snug font-bold text-[#111] sm:text-xl">
-                {question.prompt}
-              </h2>
+        <main className="no-scrollbar relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <ContentWidth size="phone" className="px-5 py-5 sm:px-6 sm:py-6 md:max-w-none md:px-6">
+            {loading && !question ? <LoadingState label="ક્વિઝ તૈયાર થઈ રહી છે…" /> : null}
+            {error ? (
+              <ErrorState message={error} onRetry={() => loadQuiz(quizId, { restart: true })} />
+            ) : null}
 
-              <div className="mt-8 sm:mt-9">
-                <QuestionRenderer
-                  question={question}
-                  value={value}
-                  onChange={setAnswer}
-                  disabled={!answering}
-                  revealed={reviewing && verdictRevealed}
-                />
-              </div>
+            {question ? (
+              <div key={question.id} className="animate-screen-in mx-auto max-w-[26.5rem] md:max-w-none">
+                <h2 className="font-canva text-[1.08rem] leading-[1.55] font-bold text-[#111] drop-shadow-[0_1px_0_rgb(255_255_255/0.65)] sm:text-[1.18rem]">
+                  {question.prompt}
+                </h2>
 
-              <div className="mt-5 hidden pt-2 md:block">
-                {!explanationOpen ? (
-                  <QuizAction
-                    answering={answering}
-                    answered={answered}
-                    isLast={isLast}
-                    loading={loading}
-                    onSubmit={handleSubmit}
-                    onNext={handleNext}
+                <div className="mt-7 sm:mt-8">
+                  <QuestionRenderer
+                    question={question}
+                    value={value}
+                    onChange={setAnswer}
+                    disabled={!answering}
+                    revealed={reviewing && verdictRevealed}
                   />
-                ) : null}
-              </div>
-            </div>
-          ) : null}
-        </ContentWidth>
-      </main>
+                </div>
 
-      {question ? (
-        <footer className="shrink-0 bg-[#F2F2F2] pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden">
-          <ContentWidth size="play" className="px-5 py-4 sm:px-6">
-            <QuizAction
-              answering={answering}
-              answered={answered}
-              isLast={isLast}
-              loading={loading}
-              onSubmit={handleSubmit}
-              onNext={handleNext}
-            />
+                <div className="mt-6 hidden pt-1 md:block">
+                  {!explanationOpen ? (
+                    <QuizAction
+                      answering={answering}
+                      answered={answered}
+                      isLast={isLast}
+                      loading={loading}
+                      onSubmit={handleSubmit}
+                      onNext={handleNext}
+                    />
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
           </ContentWidth>
-        </footer>
-      ) : null}
+        </main>
+
+        {question ? (
+          <footer className="relative z-20 shrink-0 pb-[max(0.85rem,env(safe-area-inset-bottom))] md:hidden">
+            <div className="pointer-events-none absolute inset-x-0 -top-10 h-10 bg-gradient-to-t from-white/50 to-transparent" />
+            <ContentWidth size="play" className="relative px-5 py-3 sm:px-6">
+              <QuizAction
+                answering={answering}
+                answered={answered}
+                isLast={isLast}
+                loading={loading}
+                onSubmit={handleSubmit}
+                onNext={handleNext}
+              />
+            </ContentWidth>
+          </footer>
+        ) : null}
+      </div>
 
       {reviewing && explanationOpen && question ? (
         <AiExplanationSheet
@@ -236,7 +235,11 @@ function QuizAction({ answering, answered, isLast, loading, onSubmit, onNext }) 
   if (answering) {
     return (
       <ActionButtonRow>
-        <AppButton className={ACTION_BUTTON_CLASS} onClick={onSubmit} disabled={!answered}>
+        <AppButton
+          className={`${ACTION_BUTTON_CLASS} shadow-[0_10px_28px_rgb(60_100_150/0.35)] disabled:opacity-45`}
+          onClick={onSubmit}
+          disabled={!answered}
+        >
           Submit
         </AppButton>
       </ActionButtonRow>
@@ -246,7 +249,7 @@ function QuizAction({ answering, answered, isLast, loading, onSubmit, onNext }) 
   return (
     <ActionButtonRow>
       <AppButton
-        className={ACTION_BUTTON_CLASS}
+        className={`${ACTION_BUTTON_CLASS} shadow-[0_10px_28px_rgb(60_100_150/0.35)]`}
         onClick={onNext}
         loading={loading}
       >

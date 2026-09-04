@@ -55,6 +55,7 @@ export const quizController = {
       userRole: user?.role ?? null,
       institute: user?.institute ?? "",
       district: user?.district ?? "",
+      taluka: user?.taluka ?? "",
       credential: user?.credential ?? "",
       week: quiz?.week ?? null,
     };
