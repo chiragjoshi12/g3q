@@ -130,7 +130,7 @@ function VerdictMark({ correct }) {
             correct ? "bg-success/18" : "bg-error/14"
           )}
         />
-        {correct ? <ConfettiBurst /> : null}
+        {correct ? <ConfettiBurst celebrate /> : null}
         <BrandIcon
           src={correct ? BRAND_ICONS.correct : BRAND_ICONS.incorrect}
           alt={correct ? "સાચો જવાબ" : "ખોટો જવાબ"}

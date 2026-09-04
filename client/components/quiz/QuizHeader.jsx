@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, X } from "@/components/icons";
+import { Clock, Pause, X } from "@/components/icons";
 
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { formatClock } from "@/lib/domain/format";
@@ -44,14 +44,20 @@ export function QuizHeader({ index, total, elapsedMs, paused, onExit }) {
         </div>
 
         <div
-          className={cn(
-            "relative flex flex-col items-center justify-center gap-0.5",
-            paused && "opacity-65"
-          )}
+          className="relative flex flex-col items-center justify-center gap-0.5"
           title={paused ? "જવાબ સબમિટ થયો — સમય થંભેલો છે" : "સમય ચાલુ છે"}
         >
-          <Clock className="size-5 text-[#1F2937]" strokeWidth={1.85} />
-          <span className="font-canva text-[0.95rem] leading-none font-normal tabular-nums text-[#111]">
+          {paused ? (
+            <Pause className="size-5 text-[#C2410C]" strokeWidth={2.1} />
+          ) : (
+            <Clock className="size-5 text-[#1F2937]" strokeWidth={1.85} />
+          )}
+          <span
+            className={cn(
+              "font-canva text-[0.95rem] leading-none font-normal tabular-nums",
+              paused ? "animate-pulse text-[#C2410C]" : "text-[#111]"
+            )}
+          >
             {formatClock(elapsedMs)}
           </span>
         </div>

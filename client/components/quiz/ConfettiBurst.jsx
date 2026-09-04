@@ -1,11 +1,11 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/utils";
 
-const PIECES = [
+const BURST = [
   { dx: -72, dy: -88, rot: -90, color: "#EC4899", w: 10, h: 16, radius: 2, delay: 0 },
   { dx: 76, dy: -82, rot: 110, color: "#FACC15", w: 9, h: 15, radius: 2, delay: 40 },
   { dx: -22, dy: -108, rot: 40, color: "#60A5FA", w: 11, h: 11, radius: 999, delay: 70 },
@@ -24,18 +24,55 @@ const PIECES = [
   { dx: 44, dy: -66, rot: -60, color: "#2DD4BF", w: 8, h: 12, radius: 2, delay: 85 },
 ];
 
+const COLORS = [
+  "#EC4899",
+  "#FACC15",
+  "#60A5FA",
+  "#A78BFA",
+  "#34D399",
+  "#FB7185",
+  "#F97316",
+  "#2DD4BF",
+  "#F472B6",
+  "#38BDF8",
+];
+
+function makeRain(count) {
+  return Array.from({ length: count }, (_, i) => {
+    const n = (step) => {
+      const v = (i * 9301 + 49297 * (step + 1)) % 233280;
+      return v / 233280;
+    };
+    return {
+      left: n(1) * 100,
+      delay: n(2) * 420,
+      duration: 1700 + n(3) * 1100,
+      color: COLORS[i % COLORS.length],
+      w: 6 + n(4) * 8,
+      h: 9 + n(5) * 11,
+      drift: (n(6) - 0.5) * 96,
+      rot: 200 + n(7) * 320,
+      radius: n(8) > 0.45 ? 2 : 999,
+    };
+  });
+}
+
 /**
- * Burst around a correct-answer icon.
+ * Celebration on a correct answer.
  *
- * Painted through a document.body portal so quiz sheets, buttons, and
- * overflow:hidden parents cannot clip the pieces.
+ * `celebrate` rains confetti from the top of the screen. A smaller burst
+ * still pops from the verdict icon. Painted through a document.body portal
+ * so quiz sheets cannot clip the pieces.
  */
-export function ConfettiBurst({ size = "md", className }) {
+export function ConfettiBurst({ size = "md", className, celebrate = false }) {
   const originRef = useRef(null);
   const [origin, setOrigin] = useState(null);
+  const [mounted, setMounted] = useState(false);
   const scale = size === "sm" ? 0.72 : 1;
+  const rain = useMemo(() => (celebrate ? makeRain(64) : []), [celebrate]);
 
   useLayoutEffect(() => {
+    setMounted(true);
     const node = originRef.current;
     if (!node) return undefined;
 
@@ -55,6 +92,55 @@ export function ConfettiBurst({ size = "md", className }) {
     };
   }, []);
 
+  const layer =
+    mounted && typeof document !== "undefined"
+      ? createPortal(
+          <div className="pointer-events-none fixed inset-0 z-[300] overflow-hidden" aria-hidden>
+            {celebrate
+              ? rain.map((piece, index) => (
+                  <span
+                    key={`rain-${index}`}
+                    className="animate-confetti-fall absolute"
+                    style={{
+                      left: `${piece.left}%`,
+                      top: "-16px",
+                      "--drift": `${piece.drift}px`,
+                      "--spin": `${piece.rot}deg`,
+                      width: piece.w,
+                      height: piece.h,
+                      borderRadius: piece.radius,
+                      background: piece.color,
+                      animationDelay: `${piece.delay}ms`,
+                      animationDuration: `${piece.duration}ms`,
+                    }}
+                  />
+                ))
+              : null}
+            {origin
+              ? BURST.map((piece, index) => (
+                  <span
+                    key={`burst-${index}`}
+                    className="animate-confetti absolute"
+                    style={{
+                      left: origin.x,
+                      top: origin.y,
+                      "--dx": `${piece.dx * scale}px`,
+                      "--dy": `${piece.dy * scale}px`,
+                      "--rot": `${piece.rot}deg`,
+                      width: Math.max(5, piece.w * scale),
+                      height: Math.max(5, piece.h * scale),
+                      borderRadius: piece.radius,
+                      background: piece.color,
+                      animationDelay: `${piece.delay}ms`,
+                    }}
+                  />
+                ))
+              : null}
+          </div>,
+          document.body
+        )
+      : null;
+
   return (
     <>
       <span
@@ -62,31 +148,7 @@ export function ConfettiBurst({ size = "md", className }) {
         aria-hidden
         className={cn("pointer-events-none absolute inset-0", className)}
       />
-      {origin
-        ? createPortal(
-            <div className="pointer-events-none fixed inset-0 z-[300]" aria-hidden>
-              {PIECES.map((piece, index) => (
-                <span
-                  key={index}
-                  className="animate-confetti absolute"
-                  style={{
-                    left: origin.x,
-                    top: origin.y,
-                    "--dx": `${piece.dx * scale}px`,
-                    "--dy": `${piece.dy * scale}px`,
-                    "--rot": `${piece.rot}deg`,
-                    width: Math.max(5, piece.w * scale),
-                    height: Math.max(5, piece.h * scale),
-                    borderRadius: piece.radius,
-                    background: piece.color,
-                    animationDelay: `${piece.delay}ms`,
-                  }}
-                />
-              ))}
-            </div>,
-            document.body
-          )
-        : null}
+      {layer}
     </>
   );
 }

@@ -18,5 +18,5 @@ export function LoginToast() {
     setOpen(false);
   }, []);
 
-  return <TopToast open={open} message="તમે લૉગ ઇન થયા છો" onClose={close} />;
+  return <TopToast open={open} message="Successfully logged in!" onClose={close} />;
 }
