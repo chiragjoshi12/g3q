@@ -67,7 +67,7 @@ export function FeaturedQuizCard({ quiz, onStart, score = null }) {
           </button>
         </div>
 
-        <div className="mt-3.5 -mx-4 flex items-center justify-between gap-3 border-t border-[#E8EAED] px-4 pt-3.5">
+        <div className="mt-3.5 -mx-4 flex items-end justify-between gap-3 border-t border-[#E8EAED] px-4 pt-3.5">
           <p className="flex translate-x-2 items-center gap-2.5 font-heading text-[14px] font-medium text-[#111]">
             <BrandIcon
               src={BRAND_ICONS.questionsCount}
@@ -77,11 +77,12 @@ export function FeaturedQuizCard({ quiz, onStart, score = null }) {
             {quiz.totalQuestions} પ્રશ્નો
           </p>
 
-          {hasScore ? (
-            <span className="inline-flex h-10 items-center justify-center rounded-full bg-[#2d689d] px-4.5 font-heading text-[0.92rem] font-bold whitespace-nowrap text-white">
-              Your Score - {score.correctCount}/{score.totalQuestions}
-            </span>
-          ) : (
+          <div className="flex flex-col items-end gap-1.5">
+            {hasScore ? (
+              <span className="text-right font-heading text-[12px] font-medium text-[#526273]">
+                Last Score: {score.correctCount}/{score.totalQuestions}
+              </span>
+            ) : null}
             <button
               type="button"
               onClick={onStart}
@@ -103,7 +104,7 @@ export function FeaturedQuizCard({ quiz, onStart, score = null }) {
               />
               Play Quiz
             </button>
-          )}
+          </div>
         </div>
       </div>
     </article>
