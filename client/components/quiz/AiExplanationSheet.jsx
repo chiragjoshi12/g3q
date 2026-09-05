@@ -6,7 +6,6 @@ import { X } from "@/components/icons";
 import { ACTION_BUTTON_CLASS, ActionButtonRow, AppButton } from "@/components/common/AppButton";
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { ChatMarkdown } from "@/components/g3q-ai/ChatMarkdown";
-import { ConfettiBurst } from "@/components/quiz/ConfettiBurst";
 import { useTypewriter } from "@/hooks/useTypewriter";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { playAnswerSound } from "@/lib/quiz-sounds";
@@ -151,7 +150,7 @@ export function AiExplanationSheet({
                 onClick={onContinue}
                 className={ACTION_BUTTON_CLASS}
               >
-                {isLast ? "See Results" : "Next Question"}
+                {isLast ? "See Result" : "Next Question"}
               </AppButton>
             )}
           </ActionButtonRow>
@@ -163,32 +162,28 @@ export function AiExplanationSheet({
 
 function CheckingAnswerButton({ progress }) {
   return (
-    <div className="relative w-[62%]">
-      <div
-        aria-hidden
-        className="animate-ai-check-run-border pointer-events-none absolute -inset-[4px] rounded-full p-[1.5px]"
-      >
-        <div className="h-full w-full rounded-full bg-white" />
+    <div className="animate-ai-check-run-border relative w-[62%] rounded-full p-[1.5px]">
+      <div className="rounded-full bg-[#D6E4F0]">
+        <AppButton
+          disabled
+          block
+          className="relative z-10 max-w-none overflow-hidden bg-transparent text-[#1F2937] shadow-none hover:bg-transparent disabled:bg-transparent disabled:text-[#1F2937] disabled:opacity-100"
+        >
+          <span
+            aria-hidden
+            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#b99cff] to-[#a9f5f7] opacity-85 transition-[width] duration-200 ease-out"
+            style={{ width: `${progress}%` }}
+          />
+          <span className="relative z-10">Checking Answer...</span>
+        </AppButton>
       </div>
-      <AppButton
-        disabled
-        block
-        className="relative z-10 max-w-none overflow-hidden bg-[#D6E4F0] text-[#1F2937] shadow-none hover:bg-[#D6E4F0] disabled:bg-[#D6E4F0] disabled:text-[#1F2937] disabled:opacity-100"
-      >
-        <span
-          aria-hidden
-          className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#b99cff] to-[#a9f5f7] opacity-85 transition-[width] duration-200 ease-out"
-          style={{ width: `${progress}%` }}
-        />
-        <span className="relative z-10">Checking Answer...</span>
-      </AppButton>
     </div>
   );
 }
 
 function VerdictMark({ correct }) {
   return (
-    <div className="relative mt-5 flex flex-col items-center justify-center overflow-visible py-2">
+    <div className="relative mt-[-4] flex flex-col items-center justify-center overflow-visible py-2">
       <div className="relative grid size-28 place-items-center overflow-visible">
         <span
           aria-hidden
@@ -197,16 +192,15 @@ function VerdictMark({ correct }) {
             correct ? "bg-success/18" : "bg-error/14"
           )}
         />
-        {correct ? <ConfettiBurst celebrate /> : null}
         <BrandIcon
           src={correct ? BRAND_ICONS.correct : BRAND_ICONS.incorrect}
           alt={correct ? "સાચો જવાબ" : "ખોટો જવાબ"}
-          className="relative size-[4.8rem] animate-verdict-pop"
+          className="relative size-[4rem] animate-verdict-pop"
         />
       </div>
       <p
         className={cn(
-          "mt-3 font-heading text-[18px] font-bold animate-pop-in",
+          "mt-[-3] font-heading text-[18px] font-bold animate-pop-in",
           correct ? "text-[#15803D]" : "text-[#B91C1C]"
         )}
       >

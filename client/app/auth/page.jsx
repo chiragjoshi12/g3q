@@ -28,6 +28,7 @@ export default function AuthPage() {
 
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const step = useAuthStore((state) => state.step);
+  const welcomeSourceStep = useAuthStore((state) => state.welcomeSourceStep);
   const role = useAuthStore((state) => state.role);
   const credential = useAuthStore((state) => state.credential);
   const identity = useAuthStore((state) => state.identity);
@@ -56,30 +57,28 @@ export default function AuthPage() {
 
   const pendingUser = useAuthStore((state) => state.pendingUser);
   const citizen = isCitizen(role);
+  const visibleStep = step === AUTH_STEP.WELCOME ? welcomeSourceStep : step;
+
+  const goHomeFromWelcome = () => {
+    completeLogin();
+    router.replace(ROUTES.home);
+  };
 
   useEffect(() => {
     if (!hydrated) return undefined;
-
-    if (step === AUTH_STEP.WELCOME) {
-      const id = window.setTimeout(() => {
-        completeLogin();
-        router.replace(ROUTES.home);
-      }, 2800);
-      return () => window.clearTimeout(id);
-    }
 
     if (isAuthenticated) {
       router.replace(ROUTES.home);
     }
     return undefined;
-  }, [hydrated, isAuthenticated, step, completeLogin, router]);
+  }, [hydrated, isAuthenticated, router]);
 
   return (
     <AppShell className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F3F3F3]">
       <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[26.5rem] flex-col bg-[#F3F3F3] md:max-w-none">
         <AuthBrandHeader />
-        <main className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-8">
-          {step === AUTH_STEP.CREDENTIAL ? (
+        <main className="no-scrollbar relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-8">
+          {visibleStep === AUTH_STEP.CREDENTIAL ? (
             <CredentialStep
               role={role}
               credential={credential}
@@ -91,7 +90,7 @@ export default function AuthPage() {
             />
           ) : null}
 
-          {step === AUTH_STEP.IDENTITY ? (
+          {visibleStep === AUTH_STEP.IDENTITY ? (
             <IdentityStep
               identity={identity}
               phone={phone}
@@ -103,7 +102,7 @@ export default function AuthPage() {
             />
           ) : null}
 
-          {step === AUTH_STEP.OTP ? (
+          {visibleStep === AUTH_STEP.OTP ? (
             <OtpStep
               otp={otp}
               error={error}
@@ -114,7 +113,7 @@ export default function AuthPage() {
             />
           ) : null}
 
-          {step === AUTH_STEP.PROFILE ? (
+          {visibleStep === AUTH_STEP.PROFILE ? (
             <CitizenProfileStep
               name={profileName}
               district={profileDistrict}
@@ -128,7 +127,9 @@ export default function AuthPage() {
             />
           ) : null}
 
-          {step === AUTH_STEP.WELCOME ? <WelcomeStep name={pendingUser?.name} /> : null}
+          {step === AUTH_STEP.WELCOME ? (
+            <WelcomeStep name={pendingUser?.name} onContinue={goHomeFromWelcome} />
+          ) : null}
         </main>
       </div>
     </AppShell>

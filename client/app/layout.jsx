@@ -1,21 +1,13 @@
-import { Archivo_Black, Noto_Sans, Noto_Sans_Gujarati } from "next/font/google";
+import { Archivo_Black, Noto_Sans } from "next/font/google";
 
 import { NativeAppBootstrap } from "@/components/native/NativeAppBootstrap";
 import { appConfig } from "@/config/app.config";
 import "./globals.css";
 
-// Gujarati + Latin UI: Noto Sans Gujarati first, Noto Sans for English glyphs.
-const notoSansGujarati = Noto_Sans_Gujarati({
-  variable: "--font-gujarati",
-  subsets: ["gujarati"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
-
 const notoSans = Noto_Sans({
   variable: "--font-noto",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -67,7 +59,7 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="gu"
-      className={`${notoSansGujarati.variable} ${notoSans.variable} ${archivoBlack.variable} h-full antialiased`}
+      className={`${notoSans.variable} ${archivoBlack.variable} h-full antialiased`}
     >
       <body className="min-h-full font-sans">
         <NativeAppBootstrap />

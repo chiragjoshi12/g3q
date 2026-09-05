@@ -24,14 +24,11 @@ import { formatTalukaLabel } from "@/lib/format-taluka";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
 
-const CARD_SHADOW = "shadow-[0_10px_28px_rgb(15_23_42/0.06)]";
-const ROW_SHADOW = "shadow-[0_1px_3px_rgb(0_0_0/0.06)]";
 const ROW_GRID =
   "grid min-h-[5.75rem] w-full grid-cols-[auto_1fr_auto] items-start gap-x-3.5 px-5 py-5 text-left";
 const ROW_CLASS = cn(
   ROW_GRID,
   "rounded-[1.5rem] bg-white active:bg-[#fafafa]",
-  ROW_SHADOW
 );
 
 /** Headline score card, certificate row, and leaderboard shortcut. */
@@ -62,25 +59,28 @@ export function ScoreSummary({ attempt, quiz }) {
 
   return (
     <section className="animate-slide-up space-y-3.5">
-      <div className={cn("rounded-[1.85rem] bg-white px-5 pt-7 pb-7", CARD_SHADOW)}>
-        <div className="flex min-h-[9rem] items-center justify-between">
-          <div className="shrink-0 text-left">
-            <p className="w-max whitespace-nowrap bg-gradient-to-r from-[#8c52ff] to-[#00bf63] bg-clip-text font-canva text-[1.15rem] font-semibold text-transparent">
-              {scorePraise(attempt.percentage)}
-            </p>
-            <p className="mt-2 font-canva text-[3.15rem] leading-none font-bold tracking-tight text-[#111]">
-              {attempt.percentage}
-              <span className="text-[1.85rem]">%</span>
-            </p>
+      <div className={cn("rounded-[1.85rem] bg-white pt-7 pb-2.5")}>
+        <div className="px-5">
+          <div className="flex min-h-[9rem] items-center justify-between">
+            <div className="shrink-0 text-left">
+              <p className="w-max ml-[17px] whitespace-nowrap bg-gradient-to-r from-[#8c52ff] to-[#00bf63] bg-clip-text font-canva text-[1.15rem] font-semibold text-transparent">
+                {scorePraise(attempt.percentage)}
+              </p>
+              {/* move this text on right side of the screen */}
+              <p className="mt-2 font-canva text-[3.15rem] ml-[25px] leading-none font-bold tracking-tight text-[#111]">
+                {attempt.percentage}
+                <span className="text-[1.85rem]">%</span>
+              </p>
+            </div>
+            <BrandIcon
+              src={BRAND_ICONS.resultTrophy}
+              alt=""
+              className="h-[6.5rem] w-[8.5rem] shrink-0"
+            />
           </div>
-          <BrandIcon
-            src={BRAND_ICONS.resultTrophy}
-            alt=""
-            className="h-[8.5rem] w-[9.5rem] shrink-0"
-          />
         </div>
 
-        <div className="mt-7 grid grid-cols-3 gap-2.5">
+        <div className="mt-7 grid grid-cols-3 gap-2.5 px-2.5">
           <StatChip
             tone="correct"
             value={attempt.correctCount}
@@ -102,7 +102,7 @@ export function ScoreSummary({ attempt, quiz }) {
         </div>
       </div>
 
-      <article className={cn("overflow-hidden rounded-[1.5rem] bg-white", ROW_SHADOW)}>
+      <article className={cn("overflow-hidden rounded-[1.5rem] bg-white")}>
         <button
           type="button"
           onClick={() => canOpenCertificate && setOpen((value) => !value)}

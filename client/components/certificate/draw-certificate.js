@@ -31,7 +31,7 @@ function cssFont(varName, fallback) {
 }
 
 function certificateFontFamily() {
-  return `${cssFont("--font-gujarati", "Noto Sans Gujarati")}, ${cssFont("--font-noto", "Noto Sans")}, sans-serif`;
+  return `${cssFont("--font-noto", "Noto Sans")}, sans-serif`;
 }
 
 async function ensureFonts() {

@@ -62,7 +62,7 @@ export function TrueFalseQuestion({ question, value, onChange, disabled, reveale
                 className="pointer-events-none size-[46%] object-contain"
               />
             </span>
-            <span className="grid min-h-0 place-items-center bg-white px-2 text-[1.02rem] text-[#111] sm:text-[1.08rem]">
+            <span className="grid min-h-0 place-items-center bg-[#f5f5f5] px-2 text-[1.02rem] text-[#111] sm:text-[1.08rem]">
               {option.label}
             </span>
           </button>

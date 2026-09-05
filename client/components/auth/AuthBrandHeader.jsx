@@ -1,13 +1,17 @@
+import { ACTION_BUTTON_CLASS } from "@/components/common/AppButton";
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { appConfig } from "@/config/app.config";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { cn } from "@/lib/utils";
 
-/** Same pill as Play Quiz / Next / Submit. */
-export { ACTION_BUTTON_CLASS as AUTH_BUTTON_CLASS } from "@/components/common/AppButton";
+/** Login Next / Submit — pale fill while the field is still empty. */
+export const AUTH_BUTTON_CLASS = cn(
+  ACTION_BUTTON_CLASS,
+  "disabled:bg-[#e5ebf8] disabled:text-[#f5f5f5]"
+);
 
 export const AUTH_FIELD_CLASS =
-  "h-16 w-full rounded-[1.3rem] border-0 bg-white px-5 text-base tracking-wide text-foreground outline-none placeholder:font-sans placeholder:text-sm placeholder:tracking-normal placeholder:text-[#737373]";
+  "h-16 w-full rounded-[1.3rem] border-0 bg-white px-5 text-base tracking-wide text-foreground outline-none placeholder:font-sans placeholder:text-sm placeholder:tracking-normal placeholder:text-[#737373] translate-y-3";
 
 export function AuthLink({ children, className, ...props }) {
   return (

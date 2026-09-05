@@ -79,7 +79,7 @@ export function AbhiyanScreen() {
               aria-label="પાછળ જાઓ"
               className="grid size-10 shrink-0 place-items-center rounded-full hover:bg-[#F3F3F3] active:scale-95"
             >
-              <BackArrow className="size-7 text-[#111]" />
+              <BrandIcon src={BRAND_ICONS.back} alt="" className="size-3.5" />
             </button>
             <BrandIcon
               src={BRAND_ICONS.logo}

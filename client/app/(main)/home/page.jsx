@@ -71,7 +71,7 @@ export default function HomePage() {
       className="no-scrollbar animate-screen-in flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F2F2F2] pb-32"
       aria-busy={preparingQuiz}
     >
-      <section className="relative mx-1 mt-1 overflow-hidden rounded-[1.75rem]">
+      <section className="relative mx-1 mt-1.5 overflow-hidden rounded-[1.75rem]">
         <Image
           src="/new-gradient-bg.png"
           alt=""

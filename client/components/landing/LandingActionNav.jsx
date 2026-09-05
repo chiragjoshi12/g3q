@@ -74,9 +74,9 @@ export function LandingActionNav({
 
           <nav
             aria-label="Primary actions"
-            className="relative z-[1] px-3.5 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1"
+            className="relative z-[1] px-3.5 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
           >
-            <div className="flex h-[4.05rem] items-center justify-between">
+            <div className="flex items-center justify-between">
               <SideAction onClick={onPractice} label="Practice">
                 <BrandIcon src={BRAND_ICONS.navPractice} alt="" className="size-[1.5rem]" priority />
               </SideAction>
@@ -122,12 +122,12 @@ function SideAction({ onClick, label, children }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex h-[3.85rem] w-[6.5rem] shrink-0 flex-col items-center justify-center rounded-[1.65rem] px-1 font-canva active:opacity-90"
+      className="flex h-[3.85rem] w-[7.5rem] shrink-0 flex-col items-center justify-center rounded-[1.25rem] px-1 font-canva active:opacity-90"
       style={{ backgroundColor: SIDE_BG, color: BLUE }}
     >
-      <span className="flex -translate-y-[3px] flex-col items-center gap-1">
+      <span className="flex flex-col items-center gap-2">
         {children}
-        <span className="text-[12.5px] font-medium leading-none tracking-[-0.01em]">{label}</span>
+        <span className="text-[13px] font-medium leading-none tracking-[-0.01em]">{label}</span>
       </span>
     </button>
   );

@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 const TITLE_G3Q = "linear-gradient(90deg, #8c52ff 0%, #ff914d 100%)";
 const BOTTOM_THRESHOLD_PX = 72;
-const AI_ICON_SIZE = "size-6";
+const AI_ICON_SIZE = "size-4";
 const AI_ICON_SIZE_MATCH = "size-4";
 const RESPONSE_ICON_SIZE = "size-4";
 
@@ -289,93 +289,96 @@ export default function G3qAiPage() {
           {showEmpty ? (
             <EmptyWelcome onPick={send} />
           ) : (
-            <ul className="flex flex-col gap-3 pb-2">
-              {messages.map((m, i) => {
-                const isStreamingAssistant =
-                  sending && i === messages.length - 1 && m.role === "assistant";
-                const showActions =
-                  m.role === "assistant" && Boolean(m.content) && !isStreamingAssistant;
+            <>
+              <WelcomeHero />
+              <ul className="mt-6 flex flex-col gap-3 pb-2">
+                {messages.map((m, i) => {
+                  const isStreamingAssistant =
+                    sending && i === messages.length - 1 && m.role === "assistant";
+                  const showActions =
+                    m.role === "assistant" && Boolean(m.content) && !isStreamingAssistant;
 
-                return (
-                  <li
-                    key={`${m.role}-${i}`}
-                    className={cn(
-                      "max-w-[72%] text-[18px] leading-relaxed",
-                      m.role === "user"
-                        ? "ml-auto rounded-[1.25rem] bg-[#eef7ff] px-3.5 py-2.5 text-[#000000]"
-                        : "mr-auto w-full max-w-[92%] px-0.5 py-1 text-[#111]"
-                    )}
-                    style={
-                      m.role === "assistant"
-                        ? {
-                            fontFamily:
-                              'var(--font-gujarati), var(--font-noto), "Noto Sans Gujarati", "Noto Sans", sans-serif',
-                            fontSize: 18,
-                          }
-                        : undefined
-                    }
-                  >
-                    {m.role === "user" ? (
-                      <p className="whitespace-pre-wrap">{m.content}</p>
-                    ) : m.content ? (
-                      <div className="relative">
-                        <ChatMarkdown>{m.content}</ChatMarkdown>
-                        {isStreamingAssistant ? (
-                          <span className="ml-0.5 inline-block h-[1em] w-[2px] animate-pulse bg-[#8c52ff] align-[-0.15em]" />
-                        ) : null}
-                      </div>
-                    ) : isStreamingAssistant ? (
-                      <span className="inline-block h-[1.1em] w-[2px] animate-pulse bg-[#8c52ff]" />
-                    ) : null}
+                  return (
+                    <li
+                      key={`${m.role}-${i}`}
+                      className={cn(
+                        "max-w-[72%] text-[16px] leading-relaxed",
+                        m.role === "user"
+                          ? "mt-4 ml-auto rounded-[1.25rem] bg-[#eef7ff] px-3.5 py-2.5 text-[#000000]"
+                          : "mt-2 mr-auto w-full max-w-[92%] px-0.5 py-1 text-[#111]"
+                      )}
+                      style={
+                        m.role === "assistant"
+                          ? {
+                              fontFamily:
+                                'var(--font-noto), "Noto Sans", sans-serif',
+                              fontSize: 18,
+                            }
+                          : undefined
+                      }
+                    >
+                      {m.role === "user" ? (
+                        <p className="whitespace-pre-wrap">{m.content}</p>
+                      ) : m.content ? (
+                        <div className="relative">
+                          <ChatMarkdown>{m.content}</ChatMarkdown>
+                          {isStreamingAssistant ? (
+                            <span className="ml-0.5 inline-block h-[1em] w-[2px] animate-pulse bg-[#8c52ff] align-[-0.15em]" />
+                          ) : null}
+                        </div>
+                      ) : isStreamingAssistant ? (
+                        <span className="inline-block h-[1.1em] w-[2px] animate-pulse bg-[#8c52ff]" />
+                      ) : null}
 
-                    {showActions ? (
-                      <div className="mt-2.5 flex items-center gap-3.5">
-                        <button
-                          type="button"
-                          aria-label={copiedIndex === i ? "Copied" : "Copy response"}
-                          onClick={() => copyResponse(m.content, i)}
-                          className="grid size-6 place-items-center active:opacity-60"
-                        >
-                          {copiedIndex === i ? (
-                            <CopiedCheckIcon className={cn(RESPONSE_ICON_SIZE, "text-[#111]")} />
-                          ) : (
-                            <BrandIcon
-                              src={BRAND_ICONS.aiCopyResponse}
-                              alt=""
-                              className={RESPONSE_ICON_SIZE}
+                      {showActions ? (
+                        <div className="mt-2.5 flex items-center gap-3.5">
+                          <button
+                            type="button"
+                            aria-label={copiedIndex === i ? "Copied" : "Copy response"}
+                            onClick={() => copyResponse(m.content, i)}
+                            className="grid size-6 place-items-center active:opacity-60"
+                          >
+                            {copiedIndex === i ? (
+                              <CopiedCheckIcon className={cn(RESPONSE_ICON_SIZE, "text-[#111]")} />
+                            ) : (
+                              <BrandIcon
+                                src={BRAND_ICONS.aiCopyResponse}
+                                alt=""
+                                className={RESPONSE_ICON_SIZE}
+                              />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="Like response"
+                            aria-pressed={feedback[i] === "like"}
+                            onClick={() => toggleFeedback(i, "like")}
+                            className="grid size-6 place-items-center active:opacity-60"
+                          >
+                            <ResponseFeedbackIcon
+                              src={BRAND_ICONS.aiLikeResponse}
+                              selected={feedback[i] === "like"}
                             />
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          aria-label="Like response"
-                          aria-pressed={feedback[i] === "like"}
-                          onClick={() => toggleFeedback(i, "like")}
-                          className="grid size-6 place-items-center active:opacity-60"
-                        >
-                          <ResponseFeedbackIcon
-                            src={BRAND_ICONS.aiLikeResponse}
-                            selected={feedback[i] === "like"}
-                          />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label="Dislike response"
-                          aria-pressed={feedback[i] === "dislike"}
-                          onClick={() => toggleFeedback(i, "dislike")}
-                          className="grid size-6 place-items-center active:opacity-60"
-                        >
-                          <ResponseFeedbackIcon
-                            src={BRAND_ICONS.aiDislikeResponse}
-                            selected={feedback[i] === "dislike"}
-                          />
-                        </button>
-                      </div>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="Dislike response"
+                            aria-pressed={feedback[i] === "dislike"}
+                            onClick={() => toggleFeedback(i, "dislike")}
+                            className="grid size-6 place-items-center active:opacity-60"
+                          >
+                            <ResponseFeedbackIcon
+                              src={BRAND_ICONS.aiDislikeResponse}
+                              selected={feedback[i] === "dislike"}
+                            />
+                          </button>
+                        </div>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
           )}
           {error ? (
             <p className="mt-2 rounded-xl bg-[#FEF2F2] px-3 py-2 text-[13px] text-[#B91C1C]">{error}</p>
@@ -412,7 +415,8 @@ export default function G3qAiPage() {
                   type="button"
                   aria-label="Chat history"
                   onClick={resetChat}
-                  className="grid size-10 place-items-center rounded-full bg-[#f5f5f5] text-[#4B5563] active:opacity-80"
+                  // move slide on left side of the screen
+                  className="grid size-10 place-items-center rounded-full bg-[#f5f5f5] text-[#4B5563] active:opacity-80 ml-[-10px]"
                 >
                   <BrandIcon src={BRAND_ICONS.aiHistory} alt="" className={AI_ICON_SIZE} />
                 </button>
@@ -460,35 +464,47 @@ export default function G3qAiPage() {
 function EmptyWelcome({ onPick }) {
   return (
     <div className="flex min-h-full flex-col">
-      <div className="flex flex-1 flex-col items-center px-4 pt-2 text-center">
-        <BrandIcon
-          src={BRAND_ICONS.logo}
-          alt="G3Q 2.0"
-          priority
-          className="size-[5.25rem]"
-        />
-        <h2 className="mt-2 font-heading text-[1.5rem] font-bold leading-none tracking-tight text-[#2d689d]">
-          ગુજરાત ક્વિઝ
-        </h2>
-        <p className="mt-3 max-w-[20rem] font-heading text-[14px] leading-[1.75] text-[#000000]">
-          G3Q AI ને આ ક્વિઝ સ્પર્ધા, ઇનામો,<br></br>ગુજરાત સરકાર ની યોજનાઓ વગેરે વિશે<br></br> કોઈ પણ પ્રશ્ન પૂછી શકો છો.
-        </p>
-      </div>
-      <ul className="mt-5 space-y-[1.15rem] pb-[0px]">
-        {SUGGESTIONS.map(({ id, text, Icon }) => (
-          <li key={id}>
-            <button
-              type="button"
-              onClick={() => onPick(text)}
-              className="flex w-full items-start gap-3 text-left active:opacity-70"
-            >
-              <Icon className="mt-[-5px] size-[1.2rem] shrink-0 text-[#737373]" />
-              <span className="mt-[-5px] font-heading text-[14px] leading-snug text-[#737373]">{text}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
+      <WelcomeHero />
+      <SuggestionList onPick={onPick} className="mt-auto pb-2" />
     </div>
+  );
+}
+
+function WelcomeHero() {
+  return (
+    <div className="flex flex-col items-center px-4 pt-2 text-center">
+      <BrandIcon
+        src={BRAND_ICONS.logo}
+        alt="G3Q 2.0"
+        priority
+        className="size-[5.25rem]"
+      />
+      <h2 className="mt-2 font-heading text-[1.5rem] font-bold leading-none tracking-tight text-[#2d689d]">
+        ગુજરાત ક્વિઝ
+      </h2>
+      <p className="mt-6 max-w-[20rem] font-heading text-[14px] leading-[1.75] text-[#000000]">
+        G3Q AI ને આ ક્વિઝ સ્પર્ધા, ઇનામો,<br></br>ગુજરાત સરકાર ની યોજનાઓ વગેરે વિશે<br></br> કોઈ પણ પ્રશ્ન પૂછી શકો છો.
+      </p>
+    </div>
+  );
+}
+
+function SuggestionList({ onPick, className }) {
+  return (
+    <ul className={cn("space-y-[1.15rem] pb-[0px]", className)}>
+      {SUGGESTIONS.map(({ id, text, Icon }) => (
+        <li key={id}>
+          <button
+            type="button"
+            onClick={() => onPick(text)}
+            className="flex w-full items-start gap-3 text-left active:opacity-70"
+          >
+            <Icon className="mt-[-4px] ml-[-6px] size-[1.4rem] shrink-0 text-[#737373]" />
+            <span className="mt-[-5px] ml-[-6px] font-heading text-[16px] leading-snug text-[#737373]">{text}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
   );
 }
 

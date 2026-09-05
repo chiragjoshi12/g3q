@@ -65,9 +65,9 @@ export default function CertificatesPage() {
             type="button"
             onClick={() => router.push(ROUTES.profile)}
             aria-label="પાછળ જાઓ"
-            className="absolute left-4 grid size-10 place-items-center rounded-full bg-white shadow-[0_2px_8px_rgb(15_23_42/0.08)] transition-transform active:scale-95"
+            className="absolute left-4 grid size-10 place-items-center rounded-full bg-white transition-transform active:scale-95"
           >
-            <BrandIcon src={BRAND_ICONS.back} alt="" className="size-5" />
+            <BrandIcon src={BRAND_ICONS.back} alt="" className="size-3.5" />
           </button>
           <h1 className="font-heading text-[1.25rem] font-bold text-[#111]">સર્ટિફિકેટ</h1>
         </header>
@@ -143,16 +143,17 @@ function CertificateCard({ attempt, payload, busy, onPreview, onDownload, onShar
       </button>
 
       <div className="flex items-center gap-3 px-4 py-3.5">
-        <div className="min-w-0 flex-1">
-          <h2 className="truncate font-heading text-[1.05rem] leading-snug font-bold text-[#111]">
+        {/* move entire box on right side of the screen */}
+        <div className="min-w-0 flex-1 ml-[3px]">
+          <h2 className="truncate font-heading text-[16px] leading-snug font-bold text-[#111]">
             {attempt.quizTitle}
           </h2>
-          <p className="mt-1 font-heading text-[14px] text-[#111]">
+          <p className="mt-2.5 font-heading text-[14px] text-[#111]">
             {formatGujaratiDate(attempt.completedAt)}
           </p>
         </div>
-
-        <div className="flex shrink-0 items-center gap-2">
+        {/* move entire box slide on bottom side */}
+        <div className="flex shrink-0 items-center gap-2 mb-[-12px]">
           <IconButton
             label="ડાઉનલોડ"
             onClick={onDownload}

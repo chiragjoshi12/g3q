@@ -257,7 +257,7 @@ function QuizAction({ answering, answered, isLast, loading, onSubmit, onNext }) 
     return (
       <ActionButtonRow>
         <AppButton
-          className={ACTION_BUTTON_CLASS}
+          className={`${ACTION_BUTTON_CLASS} disabled:bg-[#e5ebf8] disabled:text-[#595858]`}
           onClick={onSubmit}
           disabled={!answered}
         >

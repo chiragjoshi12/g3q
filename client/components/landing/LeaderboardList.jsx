@@ -8,6 +8,7 @@ import { BRAND_ICONS } from "@/lib/brand-icons";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_AVATAR = BRAND_ICONS.profilePhoto;
+const CITIZEN_INSTITUTE = "નાગરિક સહભાગી";
 
 function Avatar({ name, avatar, className }) {
   const src = avatar || DEFAULT_AVATAR;
@@ -56,6 +57,8 @@ export function LeaderboardDetailRow({
   avatar,
   you = false,
 }) {
+  const showInstitute = institute && institute !== CITIZEN_INSTITUTE;
+
   return (
     <li className="flex items-start gap-3 px-1 py-3.5">
       <div className="-ml-2 flex min-w-0 flex-1 items-start gap-3">
@@ -66,14 +69,14 @@ export function LeaderboardDetailRow({
           <Avatar name={name} avatar={avatar} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[0.98rem] font-bold leading-snug text-[#2d689d]">
+          <p className="truncate text-[16px] font-bold leading-snug text-[#2d689d]">
             {you ? `${name} (You)` : name}
           </p>
-          {institute ? (
-            <p className="mt-0.5 truncate text-[12px] leading-snug text-[#000000]">{institute}</p>
+          {showInstitute ? (
+            <p className="mt-0.5 whitespace-normal text-[14px] leading-snug text-[#000000]">{institute}</p>
           ) : null}
           {grade ? (
-            <span className="mt-1.5 inline-block rounded-full bg-[#e5ebf8] px-3.5 py-1 text-[11px] font-medium text-[#000000]">
+            <span className="mt-1.5 inline-block rounded-full bg-[#e5ebf8] px-3.5 py-1 text-[12px] font-medium text-[#000000]">
               {grade}
             </span>
           ) : null}
@@ -108,8 +111,10 @@ export function LeaderboardCategoryTabs({ value, onChange }) {
             aria-selected={active}
             onClick={() => onChange(item.id)}
             className={cn(
-              "relative pb-2 text-[1.05rem] leading-none",
-              active ? "font-bold text-[#2d689d]" : "font-normal text-black"
+              "relative pb-2 font-canva text-[16px] leading-snug",
+              active
+                ? "font-[800] text-[#2d689d]"
+                : "font-normal text-black"
             )}
           >
             {item.label}
@@ -177,17 +182,19 @@ export function PodiumIcon({ className }) {
 }
 
 export function LeaderboardRow({ rank, name, institute, grade, you = false }) {
+  const showInstitute = institute && institute !== CITIZEN_INSTITUTE;
+
   return (
     <li className="flex items-start py-3 md:py-3.5">
-      <span className="w-8 shrink-0 pt-2 text-center text-lg font-bold text-[#111] md:w-9 md:text-xl">
+      <span className="w-6 shrink-0 pt-2 text-center text-lg font-bold text-[#111] md:w-7 md:text-xl">
         {rank}
       </span>
-      <Avatar name={name} className="ml-8 md:ml-10" />
+      <Avatar name={name} className="ml-2 md:ml-3" />
       <span className="ml-3 min-w-0 flex-1 md:ml-4">
         <span className="block text-[1.05rem] font-bold text-[#111] md:text-lg">
           {you ? `${name} (You)` : name}
         </span>
-        {institute ? (
+        {showInstitute ? (
           <span className="mt-0.5 block text-sm leading-snug text-[#374151] md:text-[15px]">
             {institute}
           </span>

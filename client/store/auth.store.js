@@ -6,7 +6,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { authController } from "@/controllers/auth.controller";
 import { appConfig } from "@/config/app.config";
 import { toMessage } from "@/lib/core/errors";
-import { isCitizen, ROLE } from "@/lib/domain/roles";
+import { isCitizen } from "@/lib/domain/roles";
 import { STORAGE_KEYS, zustandStorage } from "@/lib/storage/storage";
 
 /** Steps of the login flow, in order. */
@@ -20,7 +20,8 @@ export const AUTH_STEP = {
 
 const initialFlow = {
   step: AUTH_STEP.CREDENTIAL,
-  role: ROLE.STUDENT,
+  welcomeSourceStep: null,
+  role: null,
   credential: "",
   identity: null,
   phone: "",
@@ -49,6 +50,7 @@ export const useAuthStore = create()(
       setRole: (role) =>
         set({
           role,
+          welcomeSourceStep: null,
           credential: "",
           identity: null,
           phone: "",
@@ -103,6 +105,7 @@ export const useAuthStore = create()(
           set({
             loading: false,
             step: AUTH_STEP.OTP,
+            welcomeSourceStep: null,
             phone: otpPhone,
             requestId,
             maskedPhone,
@@ -138,9 +141,9 @@ export const useAuthStore = create()(
             return true;
           }
           set({
-            ...initialFlow,
             loading: false,
             step: AUTH_STEP.WELCOME,
+            welcomeSourceStep: AUTH_STEP.OTP,
             pendingUser: result.user,
             token: result.token,
           });
@@ -162,9 +165,9 @@ export const useAuthStore = create()(
             taluka: profileTaluka,
           });
           set({
-            ...initialFlow,
             loading: false,
             step: AUTH_STEP.WELCOME,
+            welcomeSourceStep: AUTH_STEP.PROFILE,
             pendingUser: user,
             token,
           });
@@ -192,6 +195,7 @@ export const useAuthStore = create()(
       backToCredential: () =>
         set({
           step: AUTH_STEP.CREDENTIAL,
+          welcomeSourceStep: null,
           identity: null,
           otp: "",
           error: null,
@@ -203,7 +207,7 @@ export const useAuthStore = create()(
 
       /** OTP step's "change number" — back to step 2, keeping the resolved identity. */
       backToIdentity: () =>
-        set({ step: AUTH_STEP.IDENTITY, otp: "", error: null, requestId: null }),
+        set({ step: AUTH_STEP.IDENTITY, welcomeSourceStep: null, otp: "", error: null, requestId: null }),
 
       logout: () => set({ user: null, token: null, isAuthenticated: false, ...initialFlow }),
     }),

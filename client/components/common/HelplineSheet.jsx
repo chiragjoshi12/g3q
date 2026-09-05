@@ -52,7 +52,7 @@ export function HelplineSheet({ open, onClose }) {
         <div className="relative flex items-center justify-center">
           <h3
             id="helpline-sheet-title"
-            className="font-heading text-[1.35rem] font-bold text-[#111]"
+            className="font-heading text-[18px] font-bold text-[#111]"
           >
             Helpline
           </h3>
@@ -60,9 +60,9 @@ export function HelplineSheet({ open, onClose }) {
             type="button"
             onClick={onClose}
             aria-label="બંધ કરો"
-            className="absolute right-0 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-[#F1F5F9] text-[#6B7280] transition-transform active:scale-95"
+            className="absolute right-[-10px] top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-[#F1F5F9] text-[#6B7280] transition-transform active:scale-95"
           >
-            <X className="size-4" strokeWidth={2.2} />
+            <X className="size-5" strokeWidth={2.2} />
           </button>
         </div>
 
@@ -71,10 +71,10 @@ export function HelplineSheet({ open, onClose }) {
             href={ROUTES.g3qAi}
             className="flex flex-col items-center gap-3.5 transition-transform active:scale-95"
           >
-            <span className="grid size-[5rem] place-items-center rounded-full bg-[#f5f5f5]">
-              <BrandIcon src={BRAND_ICONS.navG3qAi} alt="" className="size-12" />
+            <span className="grid size-[4.5rem] place-items-center rounded-full bg-[#f5f5f5]">
+              <BrandIcon src={BRAND_ICONS.navG3qAi} alt="" className="size-8" />
             </span>
-            <span className="font-heading text-[1.05rem] font-bold text-[#111]">G3Q AI</span>
+            <span className="font-heading text-[16px] text-[#111]">G3Q AI</span>
           </Link>
 
           <a
@@ -82,10 +82,10 @@ export function HelplineSheet({ open, onClose }) {
             onClick={onClose}
             className="flex flex-col items-center gap-3.5 transition-transform active:scale-95"
           >
-            <span className="grid size-[5rem] place-items-center rounded-full bg-[#f5f5f5]">
-              <BrandIcon src={BRAND_ICONS.helpline} alt="" className="size-12" />
+            <span className="grid size-[4.5rem] place-items-center rounded-full bg-[#f5f5f5]">
+              <BrandIcon src={BRAND_ICONS.helpline} alt="" className="size-8" />
             </span>
-            <span className="font-heading text-[1.05rem] font-bold text-[#111]">
+            <span className="font-heading text-[16px] text-[#111]">
               Call for Help
             </span>
           </a>

@@ -33,7 +33,8 @@ export function FeaturedQuizCard({ quiz, onStart, score = null }) {
     Number.isFinite(score.totalQuestions);
 
   return (
-    <article className="mx-[-6px] overflow-hidden rounded-[1.5rem] bg-white shadow-[0_10px_28px_rgb(15_23_42/0.10)]">
+    // move entire box on above side of the screen
+    <article className="mx-[-6px] mt-[-10px] overflow-hidden rounded-[1.5rem] bg-white shadow-[0_10px_28px_rgb(15_23_42/0.10)]">
       <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#d9d9d9]">
         <Image
           src={FEATURED_IMAGE}
@@ -48,11 +49,11 @@ export function FeaturedQuizCard({ quiz, onStart, score = null }) {
       <div className="px-4 pt-3.5 pb-4">
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1 translate-x-1.5">
-            <h3 className="font-heading text-[1.15rem] leading-snug font-bold text-[#111]">
+            <h3 className="font-heading text-[16px] leading-snug font-bold text-[#111]">
               {quiz.title}
             </h3>
             {quiz.subtitle ? (
-              <p className="mt-2 font-heading text-[13px] leading-snug text-[#000000]">
+              <p className="mt-2 font-heading text-[14px] leading-snug text-[#000000]">
                 {quiz.subtitle}
               </p>
             ) : null}
@@ -86,7 +87,7 @@ export function FeaturedQuizCard({ quiz, onStart, score = null }) {
             <button
               type="button"
               onClick={onStart}
-              className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[#2d689d] px-4.5 font-heading text-[0.92rem] font-bold text-white transition-transform active:scale-[0.98]"
+              className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[#2d689d] px-4.5 font-heading text-[16px] font-bold text-white transition-transform active:scale-[0.98]"
             >
               <span
                 aria-hidden

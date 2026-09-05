@@ -73,20 +73,20 @@ export default function ProfilePage() {
               className="size-full object-cover object-[center_18%]"
             />
           </div>
-          <h2 className="mt-6 font-heading text-[18px] leading-tight font-bold text-[#000000]">
+          <h2 className="mt-4 font-heading text-[20px] leading-tight font-bold text-[#000000]">
             {user?.name}
           </h2>
           {user?.institute ? (
-            <p className="mt-2.5 max-w-sm font-heading text-[14px] leading-snug text-[#000000]">
+            <p className="mt-2.5 max-w-sm font-heading text-[16px] leading-snug text-[#000000]">
               {user.institute}
             </p>
           ) : null}
           {user?.grade ? (
-            <p className="mt-1.5 font-heading text-[14px] text-[#000000]">{user.grade}</p>
+            <p className="mt-1.5 font-heading text-[16px] text-[#000000]">{user.grade}</p>
           ) : null}
         </div>
 
-        <section className="mt-9 overflow-hidden rounded-[2rem] bg-white shadow-[0_12px_32px_rgb(15_23_42/0.06)]">
+        <section className="mt-7 overflow-hidden rounded-[2rem] bg-white">
           <nav>
             <MenuRow
               iconSrc={BRAND_ICONS.quizAttempts}
@@ -136,12 +136,12 @@ function MenuRow({ iconSrc, iconBg, label, onClick, last = false }) {
       type="button"
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-4 px-6 py-[1.2rem] text-left transition-colors hover:bg-[#FAFAFA]",
+        "flex w-full items-center gap-3 px-4 py-[1.2rem] text-left transition-colors hover:bg-[#FAFAFA]",
         !last && "border-b border-[#F3F4F6]"
       )}
     >
       <span className={cn("grid size-12 shrink-0 place-items-center rounded-full", iconBg)}>
-        <BrandIcon src={iconSrc} alt="" className="size-8" />
+        <BrandIcon src={iconSrc} alt="" className="size-6" />
       </span>
       <span className="min-w-0 flex-1 font-heading text-[1.05rem] font-semibold text-[#111]">
         {label}

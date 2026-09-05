@@ -48,9 +48,9 @@ export default function QuizAttemptsPage() {
             type="button"
             onClick={() => router.push(ROUTES.profile)}
             aria-label="પાછળ જાઓ"
-            className="absolute left-4 grid size-10 place-items-center rounded-full bg-white shadow-[0_2px_8px_rgb(15_23_42/0.08)] transition-transform active:scale-95"
+            className="absolute left-4 grid size-10 place-items-center rounded-full bg-white transition-transform active:scale-95"
           >
-            <BrandIcon src={BRAND_ICONS.back} alt="" className="size-5" />
+            <BrandIcon src={BRAND_ICONS.back} alt="" className="size-3.5" />
           </button>
           <h1 className="font-heading text-[1.25rem] font-bold text-[#111]">Quiz attempts</h1>
         </header>
@@ -99,17 +99,18 @@ function QuizAttemptCard({ attempt, onRank, onCertificate }) {
     <article className="overflow-hidden rounded-[1.35rem] bg-white shadow-[0_1px_3px_rgb(15_23_42/0.06)]">
       <div className="px-4 pt-4 pb-3.5">
         <div className="flex items-start justify-between gap-3">
-          <span className="rounded-md bg-[#e8f8ed] px-3 py-2 font-heading text-[13px] leading-none text-[#000000]">
+          {/* move text on right side of the screen */}
+          <span className="rounded-md bg-[#e8f8ed] px-3 py-2 ml-[3px] font-heading text-[14px] leading-none text-[#000000]">
             {weekLabel}
           </span>
-          <span className="shrink-0 font-heading text-[16px] text-[#111]">
+          <span className="shrink-0 font-heading text-[14px] text-[#111]">
             સ્કોર: {attempt.correctCount}/{attempt.totalQuestions}
           </span>
         </div>
-        <h2 className="mt-5 font-heading text-[18px] leading-snug font-bold text-[#111]">
+        <h2 className="mt-5 font-heading text-[16px] ml-[3px] leading-snug font-bold text-[#111]">
           {attempt.quizTitle}
         </h2>
-        <p className="mt-[2.4] font-heading text-[14px] text-[#111]">
+        <p className="mt-[5px] ml-[3px] font-heading text-[14px] text-[#111]">
           {formatGujaratiDate(attempt.completedAt)}
         </p>
       </div>
@@ -117,7 +118,7 @@ function QuizAttemptCard({ attempt, onRank, onCertificate }) {
         <button
           type="button"
           onClick={onRank}
-          className="py-3.5 text-center font-heading text-[16px] text-[#111] transition-colors active:bg-[#f5f5f5] border-r border-[1px] border-[#f5f5f5]"
+          className="border-r border-[#E8E8E8] py-3.5 text-center font-heading text-[16px] text-[#111] transition-colors active:bg-[#f5f5f5]"
         >
           રેન્ક જુઓ
         </button>
@@ -125,8 +126,7 @@ function QuizAttemptCard({ attempt, onRank, onCertificate }) {
           type="button"
           onClick={onCertificate}
           className={cn(
-            // border thickness increase
-            "border-l border-[1px] border-[#f5f5f5] py-3.5 text-center font-heading text-[15px] text-[#111]",
+            "py-3.5 text-center font-heading text-[15px] text-[#111]",
             "transition-colors active:bg-black/[0.03]"
           )}
         >

@@ -8,7 +8,7 @@ import { BrandIcon } from "@/components/common/BrandIcon";
 import { CREDENTIAL, ROLE_TABS } from "@/lib/domain/roles";
 import { cn } from "@/lib/utils";
 
-/** Step 1: pick School, College, or Citizen, then enter the matching field. */
+/** Step 1: pick a role first; the matching field appears only after that. */
 export function CredentialStep({
   role,
   credential,
@@ -18,13 +18,14 @@ export function CredentialStep({
   onCredentialChange,
   onSubmit,
 }) {
-  const rule = CREDENTIAL[role];
+  const rule = role ? CREDENTIAL[role] : null;
 
   return (
     <form
       className="animate-screen-in space-y-6"
       onSubmit={(event) => {
         event.preventDefault();
+        if (!rule) return;
         onSubmit();
       }}
     >
@@ -47,16 +48,14 @@ export function CredentialStep({
               aria-checked={active}
               onClick={() => onRoleChange(item.id)}
               className={cn(
-                "flex min-h-[9.25rem] flex-col items-center justify-between rounded-[1.35rem] bg-white px-1.5 py-3 transition-[box-shadow,transform] duration-200 ease-emphasized active:scale-[0.98]",
-                active
-                  ? "shadow-[0_0_0_2px_#2d689d]"
-                  : "shadow-[0_0_0_1px_#EFEFEF]"
+                "flex min-h-[9.25rem] flex-col items-center justify-center gap-5 rounded-[1.35rem] bg-white px-1.5 py-3 shadow-[0_0_0_1px_#EFEFEF] transition-[box-shadow,transform] duration-200 ease-emphasized active:scale-[0.98]",
+                active && "shadow-[0_0_0_2px_#2d689d]"
               )}
             >
               <BrandIcon src={item.icon} alt="" className="h-[4.85rem] w-auto max-w-full" />
               <span
                 className={cn(
-                  "mt-2 text-center text-[11px] leading-tight text-[#111]",
+                  "mt-[-2px] text-center text-[12px] leading-tight text-[#111]",
                   active ? "font-bold" : "font-semibold"
                 )}
               >
@@ -67,40 +66,44 @@ export function CredentialStep({
         })}
       </div>
 
-      <div className="space-y-5">
-        <label htmlFor="credential" className="block text-[16px] font-bold text-[#000000]">
-          {rule.label}
-        </label>
-        <input
-          id="credential"
-          value={credential}
-          onChange={(event) =>
-            onCredentialChange(event.target.value.replace(/\D/g, "").slice(0, rule.length))
-          }
-          inputMode={rule.inputMode}
-          placeholder={rule.hint}
-          autoComplete={role === "citizen" ? "tel" : "off"}
-          className={AUTH_FIELD_CLASS}
-        />
-      </div>
+      {rule ? (
+        <>
+          <div className="space-y-5">
+            <label htmlFor="credential" className="block translate-y-3 text-[16px] font-bold text-[#000000]">
+              {rule.label}
+            </label>
+            <input
+              id="credential"
+              value={credential}
+              onChange={(event) =>
+                onCredentialChange(event.target.value.replace(/\D/g, "").slice(0, rule.length))
+              }
+              inputMode={rule.inputMode}
+              placeholder={rule.hint}
+              autoComplete={role === "citizen" ? "tel" : "off"}
+              className={AUTH_FIELD_CLASS}
+            />
+          </div>
 
-      {error ? (
-        <div className="animate-shake flex items-start gap-2 rounded-xl bg-error/10 px-3 py-2.5 text-sm text-error">
-          <AlertCircle className="mt-0.5 size-4 shrink-0" />
-          <span>{error}</span>
-        </div>
+          {error ? (
+            <div className="animate-shake flex items-start gap-2 rounded-xl bg-error/10 px-3 py-2.5 text-sm text-error">
+              <AlertCircle className="mt-0.5 size-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          ) : null}
+
+          <div className="mt-12 flex w-full justify-center">
+            <AppButton
+              type="submit"
+              loading={loading}
+              disabled={!credential}
+              className={AUTH_BUTTON_CLASS}
+            >
+              Next
+            </AppButton>
+          </div>
+        </>
       ) : null}
-
-      <div className="mt-12 flex w-full justify-center">
-        <AppButton
-          type="submit"
-          loading={loading}
-          disabled={!credential}
-          className={AUTH_BUTTON_CLASS}
-        >
-          Next
-        </AppButton>
-      </div>
     </form>
   );
 }

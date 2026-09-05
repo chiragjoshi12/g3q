@@ -23,7 +23,7 @@ export function BottomNav() {
       className="pointer-events-none absolute inset-x-0 bottom-0 z-30 bg-transparent px-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3"
     >
       <ul
-        className="pointer-events-auto mx-auto flex w-full max-w-[26.5rem] items-stretch rounded-[2rem] bg-white px-3 py-3.5"
+        className="pointer-events-auto mx-auto flex w-full max-w-[26.5rem] items-stretch rounded-[2rem] bg-white px-3 py-2.5"
         style={{
           boxShadow:
             "0 14px 40px rgb(15 23 42 / 0.18), 0 4px 14px rgb(15 23 42 / 0.10), 0 0 0 1px rgb(15 23 42 / 0.04)",
@@ -39,14 +39,20 @@ export function BottomNav() {
               <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className="group flex flex-col items-center gap-1.5 rounded-full px-2 py-1.5 outline-none transition-colors"
+                className="group flex flex-col items-center gap-2.5 rounded-full px-2 py-1.5 outline-none transition-colors"
                 style={{ color }}
               >
-                {item.tint ? (
-                  <BrandGlyph src={item.iconSrc} color={color} className="size-[1.7rem]" />
-                ) : (
-                  <BrandIcon src={item.iconSrc} alt="" className="size-[1.75rem]" />
-                )}
+                <span className="grid h-7 place-items-center">
+                  {item.tint ? (
+                    <BrandGlyph
+                      src={item.iconSrc}
+                      color={color}
+                      className={item.id === "home" || item.id === "profile" ? "size-[1.45rem]" : "size-[1.7rem]"}
+                    />
+                  ) : (
+                    <BrandIcon src={item.iconSrc} alt="" className="size-[1.55rem]" />
+                  )}
+                </span>
                 <span
                   className={cn(
                     "text-[13px] leading-none tracking-wide transition-colors",

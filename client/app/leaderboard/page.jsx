@@ -7,9 +7,9 @@ import {
   LeaderboardCategoryTabs,
   LeaderboardDetailRow,
 } from "@/components/landing/LeaderboardList";
+import { BrandIcon } from "@/components/common/BrandIcon";
 import { LandingActionNav } from "@/components/landing/LandingActionNav";
 import { AppShell } from "@/components/layout/AppShell";
-import { BackArrow } from "@/components/icons";
 import { appConfig } from "@/config/app.config";
 import { FEATURED_QUIZ_ID, ROUTES, setPostAuthPath } from "@/config/routes";
 import {
@@ -17,6 +17,7 @@ import {
   COLLEGE_LEADERBOARD,
   SCHOOL_LEADERBOARD,
 } from "@/data/leaderboard";
+import { BRAND_ICONS } from "@/lib/brand-icons";
 import { formatTalukaLabel } from "@/lib/format-taluka";
 import { useStoreHydrated } from "@/hooks/useStoreHydrated";
 import { useAuthStore } from "@/store/auth.store";
@@ -54,11 +55,23 @@ export default function LeaderboardPage() {
         <header className="relative z-20 flex shrink-0 items-center justify-center bg-white px-4 py-3.5">
           <button
             type="button"
-            onClick={() => router.back()}
-            className="absolute left-3 grid size-10 place-items-center rounded-full text-[#374151] active:bg-[#F3F4F6]"
-            aria-label="Back"
+            onClick={() => {
+              const historyIndex =
+                typeof window !== "undefined" ? window.history.state?.idx : undefined;
+              if (typeof historyIndex === "number" && historyIndex > 0) {
+                router.back();
+                return;
+              }
+              if (typeof window !== "undefined" && window.history.length > 1) {
+                router.back();
+                return;
+              }
+              router.push(hydrated && isAuthenticated ? ROUTES.home : ROUTES.root);
+            }}
+            aria-label="પાછળ જાઓ"
+            className="absolute left-4 grid size-10 place-items-center rounded-full bg-white transition-transform active:scale-95"
           >
-            <BackArrow className="size-7 text-[#111]" />
+            <BrandIcon src={BRAND_ICONS.back} alt="" className="size-3.5" />
           </button>
           <h1 className="translate-y-1 text-[1.35rem] font-bold tracking-tight text-[#2d689d]">લીડરબોર્ડ</h1>
         </header>
@@ -66,7 +79,7 @@ export default function LeaderboardPage() {
         <main className="no-scrollbar relative z-0 min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <div className="px-4 pb-28 pt-5">
             <div className="flex justify-center">
-              <span className="inline-flex max-w-full items-center rounded-full bg-[#2d689d] px-5 py-2.5 text-center text-[16px] font-bold leading-snug text-white">
+              <span className="inline-flex max-w-full items-center rounded-full bg-[#2d689d] px-5 py-2.5 text-center font-canva text-[16px] font-[800] leading-snug text-white">
                 {talukaLabel} તાલુકો - {week} મું અઠવાડિયું
               </span>
             </div>

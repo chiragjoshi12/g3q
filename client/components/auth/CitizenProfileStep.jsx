@@ -39,7 +39,7 @@ export function CitizenProfileStep({
     >
       <div className="space-y-5">
         <div className="space-y-2">
-          <label htmlFor="citizen-name" className="block text-[16px] font-bold text-[#000000]">
+          <label htmlFor="citizen-name" className="block text-[16px] font-bold text-[#000000] translate-y-3">
             તમારું પૂરું નામ
           </label>
           <input
@@ -54,7 +54,7 @@ export function CitizenProfileStep({
         </div>
 
         <div className="space-y-2">
-          <span id="citizen-district-label" className="block text-[16px] font-bold text-[#000000]">
+          <span id="citizen-district-label" className="block text-[16px] font-bold text-[#000000] translate-y-3">
             જિલ્લો
           </span>
           <button
@@ -78,7 +78,7 @@ export function CitizenProfileStep({
         </div>
 
         <div className="space-y-2">
-          <span id="citizen-taluka-label" className="block text-[16px] font-bold text-[#000000]">
+          <span id="citizen-taluka-label" className="block text-[16px] font-bold text-[#000000] translate-y-3">
             તાલુકો
           </span>
           <button
