@@ -36,6 +36,7 @@ export const BRAND_ICONS = {
   aiNewChat: "/icons/ai/New Chat Icon.png",
   aiHistory: "/icons/ai/Chat History Icon.png",
   aiSend: "/icons/ai/Send Message Icon.png",
+  aiSpeech: "/icons/ai/Text To Speech.png",
   aiCopyResponse: "/icons/ai/Copy Response Icon.png",
   aiLikeResponse: "/icons/ai/Like Response Icon.png",
   aiDislikeResponse: "/icons/ai/Dislike Response Icon.png",

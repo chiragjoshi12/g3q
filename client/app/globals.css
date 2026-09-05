@@ -194,6 +194,58 @@
   }
 }
 
+/* --- AI quiz personalization scene --- */
+@keyframes ai-scene-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+
+@keyframes ai-scene-bob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(-1.5deg); }
+}
+
+@keyframes ai-scene-twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.6); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes ai-scene-chip-in {
+  0% { opacity: 0; transform: translateY(10px) scale(0.86); }
+  60% { transform: translateY(-2px) scale(1.03); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes ai-scene-check-pop {
+  0% { opacity: 0; transform: scale(0.2); }
+  60% { opacity: 1; transform: scale(1.25); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes ai-scene-glow {
+  0%, 100% { opacity: 0.45; transform: scale(0.95); }
+  50% { opacity: 0.9; transform: scale(1.08); }
+}
+
+@keyframes ai-scene-flow {
+  to { stroke-dashoffset: -22; }
+}
+
+@keyframes ai-scene-eye {
+  0%, 92%, 100% { transform: scaleY(1); }
+  96% { transform: scaleY(0.1); }
+}
+
+@keyframes ai-scene-sheen {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(220%); }
+}
+
+.animate-ai-scene-float { animation: ai-scene-float 3.4s ease-in-out infinite; }
+.animate-ai-scene-bob { animation: ai-scene-bob 3.8s ease-in-out infinite; }
+.animate-ai-scene-glow { animation: ai-scene-glow 2.6s ease-in-out infinite; }
+.animate-ai-scene-sheen { animation: ai-scene-sheen 1.6s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   .animate-confetti,
   .animate-confetti-fall,
@@ -201,7 +253,11 @@
   .animate-pulse-ring,
   .animate-flash-success,
   .animate-flash-error,
-  .animate-timer-paused {
+  .animate-timer-paused,
+  .animate-ai-scene-float,
+  .animate-ai-scene-bob,
+  .animate-ai-scene-glow,
+  .animate-ai-scene-sheen {
     animation: none !important;
   }
 }

@@ -5,7 +5,6 @@ import { persist, createJSONStorage } from "zustand/middleware";
 
 import { authController } from "@/controllers/auth.controller";
 import { appConfig } from "@/config/app.config";
-import { markLoginToast } from "@/config/routes";
 import { toMessage } from "@/lib/core/errors";
 import { isCitizen, ROLE } from "@/lib/domain/roles";
 import { STORAGE_KEYS, zustandStorage } from "@/lib/storage/storage";
@@ -141,11 +140,10 @@ export const useAuthStore = create()(
           set({
             ...initialFlow,
             loading: false,
-            user: result.user,
+            step: AUTH_STEP.WELCOME,
+            pendingUser: result.user,
             token: result.token,
-            isAuthenticated: true,
           });
-          markLoginToast();
           return true;
         } catch (error) {
           set({ loading: false, error: toMessage(error) });
@@ -166,11 +164,10 @@ export const useAuthStore = create()(
           set({
             ...initialFlow,
             loading: false,
-            user,
+            step: AUTH_STEP.WELCOME,
+            pendingUser: user,
             token,
-            isAuthenticated: true,
           });
-          markLoginToast();
           return true;
         } catch (error) {
           set({ loading: false, error: toMessage(error) });
@@ -178,11 +175,16 @@ export const useAuthStore = create()(
         }
       },
 
-      /** Step 4: the "Start" button commits the session. */
+      /** After the success pause, commit the session so Home can open. */
       completeLogin: () => {
-        const { pendingUser } = get();
+        const { pendingUser, token } = get();
         if (!pendingUser) return false;
-        set({ user: pendingUser, isAuthenticated: true, ...initialFlow });
+        set({
+          ...initialFlow,
+          user: pendingUser,
+          token,
+          isAuthenticated: true,
+        });
         return true;
       },
 

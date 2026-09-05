@@ -8,6 +8,7 @@ import { CitizenProfileStep } from "@/components/auth/CitizenProfileStep";
 import { CredentialStep } from "@/components/auth/CredentialStep";
 import { IdentityStep } from "@/components/auth/IdentityStep";
 import { OtpStep } from "@/components/auth/OtpStep";
+import { WelcomeStep } from "@/components/auth/WelcomeStep";
 import { AppShell } from "@/components/layout/AppShell";
 import { ROUTES } from "@/config/routes";
 import { useStoreHydrated } from "@/hooks/useStoreHydrated";
@@ -49,14 +50,29 @@ export default function AuthPage() {
   const requestOtp = useAuthStore((state) => state.requestOtp);
   const verifyOtp = useAuthStore((state) => state.verifyOtp);
   const completeCitizenProfile = useAuthStore((state) => state.completeCitizenProfile);
+  const completeLogin = useAuthStore((state) => state.completeLogin);
   const backToCredential = useAuthStore((state) => state.backToCredential);
   const backToIdentity = useAuthStore((state) => state.backToIdentity);
 
+  const pendingUser = useAuthStore((state) => state.pendingUser);
   const citizen = isCitizen(role);
 
   useEffect(() => {
-    if (hydrated && isAuthenticated) router.replace(ROUTES.home);
-  }, [hydrated, isAuthenticated, router]);
+    if (!hydrated) return undefined;
+
+    if (step === AUTH_STEP.WELCOME) {
+      const id = window.setTimeout(() => {
+        completeLogin();
+        router.replace(ROUTES.home);
+      }, 2800);
+      return () => window.clearTimeout(id);
+    }
+
+    if (isAuthenticated) {
+      router.replace(ROUTES.home);
+    }
+    return undefined;
+  }, [hydrated, isAuthenticated, step, completeLogin, router]);
 
   return (
     <AppShell className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F3F3F3]">
@@ -111,6 +127,8 @@ export default function AuthPage() {
               onSubmit={completeCitizenProfile}
             />
           ) : null}
+
+          {step === AUTH_STEP.WELCOME ? <WelcomeStep name={pendingUser?.name} /> : null}
         </main>
       </div>
     </AppShell>

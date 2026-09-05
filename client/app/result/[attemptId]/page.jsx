@@ -4,7 +4,8 @@ import { Suspense, use } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "@/components/icons";
 
-import { ACTION_BUTTON_CLASS, ActionButtonRow, AppButton } from "@/components/common/AppButton";
+import { ACTION_BUTTON_CLASS, AppButton } from "@/components/common/AppButton";
+import { BrandIcon } from "@/components/common/BrandIcon";
 import { ErrorState, LoadingState } from "@/components/common/StateViews";
 import { AppShell } from "@/components/layout/AppShell";
 import { AuroraWash } from "@/components/layout/AuroraWash";
@@ -15,6 +16,8 @@ import { useAsyncData } from "@/hooks/useAsyncData";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { usePracticeMode } from "@/hooks/usePracticeMode";
 import { AppError, ERROR_CODE } from "@/lib/core/errors";
+import { BRAND_ICONS } from "@/lib/brand-icons";
+import { cn } from "@/lib/utils";
 
 /**
  * Result screen: score, certificate, leaderboard, and home action.
@@ -59,8 +62,8 @@ function ResultScreen({ params }) {
 
   return (
     <AppShell className="bg-[#F4F4F4] font-canva">
-      <main className="no-scrollbar relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain">
-        <div className="relative flex min-h-full flex-col">
+      <main className="no-scrollbar relative z-0 min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain">
+        <div className="relative flex min-h-full flex-col pb-[6.75rem]">
           <AuroraWash
             src="/result-top-gradient-bg.png"
             className="h-52"
@@ -92,26 +95,43 @@ function ResultScreen({ params }) {
           </header>
 
           <div className="relative z-10 flex min-h-0 flex-1 flex-col px-5 pb-6 sm:px-6">
-            <div className="mx-auto flex w-full max-w-[26.5rem] flex-1 flex-col md:max-w-none">
+            <div className="mx-auto w-full max-w-[26.5rem] md:max-w-none">
               {status === "loading" ? <LoadingState label="પરિણામ તૈયાર થઈ રહ્યું છે…" /> : null}
               {status === "error" ? <ErrorState message={error} onRetry={reload} /> : null}
-
               {status === "ready" && attempt ? (
-                <>
-                  <ScoreSummary attempt={attempt} quiz={bundle?.quiz} />
-                  <footer className="mt-auto pt-8 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
-                    <ActionButtonRow>
-                      <AppButton className={ACTION_BUTTON_CLASS} onClick={() => router.replace(leaveTo)}>
-                        Home page
-                      </AppButton>
-                    </ActionButtonRow>
-                  </footer>
-                </>
+                <ScoreSummary attempt={attempt} quiz={bundle?.quiz} />
               ) : null}
             </div>
           </div>
         </div>
       </main>
+
+      <nav
+        aria-label="Result actions"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-30"
+      >
+        <div className="pointer-events-auto px-4 pt-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="mx-auto flex w-full max-w-[26.5rem] items-center justify-center gap-3 md:max-w-none">
+            <AppButton
+              className={cn(
+                ACTION_BUTTON_CLASS,
+                "w-auto min-w-0 px-9 shadow-[0_8px_22px_rgb(45_104_157/0.28)]"
+              )}
+              onClick={() => router.replace(leaveTo)}
+            >
+              Home page
+            </AppButton>
+            <button
+              type="button"
+              aria-label="G3Q AI"
+              onClick={() => router.push(ROUTES.g3qAi)}
+              className="grid size-14 shrink-0 place-items-center rounded-full bg-white shadow-[0_8px_22px_rgb(15_23_42/0.16)] transition-transform active:scale-95"
+            >
+              <BrandIcon src={BRAND_ICONS.navG3qAi} alt="" className="size-7" />
+            </button>
+          </div>
+        </div>
+      </nav>
     </AppShell>
   );
 }

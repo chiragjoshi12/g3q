@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { ChatMarkdown, decodeAiLineBreaks } from "@/components/g3q-ai/ChatMarkdown";
 import { BrandGlyph, BrandIcon } from "@/components/common/BrandIcon";
 import { AppShell } from "@/components/layout/AppShell";
+import { useSpeechToText } from "@/hooks/useSpeechToText";
 import { useSmoothStream } from "@/hooks/useSmoothStream";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { streamG3qAiChat } from "@/lib/g3q-ai-api";
@@ -53,6 +54,7 @@ export default function G3qAiPage() {
   const inputRef = useRef(null);
   const abortRef = useRef(null);
   const nearBottomRef = useRef(true);
+  const draftBaseRef = useRef("");
 
   const setAssistantContent = useCallback((content) => {
     setMessages((prev) => {
@@ -66,6 +68,25 @@ export default function G3qAiPage() {
   }, []);
 
   const smooth = useSmoothStream(setAssistantContent);
+
+  const speech = useSpeechToText({
+    lang: "gu-IN",
+    onText: (spoken) => {
+      const base = draftBaseRef.current;
+      setDraft(base ? `${base}${spoken}` : spoken);
+    },
+    onError: (code) => {
+      if (code === "unsupported") {
+        setError("Speech isn't available in this browser. Type your question instead.");
+        return;
+      }
+      if (code === "not-allowed" || code === "service-not-allowed") {
+        setError("Microphone permission is needed to talk.");
+        return;
+      }
+      setError("Couldn't hear that. Try again.");
+    },
+  });
 
   const updateNearBottom = useCallback(() => {
     const el = listRef.current;
@@ -106,6 +127,7 @@ export default function G3qAiPage() {
   const resetChat = () => {
     abortRef.current?.abort();
     abortRef.current = null;
+    speech.stop();
     smooth.reset();
     setMessages([]);
     setDraft("");
@@ -144,6 +166,8 @@ export default function G3qAiPage() {
   const send = async (preset) => {
     const text = (typeof preset === "string" ? preset : draft).trim();
     if (!text || sending) return;
+
+    speech.stop();
 
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -193,6 +217,16 @@ export default function G3qAiPage() {
       if (abortRef.current === controller) abortRef.current = null;
       setSending(false);
     }
+  };
+
+  const onMicClick = () => {
+    if (sending || !inputVisible) return;
+    if (!speech.listening) {
+      const cur = draft.trim();
+      draftBaseRef.current = cur ? `${cur} ` : "";
+      setError(null);
+    }
+    speech.toggle();
   };
 
   const onKeyDown = (e) => {
@@ -367,20 +401,45 @@ export default function G3qAiPage() {
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={onKeyDown}
               rows={2}
-              placeholder="Ask here..."
+              placeholder={speech.listening ? "Listening..." : "Ask here..."}
               disabled={sending || !inputVisible}
               tabIndex={inputVisible ? 0 : -1}
               className="w-full resize-none bg-transparent font-canva text-[16px] leading-snug text-[#111] outline-none placeholder:text-[#000000] disabled:opacity-60"
             />
             <div className="mt-2 flex items-center justify-between">
-              <button
-                type="button"
-                aria-label="Chat history"
-                onClick={resetChat}
-                className="grid size-10 place-items-center rounded-full bg-[#f5f5f5] text-[#4B5563] active:opacity-80"
-              >
-                <BrandIcon src={BRAND_ICONS.aiHistory} alt="" className={AI_ICON_SIZE} />
-              </button>
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  aria-label="Chat history"
+                  onClick={resetChat}
+                  className="grid size-10 place-items-center rounded-full bg-[#f5f5f5] text-[#4B5563] active:opacity-80"
+                >
+                  <BrandIcon src={BRAND_ICONS.aiHistory} alt="" className={AI_ICON_SIZE} />
+                </button>
+                <button
+                  type="button"
+                  aria-label={speech.listening ? "Stop listening" : "Speak prompt"}
+                  aria-pressed={speech.listening}
+                  onClick={onMicClick}
+                  disabled={sending || !inputVisible}
+                  className={cn(
+                    "grid size-10 place-items-center rounded-full active:opacity-80 disabled:opacity-50",
+                    speech.listening
+                      ? "bg-[#2d689d] text-white"
+                      : "bg-[#f5f5f5] text-[#4B5563]"
+                  )}
+                >
+                  {speech.listening ? (
+                    <BrandGlyph
+                      src={BRAND_ICONS.aiSpeech}
+                      className={cn(AI_ICON_SIZE, "animate-pulse")}
+                      color="#ffffff"
+                    />
+                  ) : (
+                    <BrandIcon src={BRAND_ICONS.aiSpeech} alt="" className={AI_ICON_SIZE} />
+                  )}
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={() => send()}
