@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 const BLUE = "#2d689d";
 const SIDE_BG = "#f5f5f5";
-const PLAY_SIZE = 88;
+const PLAY_SIZE = 74;
 const CUT_GAP = 10;
 const CUT_DIAMETER = PLAY_SIZE + CUT_GAP * 2;
 /** Raised Play Quiz — slid slightly into the white tray. */
@@ -18,7 +18,7 @@ const NOTCH_OFFSET_Y = PLAY_TOP + PLAY_SIZE / 2 - TRAY_PAD_TOP;
 
 /**
  * Bottom bar: Practice | raised Play Quiz (notch) | G3Q AI.
- * Notch disc behind Play Quiz is #f5f5f5; the blue Play pill sits on top.
+ * The center action should feel cut out from the tray, not mounted on a gray pad.
  */
 export function LandingActionNav({
   onPractice,
@@ -57,7 +57,7 @@ export function LandingActionNav({
         <div
           className="relative overflow-hidden rounded-t-[1.65rem]"
           style={{
-            filter: "drop-shadow(0 -12px 28px rgba(15, 23, 42, 0.14))",
+            filter: "drop-shadow(0 -12px 28px rgba(185, 187, 192, 0.01))",
           }}
         >
           <div
@@ -90,19 +90,6 @@ export function LandingActionNav({
           </nav>
         </div>
 
-        {/* Solid #f5f5f5 ring behind Play Quiz (outside overflow clip — fully opaque) */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute left-1/2 z-[5] -translate-x-1/2 rounded-full"
-          style={{
-            top: PLAY_TOP - CUT_GAP,
-            width: CUT_DIAMETER,
-            height: CUT_DIAMETER,
-            backgroundColor: SIDE_BG,
-            opacity: 1,
-          }}
-        />
-
         <button
           type="button"
           onClick={onPlayQuiz}
@@ -111,7 +98,7 @@ export function LandingActionNav({
           style={{ top: PLAY_TOP }}
         >
           <span
-            className="grid place-items-center rounded-full"
+            className="grid place-items-center rounded-full text-center font-canva text-white"
             style={{
               width: PLAY_SIZE,
               height: PLAY_SIZE,
@@ -119,20 +106,10 @@ export function LandingActionNav({
               boxShadow: "0 8px 22px rgba(45, 104, 157, 0.30)",
             }}
           >
-            <span
-              aria-hidden
-              className="block size-[2.15rem] bg-white"
-              style={{
-                WebkitMaskImage: `url(${BRAND_ICONS.navPlayQuiz})`,
-                maskImage: `url(${BRAND_ICONS.navPlayQuiz})`,
-                WebkitMaskSize: "contain",
-                maskSize: "contain",
-                WebkitMaskRepeat: "no-repeat",
-                maskRepeat: "no-repeat",
-                WebkitMaskPosition: "center",
-                maskPosition: "center",
-              }}
-            />
+            <span className="leading-[1.06] font-bold tracking-[-0.02em]">
+              <span className="block text-[0.95rem]">Play</span>
+              <span className="mt-0.5 block text-[0.95rem]">Quiz</span>
+            </span>
           </span>
         </button>
       </div>
@@ -145,7 +122,7 @@ function SideAction({ onClick, label, children }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex h-[3.85rem] w-[6.5rem] shrink-0 flex-col items-center justify-center rounded-[1.2rem] px-1 font-canva active:opacity-90"
+      className="flex h-[3.85rem] w-[6.5rem] shrink-0 flex-col items-center justify-center rounded-[1.65rem] px-1 font-canva active:opacity-90"
       style={{ backgroundColor: SIDE_BG, color: BLUE }}
     >
       <span className="flex -translate-y-[3px] flex-col items-center gap-1">

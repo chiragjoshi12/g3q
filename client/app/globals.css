@@ -194,6 +194,18 @@
   }
 }
 
+@property --ai-check-border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes ai-check-run-border {
+  to {
+    --ai-check-border-angle: 360deg;
+  }
+}
+
 /* --- AI quiz personalization scene --- */
 @keyframes ai-scene-float {
   0%, 100% { transform: translateY(0); }
@@ -245,6 +257,18 @@
 .animate-ai-scene-bob { animation: ai-scene-bob 3.8s ease-in-out infinite; }
 .animate-ai-scene-glow { animation: ai-scene-glow 2.6s ease-in-out infinite; }
 .animate-ai-scene-sheen { animation: ai-scene-sheen 1.6s ease-in-out infinite; }
+.animate-ai-check-run-border {
+  background: conic-gradient(
+    from var(--ai-check-border-angle),
+    transparent 0deg,
+    rgb(185 156 255 / 0.72) 50deg,
+    rgb(169 245 247 / 0.78) 105deg,
+    rgb(185 156 255 / 0.72) 160deg,
+    transparent 215deg,
+    transparent 360deg
+  );
+  animation: ai-check-run-border 2.2s linear infinite;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .animate-confetti,
@@ -254,6 +278,7 @@
   .animate-flash-success,
   .animate-flash-error,
   .animate-timer-paused,
+  .animate-ai-check-run-border,
   .animate-ai-scene-float,
   .animate-ai-scene-bob,
   .animate-ai-scene-glow,

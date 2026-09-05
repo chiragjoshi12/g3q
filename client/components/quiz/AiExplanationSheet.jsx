@@ -12,11 +12,11 @@ import { BRAND_ICONS } from "@/lib/brand-icons";
 import { playAnswerSound } from "@/lib/quiz-sounds";
 import { cn } from "@/lib/utils";
 
-const TYPEWRITER_INTERVAL_MS = 24;
-const MIN_STREAM_DURATION_MS = 3000;
-const MAX_STREAM_DURATION_MS = 5000;
-const PROGRESS_COMPLETE_DELAY_MS = 800;
-const RESULT_REVEAL_DELAY_MS = 1200;
+const TYPEWRITER_INTERVAL_MS = 26;
+const MIN_STREAM_DURATION_MS = 2600;
+const MAX_STREAM_DURATION_MS = 4200;
+const PROGRESS_COMPLETE_DELAY_MS = 320;
+const RESULT_REVEAL_DELAY_MS = 700;
 
 /**
  * Fun-fact sheet that opens the moment an answer is submitted.
@@ -36,7 +36,7 @@ export function AiExplanationSheet({
   const source = explanation?.body ?? "";
   const streamDurationMs = Math.min(
     MAX_STREAM_DURATION_MS,
-    Math.max(MIN_STREAM_DURATION_MS, source.length * 3.4)
+    Math.max(MIN_STREAM_DURATION_MS, source.length * 4.2)
   );
   const charsPerTick = Math.min(3, Math.max(
     1,
@@ -125,9 +125,9 @@ export function AiExplanationSheet({
                   type="button"
                   onClick={onDismiss}
                   aria-label="બંધ કરો"
-                  className="absolute right-0 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-full bg-[#F1F5F9] text-muted-foreground transition-transform active:scale-95"
+                  className="absolute right-0 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-full bg-[#f5f5f5] text-muted-foreground transition-transform active:scale-95"
                 >
-                  <X className="size-4" />
+                  <X className="size-7 text-[#111]" />
                 </button>
               ) : null}
             </div>
@@ -145,16 +145,7 @@ export function AiExplanationSheet({
 
           <ActionButtonRow className="mt-5">
             {!bodyDone ? (
-              <div className="relative w-[70%]">
-                <CheckingButtonProgress progress={checkingProgress} />
-                <AppButton
-                  disabled
-                  block
-                  className="max-w-none bg-[#D6E4F0] text-foreground shadow-none hover:bg-[#D6E4F0] disabled:bg-[#D6E4F0] disabled:text-foreground disabled:opacity-100"
-                >
-                  Checking Answer...
-                </AppButton>
-              </div>
+              <CheckingAnswerButton progress={checkingProgress} />
             ) : (
               <AppButton
                 onClick={onContinue}
@@ -170,53 +161,28 @@ export function AiExplanationSheet({
   );
 }
 
-function CheckingButtonProgress({ progress }) {
-  const strokeDashoffset = 100 - progress;
-
+function CheckingAnswerButton({ progress }) {
   return (
-    <svg
-      aria-hidden
-      viewBox="0 0 100 24"
-      preserveAspectRatio="none"
-      className="pointer-events-none absolute -inset-[5px] h-[calc(100%+10px)] w-[calc(100%+10px)] overflow-visible"
-    >
-      <defs>
-        <linearGradient id="checking-button-gradient" x1="0" y1="0" x2="100" y2="0" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#7C5CE0" />
-          <stop offset="42%" stopColor="#2D689D" />
-          <stop offset="72%" stopColor="#61A5D8" />
-          <stop offset="100%" stopColor="#00BF63" />
-        </linearGradient>
-      </defs>
-      <rect
-        x="2"
-        y="2"
-        width="96"
-        height="20"
-        rx="10"
-        fill="none"
-        stroke="#DFEAF3"
-        strokeWidth="3"
-        pathLength="100"
-      />
-      <rect
-        x="2"
-        y="2"
-        width="96"
-        height="20"
-        rx="10"
-        fill="none"
-        stroke="url(#checking-button-gradient)"
-        strokeWidth="3"
-        strokeLinecap="round"
-        pathLength="100"
-        className="transition-[stroke-dashoffset] duration-75 ease-out"
-        style={{
-          strokeDasharray: 100,
-          strokeDashoffset,
-        }}
-      />
-    </svg>
+    <div className="relative w-[62%]">
+      <div
+        aria-hidden
+        className="animate-ai-check-run-border pointer-events-none absolute -inset-[4px] rounded-full p-[1.5px]"
+      >
+        <div className="h-full w-full rounded-full bg-white" />
+      </div>
+      <AppButton
+        disabled
+        block
+        className="relative z-10 max-w-none overflow-hidden bg-[#D6E4F0] text-[#1F2937] shadow-none hover:bg-[#D6E4F0] disabled:bg-[#D6E4F0] disabled:text-[#1F2937] disabled:opacity-100"
+      >
+        <span
+          aria-hidden
+          className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#b99cff] to-[#a9f5f7] opacity-85 transition-[width] duration-200 ease-out"
+          style={{ width: `${progress}%` }}
+        />
+        <span className="relative z-10">Checking Answer...</span>
+      </AppButton>
+    </div>
   );
 }
 
@@ -235,12 +201,12 @@ function VerdictMark({ correct }) {
         <BrandIcon
           src={correct ? BRAND_ICONS.correct : BRAND_ICONS.incorrect}
           alt={correct ? "સાચો જવાબ" : "ખોટો જવાબ"}
-          className="relative size-[5.25rem] animate-verdict-pop"
+          className="relative size-[4.8rem] animate-verdict-pop"
         />
       </div>
       <p
         className={cn(
-          "mt-3 font-heading text-2xl font-bold animate-pop-in",
+          "mt-3 font-heading text-[18px] font-bold animate-pop-in",
           correct ? "text-[#15803D]" : "text-[#B91C1C]"
         )}
       >

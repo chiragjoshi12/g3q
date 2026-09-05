@@ -23,7 +23,7 @@ const ABOUT_LEAD = [
   ABHIYAN.lead,
 ];
 
-const LANDING_BANNERS = ["/landing/hero.png", "/q3quiz.png", "/white-banner.jpeg"];
+const LANDING_BANNERS = ["/q3quiz.png", "/white-banner.jpeg"];
 
 export default function LandingPage() {
   const router = useRouter();

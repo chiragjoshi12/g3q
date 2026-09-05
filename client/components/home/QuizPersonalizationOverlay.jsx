@@ -132,10 +132,6 @@ export function QuizPersonalizationOverlay({ name, taluka, onComplete }) {
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/g3q-ai-bg.jpeg')" }}
       />
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-gradient-to-b from-white/76 via-[#f5f1fc]/84 to-[#f7f9ff]/88"
-      />
 
       {/* ambient blobs */}
       <div
@@ -151,7 +147,7 @@ export function QuizPersonalizationOverlay({ name, taluka, onComplete }) {
       <div className="relative flex w-full max-w-[26rem] flex-1 flex-col items-center justify-center">
       <div className="relative w-full">
       <h2 className="mt-2 -translate-y-16 py-1 text-[1.35rem] leading-tight font-bold bg-gradient-to-r from-[#7C5CE0] via-[#2D689D] to-[#61A5D8] bg-clip-text text-transparent">
-            {firstName ? `${firstName}, ` : ""} Creating & Personalizing your questions...
+            {firstName ? `${firstName}, ` : ""} તમારા માટે પર્સનલાઈઝ્ડ પ્રશ્નો બની રહ્યા છે...
           </h2>
         </div>
 
