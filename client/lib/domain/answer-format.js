@@ -8,9 +8,14 @@ import { QUESTION_TYPE } from "@/config/question-types";
 const labelOf = (collection, id) =>
   (collection ?? []).find((item) => item.id === id)?.label ?? "—";
 
+const TRUE_FALSE_LABEL = { true: "સાચું", false: "ખોટું" };
+
 const FORMATTERS = {
   [QUESTION_TYPE.SINGLE_CHOICE]: (q, value) =>
     (value ?? []).map((id) => labelOf(q.options, id)),
+
+  [QUESTION_TYPE.TRUE_FALSE]: (q, value) =>
+    (value ?? []).map((id) => TRUE_FALSE_LABEL[id] ?? labelOf(q.options, id)),
 
   [QUESTION_TYPE.IMAGE_CHOICE]: (q, value) =>
     (value ?? []).map((id) => labelOf(q.options, id)),

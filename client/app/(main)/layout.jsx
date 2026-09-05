@@ -8,8 +8,7 @@ import { LoginToast } from "@/components/common/LoginToast";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 
 /**
- * Shell for the two tab destinations. The quiz and result routes sit
- * outside this group on purpose — they run full-screen without navigation.
+ * Shell for Home / Profile. Floating nav overlays page content (no gray tray).
  */
 export default function MainLayout({ children }) {
   const { ready } = useAuthGuard();

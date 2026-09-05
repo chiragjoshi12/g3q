@@ -132,7 +132,7 @@ export function LeaderboardPreviewCard({ talukaLabel, week, onClick, iconColor =
       type="button"
       onClick={onClick}
       className={cn(
-        "flex min-h-[5.75rem] w-full items-start gap-6 rounded-[2rem] bg-white px-9 pt-7 pb-5 shadow-[0_1px_3px_rgb(0_0_0/0.06)] active:bg-[#fafafa]",
+        "flex min-h-[5.75rem] w-full items-start gap-4 rounded-[2rem] bg-white px-6 pt-5 pb-5 active:bg-[#fafafa]",
         className
       )}
     >
@@ -145,7 +145,7 @@ export function LeaderboardPreviewCard({ talukaLabel, week, onClick, iconColor =
         <p className="text-[1.35rem] font-bold leading-tight" style={{ color: iconColor }}>
           લીડરબોર્ડ
         </p>
-        <p className="mt-1 truncate text-[15px] leading-snug font-medium text-black">
+        <p className="mt-1 truncate text-[15px] leading-snug text-black">
           {talukaLabel} તાલુકો - {week} મું અઠવાડિયું
         </p>
       </div>

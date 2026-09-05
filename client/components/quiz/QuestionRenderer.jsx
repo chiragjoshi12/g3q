@@ -6,6 +6,7 @@ import { DragIntoBlanksQuestion } from "@/components/quiz/questions/DragIntoBlan
 import { ImageChoiceQuestion } from "@/components/quiz/questions/ImageChoiceQuestion";
 import { MatchFollowingQuestion } from "@/components/quiz/questions/MatchFollowingQuestion";
 import { SingleChoiceQuestion } from "@/components/quiz/questions/SingleChoiceQuestion";
+import { TrueFalseQuestion } from "@/components/quiz/questions/TrueFalseQuestion";
 
 /**
  * Type → renderer registry.
@@ -16,6 +17,7 @@ import { SingleChoiceQuestion } from "@/components/quiz/questions/SingleChoiceQu
  */
 const RENDERERS = {
   [QUESTION_TYPE.SINGLE_CHOICE]: SingleChoiceQuestion,
+  [QUESTION_TYPE.TRUE_FALSE]: TrueFalseQuestion,
   [QUESTION_TYPE.MATCH_FOLLOWING]: MatchFollowingQuestion,
   [QUESTION_TYPE.IMAGE_CHOICE]: ImageChoiceQuestion,
   [QUESTION_TYPE.DRAG_DROP]: DragDropQuestion,

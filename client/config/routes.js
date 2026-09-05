@@ -6,14 +6,19 @@ export const ROUTES = {
   g3qAi: "/g3q-ai",
   home: "/home",
   profile: "/profile",
+  quizAttempts: "/quiz-attempts",
+  certificates: "/certificates",
   quiz: (quizId, { practice = false } = {}) =>
     practice ? `/quiz/${quizId}?practice=1` : `/quiz/${quizId}`,
   result: (attemptId, { practice = false } = {}) =>
     practice ? `/result/${attemptId}?practice=1` : `/result/${attemptId}`,
 };
 
-/** Featured quiz launched from the landing Practice Quiz action. */
+/** Practice quiz launched from the landing Practice action. */
 export const FEATURED_QUIZ_ID = "quiz_gujarat_gk";
+
+/** Real play quiz launched from Home → Play Quiz (featured). */
+export const PLAY_QUIZ_ID = "quiz_g3q_play";
 
 const POST_AUTH_KEY = "ggq:post-auth";
 const LOGIN_TOAST_KEY = "ggq:login-toast";
@@ -46,7 +51,14 @@ export function clearLoginToast() {
 }
 
 /** Routes that require an authenticated session. */
-export const PROTECTED_PREFIXES = ["/home", "/profile", "/quiz", "/result"];
+export const PROTECTED_PREFIXES = [
+  "/home",
+  "/profile",
+  "/quiz-attempts",
+  "/certificates",
+  "/quiz",
+  "/result",
+];
 
 export function isProtectedPath(pathname) {
   return PROTECTED_PREFIXES.some(

@@ -22,12 +22,11 @@ export function ChoiceOption({
       onClick={onToggle}
       aria-pressed={selected}
       className={cn(
-        "flex min-h-[3.85rem] w-full items-center justify-center rounded-[1.35rem] bg-white px-5 py-4 text-center font-canva text-[0.98rem] leading-snug font-semibold text-[#111] transition-[transform,box-shadow,border-color] duration-200 ease-emphasized sm:min-h-[4.25rem] sm:text-[1.05rem]",
-        "shadow-[0_4px_16px_rgb(15_23_42/0.08)]",
+        "flex min-h-[3.85rem] w-full items-center justify-start rounded-[1.35rem] bg-white px-5 py-4 text-center font-canva text-[0.98rem] leading-snug text-[#111] transition-[transform,box-shadow,border-color] duration-200 ease-emphasized sm:min-h-[4.25rem] sm:text-[1.05rem]",
         !disabled && "active:scale-[0.985]",
         selected
-          ? "border-[3px] border-[#3C6496] shadow-[0_6px_18px_rgb(60_100_150/0.18)]"
-          : "border-[3px] border-transparent",
+          ? "border-[2px] border-[#2d689d]"
+          : "border-[1px] border-[#d9d9d9]",
         revealed && !selected && "opacity-55"
       )}
     >

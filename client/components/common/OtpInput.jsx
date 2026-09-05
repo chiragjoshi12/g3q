@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
  * the boxes are presentational, which keeps paste, autofill and mobile keyboards
  * working correctly.
  */
-export function OtpInput({ length = 6, value, onChange, onComplete, invalid, autoFocus }) {
+export function OtpInput({ length = 4, value, onChange, onComplete, invalid, autoFocus }) {
   const inputRef = useRef(null);
   const digits = String(value ?? "").slice(0, length).split("");
 

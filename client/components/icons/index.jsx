@@ -1,4 +1,6 @@
 import { HugeiconsIcon } from "@hugeicons/react";
+import { BrandIcon } from "@/components/common/BrandIcon";
+import { BRAND_ICONS } from "@/lib/brand-icons";
 import {
   Loading03Icon,
   Sparkles as SparklesSrc,
@@ -131,24 +133,7 @@ export function LineArrowRight({ className, ...props }) {
   );
 }
 
-/** Larger straight `<` chevron for back — no shaft, bigger than the row arrow. */
-export function BackArrow({ className, ...props }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-      aria-hidden
-      {...props}
-    >
-      <path
-        d="M15 5l-9 7 9 7"
-        stroke="currentColor"
-        strokeWidth="2.7"
-        strokeLinecap="square"
-        strokeLinejoin="miter"
-      />
-    </svg>
-  );
+/** App back chevron from `public/icons/Back Button Icon.png`. */
+export function BackArrow({ className }) {
+  return <BrandIcon src={BRAND_ICONS.back} alt="" className={className} />;
 }

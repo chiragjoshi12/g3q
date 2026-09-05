@@ -27,6 +27,7 @@ const sameMap = (a, b) => {
 
 const GRADERS = {
   [QUESTION_TYPE.SINGLE_CHOICE]: (q, a) => sameSet(a, q.answer),
+  [QUESTION_TYPE.TRUE_FALSE]: (q, a) => sameSet(a, q.answer),
   [QUESTION_TYPE.IMAGE_CHOICE]: (q, a) => sameSet(a, q.answer),
   [QUESTION_TYPE.MATCH_FOLLOWING]: (q, a) => sameMap(a, q.answer),
   [QUESTION_TYPE.DRAG_DROP]: (q, a) => sameOrder(a, q.answer),

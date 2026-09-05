@@ -1,8 +1,131 @@
 {
+  "quiz_g3q_play": [
+    {
+      "id": "play_q1",
+      "order": 1,
+      "type": "image_choice",
+      "points": 1,
+      "prompt": "નીચે આપેલી તસવીરોમાંથી કઈ તસવીર ‘સ્ટેચ્યુ ઑફ યુનિટી’ દર્શાવે છે?",
+      "options": [
+        {
+          "id": "a",
+          "label": "સોમનાથ મંદિર",
+          "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Somanath_mandir_%28cropped%29.jpg/1280px-Somanath_mandir_%28cropped%29.jpg?utm_source=gu.wikipedia.org&utm_campaign=index&utm_content=thumbnail"
+        },
+        {
+          "id": "b",
+          "label": "સ્ટેચ્યુ ઓફ યુનિટી",
+          "image": "https://static.abplive.com/wp-content/uploads/sites/7/2020/10/17132101/Statue-of-unity-open-today.jpg?impolicy=abp_cdn&imwidth=1200"
+        },
+        {
+          "id": "c",
+          "label": "રાણી કી વાવ",
+          "image": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Rani_ki_vav_02.jpg"
+        },
+        {
+          "id": "d",
+          "label": "એશિયાઈ સિંહ",
+          "image": "https://gujarati.opindia.com/wp-content/uploads/sites/7/2023/08/Image-10-08-23-at-7.14-PM.jpeg"
+        }
+      ],
+      "answer": ["b"]
+    },
+    {
+      "id": "play_q2",
+      "order": 2,
+      "type": "single_choice",
+      "points": 1,
+      "prompt": "વડાપ્રધાન શ્રી નરેન્દ્ર મોદીએ 2 ઑક્ટોબર 2014ના રોજ કઈ રાષ્ટ્રીય પહેલ શરૂ કરી હતી?",
+      "options": [
+        { "id": "a", "label": "આયુષ્માન ભારત" },
+        { "id": "b", "label": "સ્વચ્છ ભારત મિશન" },
+        { "id": "c", "label": "પ્રધાનમંત્રી ઉજ્જ્વલા યોજના" },
+        { "id": "d", "label": "ડિજિટલ ઇન્ડિયા" }
+      ],
+      "answer": ["b"]
+    },
+    {
+      "id": "play_q3",
+      "order": 3,
+      "type": "match_following",
+      "points": 1,
+      "prompt": "યોગ્ય જોડકાં બનાવો:",
+      "left": [
+        { "id": "l1", "label": "જન ધન યોજના" },
+        { "id": "l2", "label": "ઉજ્જ્વલા યોજના" },
+        { "id": "l3", "label": "આયુષ્માન ભારત" },
+        { "id": "l4", "label": "સ્વચ્છ ભારત" }
+      ],
+      "right": [
+        { "id": "r1", "label": "આરોગ્ય" },
+        { "id": "r2", "label": "બેંકિંગ" },
+        { "id": "r3", "label": "LPG" },
+        { "id": "r4", "label": "સ્વચ્છતા" }
+      ],
+      "answer": { "l1": "r2", "l2": "r3", "l3": "r1", "l4": "r4" }
+    },
+    {
+      "id": "play_q4",
+      "order": 4,
+      "type": "drag_into_blanks",
+      "points": 1,
+      "prompt": "નીચે આપેલા શબ્દોને યોગ્ય ખાલી જગ્યામાં ખેંચીને ગોઠવો.",
+      "segments": [
+        { "type": "text", "value": "ચંદ્રયાન-3નું સફળ સોફ્ટ લેન્ડિંગ" },
+        { "type": "blank", "id": "b1" },
+        { "type": "text", "value": "ના રોજ થયું અને લેન્ડિંગ સ્થળનું નામ" },
+        { "type": "blank", "id": "b2" },
+        { "type": "text", "value": "રાખવામાં આવ્યું." }
+      ],
+      "bank": [
+        { "id": "w1", "label": "23 ઑગસ્ટ 2023" },
+        { "id": "w2", "label": "શિવ શક્તિ પોઇન્ટ" }
+      ],
+      "answer": { "b1": "w1", "b2": "w2" }
+    },
+    {
+      "id": "play_q5",
+      "order": 5,
+      "type": "drag_drop",
+      "points": 1,
+      "prompt": "નીચેની પહેલોને તેમના પ્રારંભના વર્ષ પ્રમાણે જૂનાથી નવા ક્રમમાં ગોઠવો.",
+      "items": [
+        { "id": "i1", "label": "આયુષ્માન ભારત" },
+        { "id": "i2", "label": "જન ધન યોજના" },
+        { "id": "i3", "label": "ઉજ્જ્વલા યોજના" },
+        { "id": "i4", "label": "સ્વચ્છ ભારત મિશન" }
+      ],
+      "answer": ["i2", "i4", "i3", "i1"]
+    },
+    {
+      "id": "play_q6",
+      "order": 6,
+      "type": "true_false",
+      "points": 1,
+      "prompt": "પ્રધાનમંત્રી ઉજ્જ્વલા યોજના હેઠળ ગરીબ પરિવારોની પુખ્ત મહિલાઓને ડિપોઝિટ વગર LPG કનેક્શન આપવાનું આયોજન કરવામાં આવ્યું હતું.",
+      "options": [
+        { "id": "true", "label": "સાચું" },
+        { "id": "false", "label": "ખોટું" }
+      ],
+      "answer": ["true"]
+    }
+  ],
   "quiz_gujarat_gk": [
     {
-      "id": "q1",
+      "id": "q2",
       "order": 1,
+      "type": "true_false",
+      "points": 1,
+      "prompt": "સ્ટેચ્યુ ઓફ યુનિટી વિશ્વની સૌથી ઊંચી પ્રતિમા છે.",
+      "options": [
+        { "id": "true", "label": "સાચું" },
+        { "id": "false", "label": "ખોટું" }
+      ],
+      "answer": ["true"]
+    },
+    {
+      "id": "q1",
+      "order": 2,
       "type": "single_choice",
       "points": 1,
       "prompt": "ગુજરાત રાજ્યની રાજધાની કયું શહેર છે?",
@@ -16,7 +139,7 @@
     },
     {
       "id": "q3",
-      "order": 2,
+      "order": 3,
       "type": "match_following",
       "points": 1,
       "prompt": "નીચેના સ્થળોને તેમના જિલ્લા સાથે જોડો.",
@@ -36,7 +159,7 @@
     },
     {
       "id": "q4",
-      "order": 3,
+      "order": 4,
       "type": "image_choice",
       "points": 1,
       "prompt": "નીચેનામાંથી કયું ચિત્ર 'સ્ટેચ્યુ ઓફ યુનિટી' દર્શાવે છે?",
@@ -66,7 +189,7 @@
     },
     {
       "id": "q6",
-      "order": 4,
+      "order": 5,
       "type": "drag_drop",
       "points": 1,
       "prompt": "નીચેની ઘટનાઓને સમયક્રમ પ્રમાણે (જૂનીથી નવી) ગોઠવો.",
@@ -80,7 +203,7 @@
     },
     {
       "id": "q7",
-      "order": 5,
+      "order": 6,
       "type": "drag_into_blanks",
       "points": 1,
       "prompt": "નીચે આપેલા શબ્દોને યોગ્ય ખાલી જગ્યામાં ખેંચીને ગોઠવો.",
@@ -101,7 +224,7 @@
     },
     {
       "id": "q8",
-      "order": 6,
+      "order": 7,
       "type": "single_choice",
       "points": 1,
       "prompt": "એશિયાઈ સિંહો માટે પ્રખ્યાત ગીર રાષ્ટ્રીય ઉદ્યાન મુખ્યત્વે કયા જિલ્લામાં આવેલું છે?",

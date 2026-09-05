@@ -18,3 +18,9 @@ export const verifyOtp = asyncHandler(async (req, res) => {
   const result = await authService.verifyOtp({ requestId, otp, role, credential });
   return res.status(200).json(result);
 });
+
+export const registerCitizen = asyncHandler(async (req, res) => {
+  const { requestId, name, district, taluka } = req.body;
+  const result = await authService.registerCitizen({ requestId, name, district, taluka });
+  return res.status(200).json(result);
+});

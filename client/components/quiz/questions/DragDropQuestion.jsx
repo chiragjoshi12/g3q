@@ -20,10 +20,10 @@ export function DragDropQuestion({ question, value, onChange, disabled, revealed
   const listRef = useRef(null);
   const posRef = useRef({});
   const orderRef = useRef(order);
-  const prevIndexRef = useRef({});
   orderRef.current = order;
 
   const labelOf = (id) => question.items.find((item) => item.id === id)?.label ?? "";
+  const numberOf = (id) => question.items.findIndex((item) => item.id === id) + 1;
   const canDrag = !disabled && !revealed;
 
   const startDrag = (id) => (event) => {
@@ -105,62 +105,69 @@ export function DragDropQuestion({ question, value, onChange, disabled, revealed
     <div className="mx-auto w-full space-y-4">
       {!revealed ? (
         <p className="flex items-center gap-1.5 text-sm font-medium text-primary-600">
-          <BrandIcon src={BRAND_ICONS.drag} alt="" className="size-4" />
+          <BrandIcon
+            src={BRAND_ICONS.drag}
+            alt=""
+            className="size-5 shrink-0"
+          />
           ખેંચીને ક્રમ બદલો
         </p>
       ) : null}
 
       <ul
         ref={listRef}
-        className={cn("space-y-2.5", draggingId && "select-none")}
+        className={cn("space-y-3", draggingId && "select-none")}
       >
-        {order.map((id, index) => {
+        {order.map((id) => {
           const isDragging = draggingId === id;
           const justMoved = settledId === id;
-          const indexChanged =
-            prevIndexRef.current[id] != null && prevIndexRef.current[id] !== index;
-          prevIndexRef.current[id] = index;
 
           return (
             <li key={id} data-item-id={id} className="relative">
               <div
                 onPointerDown={canDrag ? startDrag(id) : undefined}
                 className={cn(
-                  "flex min-w-0 items-center gap-3 rounded-[1.40rem] border bg-white px-3.5 py-3.5 shadow-m1",
-                  "h-[4.2rem] touch-none transition-[box-shadow,background-color,border-color,transform] duration-200 ease-emphasized",
-                  canDrag && "cursor-grab active:cursor-grabbing",
-                  isDragging &&
-                    "z-10 scale-[1.03] border-primary-600 bg-[#F4F8FC] shadow-[0_12px_28px_rgb(44_102_152/0.22)]",
-                  justMoved && !isDragging && "border-primary-400 bg-primary-50",
-                  !isDragging && !justMoved && "border-[#E2E8F0]"
+                  "flex items-center gap-2 touch-none",
+                  canDrag && "cursor-grab active:cursor-grabbing"
                 )}
               >
-                <span
+                <div
                   className={cn(
-                    "grid size-8 shrink-0 place-items-center rounded-full font-heading text-sm font-bold tabular-nums",
-                    isDragging
-                      ? "bg-primary-600 text-white"
-                      : "bg-[#DCEAF4] text-primary-700",
-                    indexChanged && !isDragging && "animate-pop-in"
+                    "flex min-h-[3.85rem] min-w-0 flex-1 items-center gap-3 rounded-[1.35rem] bg-white py-4 pl-5 pr-4 sm:min-h-[4.25rem]",
+                    "border transition-[transform,box-shadow,border-color,background-color] duration-200 ease-emphasized",
+                    isDragging &&
+                      "z-10 scale-[1.02] border-[2px] border-[#2d689d] bg-[#F4F8FC] shadow-[0_12px_28px_rgb(44_102_152/0.18)]",
+                    justMoved && !isDragging && "border-[2px] border-primary-400 bg-primary-50",
+                    !isDragging && !justMoved && "border-[1px] border-[#d9d9d9]"
                   )}
                 >
-                  {index + 1}
-                </span>
-
-                <span className="min-w-0 flex-1 text-sm leading-snug font-medium">
-                  {labelOf(id)}
-                </span>
+                  <span className="min-w-0 flex-1 text-left font-canva text-[0.98rem] leading-snug font-medium text-[#111] sm:text-[1.05rem]">
+                    {labelOf(id)}
+                  </span>
+                  <span
+                    className={cn(
+                      "grid size-8 shrink-0 place-items-center rounded-full font-heading text-sm font-bold tabular-nums",
+                      isDragging
+                        ? "bg-[#2d689d] text-white"
+                        : "bg-[#f5f5f5] text-[#2d689d]"
+                    )}
+                  >
+                    {numberOf(id)}
+                  </span>
+                </div>
 
                 <span
                   className={cn(
-                    "grid size-8 shrink-0 place-items-center text-muted-foreground",
-                    isDragging && "text-primary-600"
+                    "grid size-8 shrink-0 place-items-center",
+                    isDragging && "opacity-100",
+                    !canDrag && "opacity-30"
                   )}
+                  aria-hidden
                 >
                   <BrandIcon
                     src={BRAND_ICONS.changeSequence}
                     alt=""
-                    className={cn("size-5", canDrag && "cursor-grab", !canDrag && "opacity-30")}
+                    className="size-5"
                   />
                 </span>
               </div>

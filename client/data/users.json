@@ -50,5 +50,17 @@
       "phone": "+91 90909 10101",
       "joinedOn": "2025-08-01"
     }
+  ],
+  "citizens": [
+    {
+      "id": "cit_1",
+      "role": "citizen",
+      "name": "અમિત દેસાઈ",
+      "institute": "નાગરિક સહભાગી",
+      "district": "અમદાવાદ",
+      "taluka": "Sanand",
+      "phone": "9876543210",
+      "joinedOn": "2026-09-01"
+    }
   ]
 }

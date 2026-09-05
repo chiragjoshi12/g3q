@@ -1,7 +1,8 @@
 // Gujarat Quiz backend.
 //
 // Flows:
-//   1. Login: identity lookup (CTS Number/ABC) -> OTP -> JWT
+//   1. Login: school/college CTS or ABC → OTP → JWT
+//      citizen: mobile → OTP → name/district/taluka → JWT
 //   2. Bank play: start session (allocate unseen ACCEPTED bank Qs) -> submit -> stats
 //   3. Admin: bilingual bank review (separate /api/v1/admin)
 //   4. Legacy fixed quizzes/attempts kept for compatibility
@@ -21,20 +22,22 @@ datasource db {
 enum UserRole {
   student
   college
+  citizen
 }
 
 // Mirrors QUESTION_TYPE in gujarat-gov-quiz/config/question-types.js
 enum QuestionType {
   single_choice
+  true_false
   match_following
   image_choice
   drag_drop
   drag_into_blanks
 }
 
-/// A student or college login identity — resolved by CTS Number/ABC code, never by
-/// email or password. There is no self-signup flow: rows are provisioned
-/// (seeded / admin-imported) ahead of time, matching data/users.json.
+/// A login identity. School and college rows are provisioned (seeded / imported)
+/// and resolved by CTS Number / ABC code. Citizen rows are created after OTP
+/// when the user submits name, district and taluka.
 model User {
   id              String    @id @default(cuid())
   role            UserRole
@@ -66,6 +69,7 @@ model User {
   @@index([schoolId])
   @@index([taluka])
   @@index([institute])
+  @@index([role, phone])
   @@map("users")
 }
 
@@ -157,16 +161,17 @@ model UserQuestionExposure {
 model OtpRequest {
   id          String    @id @default(cuid())
   requestId   String    @unique @map("request_id")
-  userId      String    @map("user_id")
+  userId      String?   @map("user_id")
   role        UserRole
   phone       String
   maskedPhone String    @map("masked_phone")
   otp         String
   expiresAt   DateTime  @map("expires_at")
+  verifiedAt  DateTime? @map("verified_at")
   consumedAt  DateTime? @map("consumed_at")
   createdAt   DateTime  @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("otp_requests")

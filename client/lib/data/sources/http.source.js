@@ -54,6 +54,12 @@ export const httpSource = {
       body: { requestId, otp, role, credential },
     }),
 
+  registerCitizen: ({ requestId, name, district, taluka }) =>
+    request("/auth/citizen/register", {
+      method: "POST",
+      body: { requestId, name, district, taluka },
+    }),
+
   listQuizzes: () => request("/quizzes"),
 
   getQuizById: (quizId) => request(`/quizzes/${quizId}`),

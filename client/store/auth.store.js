@@ -7,7 +7,7 @@ import { authController } from "@/controllers/auth.controller";
 import { appConfig } from "@/config/app.config";
 import { markLoginToast } from "@/config/routes";
 import { toMessage } from "@/lib/core/errors";
-import { ROLE } from "@/lib/domain/roles";
+import { isCitizen, ROLE } from "@/lib/domain/roles";
 import { STORAGE_KEYS, zustandStorage } from "@/lib/storage/storage";
 
 /** Steps of the login flow, in order. */
@@ -15,6 +15,7 @@ export const AUTH_STEP = {
   CREDENTIAL: "credential",
   IDENTITY: "identity",
   OTP: "otp",
+  PROFILE: "profile",
   WELCOME: "welcome",
 };
 
@@ -28,6 +29,9 @@ const initialFlow = {
   requestId: null,
   maskedPhone: "",
   pendingUser: null,
+  profileName: "",
+  profileDistrict: "",
+  profileTaluka: "",
   loading: false,
   error: null,
 };
@@ -49,6 +53,10 @@ export const useAuthStore = create()(
           credential: "",
           identity: null,
           phone: "",
+          otp: "",
+          profileName: "",
+          profileDistrict: "",
+          profileTaluka: "",
           error: null,
           step: AUTH_STEP.CREDENTIAL,
         }),
@@ -59,6 +67,12 @@ export const useAuthStore = create()(
         set({ phone: phone.replace(/\D/g, "").slice(0, appConfig.auth.phoneLength), error: null }),
 
       setOtp: (otp) => set({ otp, error: null }),
+
+      setProfileName: (profileName) => set({ profileName, error: null }),
+
+      setProfileDistrict: (profileDistrict) => set({ profileDistrict, error: null }),
+
+      setProfileTaluka: (profileTaluka) => set({ profileTaluka, error: null }),
 
       clearError: () => set({ error: null }),
 
@@ -76,19 +90,21 @@ export const useAuthStore = create()(
         }
       },
 
-      /** Step 2 → 3: send an OTP to the phone number just entered. */
+      /** School/college: identity → OTP. Citizen: mobile on step 1 → OTP. */
       requestOtp: async () => {
         const { role, credential, phone } = get();
+        const otpPhone = isCitizen(role) ? credential : phone;
         set({ loading: true, error: null });
         try {
           const { requestId, maskedPhone } = await authController.sendOtp({
             role,
             credential,
-            phone,
+            phone: otpPhone,
           });
           set({
             loading: false,
             step: AUTH_STEP.OTP,
+            phone: otpPhone,
             requestId,
             maskedPhone,
             otp: "",
@@ -100,16 +116,52 @@ export const useAuthStore = create()(
         }
       },
 
-      /** Step 3 → 4: verify the OTP and reveal the user's name. */
+      /**
+       * Verify the OTP. Roster users land in the session immediately.
+       * New / incomplete નાગરિક accounts continue to the profile form.
+       */
       verifyOtp: async () => {
         const { requestId, otp, role, credential } = get();
         set({ loading: true, error: null });
         try {
-          const { user, token } = await authController.verifyOtp({
+          const result = await authController.verifyOtp({
             requestId,
             otp,
             role,
             credential,
+          });
+          if (result.needsProfile) {
+            set({
+              loading: false,
+              step: AUTH_STEP.PROFILE,
+              otp: "",
+            });
+            return true;
+          }
+          set({
+            ...initialFlow,
+            loading: false,
+            user: result.user,
+            token: result.token,
+            isAuthenticated: true,
+          });
+          markLoginToast();
+          return true;
+        } catch (error) {
+          set({ loading: false, error: toMessage(error) });
+          return false;
+        }
+      },
+
+      completeCitizenProfile: async () => {
+        const { requestId, profileName, profileDistrict, profileTaluka } = get();
+        set({ loading: true, error: null });
+        try {
+          const { user, token } = await authController.registerCitizen({
+            requestId,
+            name: profileName,
+            district: profileDistrict,
+            taluka: profileTaluka,
           });
           set({
             ...initialFlow,
@@ -134,15 +186,17 @@ export const useAuthStore = create()(
         return true;
       },
 
-      /** Identity step's "change ID" — back to step 1. */
+      /** Identity / OTP / profile "change ID or number" — back to step 1. */
       backToCredential: () =>
         set({
           step: AUTH_STEP.CREDENTIAL,
           identity: null,
-          phone: "",
           otp: "",
           error: null,
           requestId: null,
+          profileName: "",
+          profileDistrict: "",
+          profileTaluka: "",
         }),
 
       /** OTP step's "change number" — back to step 2, keeping the resolved identity. */

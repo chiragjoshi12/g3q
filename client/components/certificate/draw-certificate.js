@@ -194,16 +194,19 @@ export async function renderCertificateCanvas(canvas, payload, { pixelWidth } = 
   return canvas;
 }
 
-export async function downloadCertificatePng(payload, fileName) {
+export async function renderCertificateBlob(payload) {
   const canvas = document.createElement("canvas");
   const pixelWidth = Math.min(CERT_NATIVE.width, 3200);
   await renderCertificateCanvas(canvas, payload, { pixelWidth });
-  const blob = await new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     canvas.toBlob((next) => {
       if (next) resolve(next);
       else reject(new Error("Could not create certificate image."));
     }, "image/png");
   });
+}
+
+function triggerBlobDownload(blob, fileName) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -212,4 +215,27 @@ export async function downloadCertificatePng(payload, fileName) {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+export async function downloadCertificatePng(payload, fileName) {
+  const blob = await renderCertificateBlob(payload);
+  triggerBlobDownload(blob, fileName);
+}
+
+export async function shareCertificatePng(payload, fileName, title) {
+  const blob = await renderCertificateBlob(payload);
+  const file = new File([blob], fileName, { type: "image/png" });
+  try {
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], title, text: title });
+      return;
+    }
+    if (navigator.share) {
+      await navigator.share({ title, text: title });
+      return;
+    }
+  } catch (error) {
+    if (error?.name === "AbortError") return;
+  }
+  triggerBlobDownload(blob, fileName);
 }

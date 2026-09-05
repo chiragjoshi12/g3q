@@ -59,6 +59,18 @@ const users = {
       joinedOn: '2025-08-01',
     },
   ],
+  citizens: [
+    {
+      id: 'cit_1',
+      role: 'citizen',
+      name: 'અમિત દેસાઈ',
+      institute: 'નાગરિક સહભાગી',
+      district: 'અમદાવાદ',
+      taluka: 'Sanand',
+      phone: '9876543210',
+      joinedOn: '2026-09-01',
+    },
+  ],
 };
 
 const quizzes = [
@@ -71,9 +83,9 @@ const quizzes = [
     banner: 'https://i.ibb.co/r2RnQjZB/q3quiz.png',
     category: 'સામાન્ય જ્ઞાન',
     level: 'મધ્યમ',
-    totalQuestions: 6,
+    totalQuestions: 7,
     durationMinutes: 8,
-    totalPoints: 6,
+    totalPoints: 7,
     featured: true,
     tags: ['ગુજરાત', 'ઇતિહાસ', 'ભૂગોળ'],
   },
@@ -82,8 +94,20 @@ const quizzes = [
 const questions = {
   quiz_gujarat_gk: [
     {
-      id: 'q1',
+      id: 'q2',
       order: 1,
+      type: 'true_false',
+      points: 1,
+      prompt: 'સ્ટેચ્યુ ઓફ યુનિટી વિશ્વની સૌથી ઊંચી પ્રતિમા છે.',
+      options: [
+        { id: 'true', label: 'સાચું' },
+        { id: 'false', label: 'ખોટું' },
+      ],
+      answer: ['true'],
+    },
+    {
+      id: 'q1',
+      order: 2,
       type: 'single_choice',
       points: 1,
       prompt: 'ગુજરાત રાજ્યની રાજધાની કયું શહેર છે?',
@@ -97,7 +121,7 @@ const questions = {
     },
     {
       id: 'q3',
-      order: 2,
+      order: 3,
       type: 'match_following',
       points: 1,
       prompt: 'નીચેના સ્થળોને તેમના જિલ્લા સાથે જોડો.',
@@ -117,7 +141,7 @@ const questions = {
     },
     {
       id: 'q4',
-      order: 3,
+      order: 4,
       type: 'image_choice',
       points: 1,
       prompt: "નીચેનામાંથી કયું ચિત્ર 'સ્ટેચ્યુ ઓફ યુનિટી' દર્શાવે છે?",
@@ -148,7 +172,7 @@ const questions = {
     },
     {
       id: 'q6',
-      order: 4,
+      order: 5,
       type: 'drag_drop',
       points: 1,
       prompt: 'નીચેની ઘટનાઓને સમયક્રમ પ્રમાણે (જૂનીથી નવી) ગોઠવો.',
@@ -162,7 +186,7 @@ const questions = {
     },
     {
       id: 'q7',
-      order: 5,
+      order: 6,
       type: 'drag_into_blanks',
       points: 1,
       prompt: 'નીચે આપેલા શબ્દોને યોગ્ય ખાલી જગ્યામાં ખેંચીને ગોઠવો.',
@@ -183,7 +207,7 @@ const questions = {
     },
     {
       id: 'q8',
-      order: 6,
+      order: 7,
       type: 'single_choice',
       points: 1,
       prompt: 'એશિયાઈ સિંહો માટે પ્રખ્યાત ગીર રાષ્ટ્રીય ઉદ્યાન મુખ્યત્વે કયા જિલ્લામાં આવેલું છે?',
@@ -199,6 +223,16 @@ const questions = {
 };
 
 const explanations = {
+  q2: {
+    model: 'GujaratGPT',
+    summary: 'સ્ટેચ્યુ ઓફ યુનિટી વિશ્વની સૌથી ઊંચી પ્રતિમા છે.',
+    body: 'સ્ટેચ્યુ ઓફ યુનિટી સરદાર વલ્લભભાઈ પટેલની 182 મીટર ઊંચી પ્રતિમા છે, જે વિશ્વની સૌથી ઊંચી પ્રતિમા ગણાય છે. તેનું ઉદ્ઘાટન 31 ઑક્ટોબર, 2018ના રોજ કેવડિયા, નર્મદા જિલ્લામાં થયું હતું.',
+    keyPoints: [
+      'ઊંચાઈ: 182 મીટર — વિશ્વની સૌથી ઊંચી પ્રતિમા',
+      'ઉદ્ઘાટન: 31 ઑક્ટોબર, 2018',
+      'સ્થળ: કેવડિયા, નર્મદા જિલ્લો',
+    ],
+  },
   q1: {
     model: 'GujaratGPT',
     summary: 'ગાંધીનગર ગુજરાતની રાજધાની છે.',
@@ -264,14 +298,15 @@ const explanations = {
 };
 
 async function seedUsers() {
-  for (const user of [...users.students, ...users.colleges]) {
+  const allUsers = [...users.students, ...users.colleges, ...users.citizens];
+  for (const user of allUsers) {
     await prisma.user.upsert({
       where: { id: user.id },
       update: {},
       create: { ...user, joinedOn: new Date(user.joinedOn) },
     });
   }
-  console.log(`Seeded ${users.students.length + users.colleges.length} users.`);
+  console.log(`Seeded ${allUsers.length} users.`);
 }
 
 async function seedQuizzes() {

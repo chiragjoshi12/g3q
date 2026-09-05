@@ -42,14 +42,14 @@ export const CONFIG = {
   },
 
   OTP: {
-    LENGTH: 6,
+    LENGTH: parseInt(process.env.OTP_LENGTH) || 4,
     EXPIRY_MINUTES: parseInt(process.env.OTP_EXPIRY_MINUTES) || 5,
     RESEND_SECONDS: parseInt(process.env.OTP_RESEND_SECONDS) || 30,
     // No SMS gateway wired up yet, so the OTP is logged server-side. This
     // fixed code is additionally accepted outside production so QA/dev can
     // log in without reading server logs — mirrors appConfig.auth.staticOtp
     // in the frontend's local JSON data source.
-    DEV_BYPASS_CODE: process.env.OTP_DEV_BYPASS_CODE || '123456',
+    DEV_BYPASS_CODE: process.env.OTP_DEV_BYPASS_CODE || '1234',
   },
 
   // Bank-backed quiz sessions (allocate from ACCEPTED bank_questions).

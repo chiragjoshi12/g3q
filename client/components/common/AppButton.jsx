@@ -6,21 +6,21 @@ import { cn } from "@/lib/utils";
 
 /** Shared size / type for every primary CTA. */
 const ACTION_BUTTON_GEOMETRY =
-  "relative inline-flex select-none items-center justify-center gap-2 rounded-full transition-all duration-200 ease-emphasized outline-none focus-visible:ring-4 focus-visible:ring-primary-200 active:scale-[0.97] disabled:pointer-events-none px-5 h-14 w-[70%] font-canva text-[1.05rem] font-bold";
+  "relative inline-flex select-none items-center justify-center gap-2 rounded-full px-5 h-14 w-[70%] font-canva text-[1.05rem] font-bold transition-[transform,background-color,color] duration-200 ease-emphasized outline-none focus-visible:outline-none focus-visible:ring-0 active:scale-[0.97] disabled:pointer-events-none";
 
 /**
  * Canonical primary CTA — Submit, Next, Send OTP, Home, certificate download.
- * Same height, width, and font size on every screen.
+ * Solid fill even when disabled (no opacity halo / soft blur behind the pill).
  */
 export const ACTION_BUTTON_CLASS = cn(
   ACTION_BUTTON_GEOMETRY,
-  "bg-[#2d689d] text-white hover:bg-[#255a88] disabled:opacity-45"
+  "border-0 bg-[#2d689d] text-white shadow-none hover:bg-[#255a88] disabled:bg-[#2d689d] disabled:text-white/70 disabled:opacity-100"
 );
 
 /** Same geometry as the primary pill; white fill for the stacked second action. */
 export const ACTION_BUTTON_SECONDARY_CLASS = cn(
   ACTION_BUTTON_GEOMETRY,
-  "border-0 bg-white text-[#2d689d] shadow-[0_0_0_1px_rgb(45_104_157/0.22)] hover:bg-[#f7f9fb] disabled:opacity-45"
+  "border-0 bg-white text-[#2d689d] shadow-none hover:bg-[#f7f9fb] disabled:bg-[#EEF2F6] disabled:text-[#9BB8D4] disabled:opacity-100"
 );
 
 export function ActionButtonRow({ className, children }) {
@@ -30,8 +30,10 @@ export function ActionButtonRow({ className, children }) {
 }
 
 const VARIANT_CLASS = {
-  filled: "bg-[#2d689d] text-white hover:bg-[#255a88] disabled:opacity-45",
-  tonal: "bg-primary-50 text-primary-800 shadow-none hover:bg-primary-100 disabled:opacity-45",
+  filled:
+    "border-0 bg-[#2d689d] text-white shadow-none hover:bg-[#255a88] disabled:bg-[#2d689d] disabled:text-white/70 disabled:opacity-100",
+  tonal:
+    "bg-primary-50 text-primary-800 shadow-none hover:bg-primary-100 disabled:bg-primary-50 disabled:text-primary-300 disabled:opacity-100",
   outline:
     "border-2 border-border bg-surface text-foreground shadow-none hover:bg-muted disabled:opacity-45",
   text: "bg-transparent text-primary-700 shadow-none hover:bg-primary-50 disabled:opacity-45",

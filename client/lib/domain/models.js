@@ -1,4 +1,4 @@
-import { CREDENTIAL } from "@/lib/domain/roles";
+import { CREDENTIAL, ROLE } from "@/lib/domain/roles";
 
 /**
  * Mappers from raw data-source payloads to the domain shapes the app uses.
@@ -10,19 +10,28 @@ import { CREDENTIAL } from "@/lib/domain/roles";
 
 export function toUser(raw) {
   if (!raw) return null;
-  const role = raw.role === "college" ? "college" : "student";
+  const role = Object.values(ROLE).includes(raw.role) ? raw.role : ROLE.STUDENT;
+  const phoneDigits = String(raw.phone ?? "").replace(/\D/g, "").slice(-10);
+  const credential = raw.udiseCode ?? raw.abcId ?? phoneDigits;
+  const institute =
+    raw.institute || (role === ROLE.CITIZEN ? "નાગરિક સહભાગી" : "") || "";
   return {
     id: raw.id,
     role,
     name: raw.name,
-    institute: raw.institute ?? "",
-    grade: raw.grade ?? "",
+    institute,
+    grade:
+      raw.grade ||
+      (role === ROLE.CITIZEN
+        ? [raw.district, raw.taluka].filter(Boolean).join(" · ")
+        : "") ||
+      "",
     district: raw.district ?? "",
     taluka: raw.taluka ?? "",
     phone: raw.phone ?? "",
     joinedOn: raw.joinedOn ?? null,
-    credential: raw.udiseCode ?? raw.abcId ?? "",
-    credentialLabel: CREDENTIAL[role].label,
+    credential,
+    credentialLabel: CREDENTIAL[role]?.label ?? "",
   };
 }
 

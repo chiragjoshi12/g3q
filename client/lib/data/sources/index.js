@@ -8,7 +8,8 @@ import { httpSource } from "@/lib/data/sources/http.source";
  * DataSource contract — both implementations satisfy it exactly:
  *   lookupIdentity({ role, credential })         -> User (raw)
  *   requestOtp({ role, credential, phone })      -> { requestId, maskedPhone, resendSeconds }
- *   verifyOtp({ requestId, otp, role, ... })     -> { user, token }
+ *   verifyOtp({ requestId, otp, role, ... })     -> { user, token } | { needsProfile }
+ *   registerCitizen({ requestId, name, district, taluka }) -> { user, token }
  *   listQuizzes()                             -> Quiz[]
  *   getQuizById(quizId)                       -> Quiz
  *   getQuestionsByQuizId(quizId)              -> Question[]

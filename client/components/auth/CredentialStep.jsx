@@ -4,10 +4,11 @@ import { AlertCircle } from "@/components/icons";
 
 import { AUTH_BUTTON_CLASS, AUTH_FIELD_CLASS } from "@/components/auth/AuthBrandHeader";
 import { AppButton } from "@/components/common/AppButton";
+import { BrandIcon } from "@/components/common/BrandIcon";
 import { CREDENTIAL, ROLE_TABS } from "@/lib/domain/roles";
 import { cn } from "@/lib/utils";
 
-/** Step 1: pick Student or College, then enter the matching code. */
+/** Step 1: pick School, College, or Citizen, then enter the matching field. */
 export function CredentialStep({
   role,
   credential,
@@ -18,10 +19,6 @@ export function CredentialStep({
   onSubmit,
 }) {
   const rule = CREDENTIAL[role];
-  const activeIndex = Math.max(
-    0,
-    ROLE_TABS.findIndex((item) => item.id === role)
-  );
 
   return (
     <form
@@ -34,23 +31,11 @@ export function CredentialStep({
       <div className="space-y-2 text-center">
         <h2 className="text-xl font-bold text-[#111]">લોગિન કરો</h2>
         <p className="text-sm leading-relaxed text-[#111]">
-          તમે શેમા અભ્યાસ કરો છો તેના આધારે પ્રકાર પસંદ કરો.
+          તમે શેમાં અભ્યાસ કરો છો તેના આધારે પ્રકાર પસંદ કરો
         </p>
       </div>
 
-      <div
-        role="tablist"
-        className="relative mx-auto grid h-15 w-[80%] grid-cols-2 rounded-[1.9rem] bg-[#ffffff] p-1 shadow-[0_0_0_1px_#EFEFEF]"
-      >
-        <span
-          aria-hidden
-          className="absolute inset-y-1 left-1 rounded-[1.9rem] bg-[linear-gradient(90deg,#f6f5f3,#edf5f2)] transition-transform duration-300 ease-emphasized"
-          style={{
-            width: "calc((100% - 0.5rem) / 2)",
-            transform: `translateX(${activeIndex * 100}%)`,
-          }}
-        />
-
+      <div role="radiogroup" aria-label="પ્રકાર" className="grid grid-cols-3 gap-2.5">
         {ROLE_TABS.map((item) => {
           const active = item.id === role;
 
@@ -58,15 +43,25 @@ export function CredentialStep({
             <button
               key={item.id}
               type="button"
-              role="tab"
-              aria-selected={active}
+              role="radio"
+              aria-checked={active}
               onClick={() => onRoleChange(item.id)}
               className={cn(
-                "relative z-10 rounded-[1.25rem] text-sm",
-                active ? "text-[#000000] font-semibold" : "text-[#000000]"
+                "flex min-h-[9.25rem] flex-col items-center justify-between rounded-[1.35rem] bg-white px-1.5 py-3 transition-[box-shadow,transform] duration-200 ease-emphasized active:scale-[0.98]",
+                active
+                  ? "shadow-[0_0_0_2px_#2d689d]"
+                  : "shadow-[0_0_0_1px_#EFEFEF]"
               )}
             >
-              {item.label}
+              <BrandIcon src={item.icon} alt="" className="h-[4.85rem] w-auto max-w-full" />
+              <span
+                className={cn(
+                  "mt-2 text-center text-[11px] leading-tight text-[#111]",
+                  active ? "font-bold" : "font-semibold"
+                )}
+              >
+                {item.label}
+              </span>
             </button>
           );
         })}
@@ -84,7 +79,7 @@ export function CredentialStep({
           }
           inputMode={rule.inputMode}
           placeholder={rule.hint}
-          autoComplete="off"
+          autoComplete={role === "citizen" ? "tel" : "off"}
           className={AUTH_FIELD_CLASS}
         />
       </div>

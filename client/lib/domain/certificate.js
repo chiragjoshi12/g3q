@@ -33,15 +33,27 @@ export function formatG3qId(user = {}) {
     .replace(/\D/g, "")
     .slice(-7)
     .padStart(7, "0");
-  const prefix = user.role === ROLE.COLLEGE ? "GJC" : "GJS";
+  const prefix =
+    user.role === ROLE.COLLEGE ? "GJC" : user.role === ROLE.CITIZEN ? "GJN" : "GJS";
   return `${prefix}${digits}`;
 }
 
 export function certificateCategory(role) {
-  const isCollege = role === ROLE.COLLEGE;
+  if (role === ROLE.COLLEGE) {
+    return {
+      title: "College/University Category",
+      inline: "College/University category",
+    };
+  }
+  if (role === ROLE.CITIZEN) {
+    return {
+      title: "Citizen Category",
+      inline: "Citizen category",
+    };
+  }
   return {
-    title: isCollege ? "College/University Category" : "School Category",
-    inline: isCollege ? "College/University category" : "School category",
+    title: "School Category",
+    inline: "School category",
   };
 }
 

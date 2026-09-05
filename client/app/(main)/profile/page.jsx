@@ -1,38 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import {
-  BackArrow,
-  LineArrowRight,
-  LogOut,
-  Trash2,
-} from "@/components/icons";
+import { LineArrowRight, LogOut } from "@/components/icons";
 
-import { CertificateViewer } from "@/components/certificate/CertificateViewer";
 import { ConfirmSheet } from "@/components/common/ConfirmSheet";
-import { EmptyState, LoadingState } from "@/components/common/StateViews";
+import { HelplineSheet } from "@/components/common/HelplineSheet";
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { AuroraWash } from "@/components/layout/AuroraWash";
 import { BrandHeader } from "@/components/layout/BrandHeader";
-import { appConfig } from "@/config/app.config";
 import { ROUTES } from "@/config/routes";
-import { profileController } from "@/controllers/profile.controller";
-import { useAsyncData } from "@/hooks/useAsyncData";
-import { attemptEarnsCertificate, buildCertificatePayload } from "@/lib/domain/certificate";
-import { formatDate, formatDuration } from "@/lib/domain/format";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
 import { useQuizStore } from "@/store/quiz.store";
-
-const PANEL = {
-  MENU: "menu",
-  ATTEMPTS: "attempts",
-  CERTIFICATES: "certificates",
-  HELPLINE: "helpline",
-};
 
 const COLUMN = "mx-auto w-full max-w-[26.5rem] md:max-w-[32rem]";
 
@@ -41,18 +23,8 @@ export default function ProfilePage() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const resetSession = useQuizStore((state) => state.resetSession);
-  const [panel, setPanel] = useState(PANEL.MENU);
   const [confirmLogout, setConfirmLogout] = useState(false);
-
-  const userId = user?.id;
-
-  const { status, data: overview, reload } = useAsyncData(
-    () => profileController.loadOverview(userId),
-    [userId]
-  );
-  const loading = status === "loading";
-  const attempts = overview?.attempts ?? [];
-  const certificates = attempts.filter(attemptEarnsCertificate);
+  const [helplineOpen, setHelplineOpen] = useState(false);
 
   const handleLogout = () => {
     resetSession();
@@ -60,15 +32,9 @@ export default function ProfilePage() {
     router.replace(ROUTES.auth);
   };
 
-  const handleClearHistory = async () => {
-    await profileController.clearHistory(userId);
-    resetSession();
-    reload();
-  };
-
   return (
     <>
-    <main className="no-scrollbar animate-screen-in relative flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F5F7F9]">
+    <main className="no-scrollbar animate-screen-in relative flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F5F7F9] pb-32">
       <div className="relative overflow-hidden pb-[3.75rem]">
         <AuroraWash
           src="/new-gradient-bg.png"
@@ -121,65 +87,33 @@ export default function ProfilePage() {
         </div>
 
         <section className="mt-9 overflow-hidden rounded-[2rem] bg-white shadow-[0_12px_32px_rgb(15_23_42/0.06)]">
-          {panel === PANEL.MENU ? (
-            <nav>
-              <MenuRow
-                iconSrc={BRAND_ICONS.quizAttempts}
-                iconBg="bg-[#f4e5f8]"
-                label="Quiz attempts"
-                onClick={() => setPanel(PANEL.ATTEMPTS)}
-              />
-              <MenuRow
-                iconSrc={BRAND_ICONS.certificates}
-                iconBg="bg-[#e8f8ed]"
-                label="Certificates"
-                onClick={() => setPanel(PANEL.CERTIFICATES)}
-              />
-              <MenuRow
-                iconSrc={BRAND_ICONS.aboutAbhinyan}
-                iconBg="bg-[#f6f8e5]"
-                label="About Abhinyan"
-                onClick={() => router.push(ROUTES.abhiyan)}
-              />
-              <MenuRow
-                iconSrc={BRAND_ICONS.helpline}
-                iconBg="bg-[#e5ebf8]"
-                label="Helpline"
-                onClick={() => setPanel(PANEL.HELPLINE)}
-                last
-              />
-            </nav>
-          ) : (
-            <div className="px-5 py-4">
-              <button
-                type="button"
-                onClick={() => setPanel(PANEL.MENU)}
-                className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground"
-              >
-                <BackArrow className="size-5 text-[#111]" />
-                પાછળ
-              </button>
-
-              {panel === PANEL.ATTEMPTS ? (
-                <AttemptsPanel
-                  loading={loading}
-                  attempts={attempts}
-                  onOpen={(id) => router.push(ROUTES.result(id))}
-                  onClear={attempts.length > 0 ? handleClearHistory : null}
-                />
-              ) : null}
-
-              {panel === PANEL.CERTIFICATES ? (
-                <CertificatesPanel
-                  loading={loading}
-                  certificates={certificates}
-                  user={user}
-                />
-              ) : null}
-
-              {panel === PANEL.HELPLINE ? <HelplinePanel /> : null}
-            </div>
-          )}
+          <nav>
+            <MenuRow
+              iconSrc={BRAND_ICONS.quizAttempts}
+              iconBg="bg-[#f4e5f8]"
+              label="Quiz attempts"
+              onClick={() => router.push(ROUTES.quizAttempts)}
+            />
+            <MenuRow
+              iconSrc={BRAND_ICONS.certificates}
+              iconBg="bg-[#e8f8ed]"
+              label="Certificates"
+              onClick={() => router.push(ROUTES.certificates)}
+            />
+            <MenuRow
+              iconSrc={BRAND_ICONS.aboutAbhinyan}
+              iconBg="bg-[#f6f8e5]"
+              label="About Abhinyan"
+              onClick={() => router.push(ROUTES.abhiyan)}
+            />
+            <MenuRow
+              iconSrc={BRAND_ICONS.helpline}
+              iconBg="bg-[#e5ebf8]"
+              label="Helpline"
+              onClick={() => setHelplineOpen(true)}
+              last
+            />
+          </nav>
         </section>
       </div>
     </main>
@@ -191,6 +125,7 @@ export default function ProfilePage() {
         onCancel={() => setConfirmLogout(false)}
         onConfirm={handleLogout}
       />
+      <HelplineSheet open={helplineOpen} onClose={() => setHelplineOpen(false)} />
     </>
   );
 }
@@ -213,133 +148,5 @@ function MenuRow({ iconSrc, iconBg, label, onClick, last = false }) {
       </span>
       <LineArrowRight className="size-4 shrink-0 text-black" />
     </button>
-  );
-}
-
-function AttemptsPanel({ loading, attempts, onOpen, onClear }) {
-  return (
-    <div className="space-y-3">
-      <h3 className="font-heading text-base font-bold">Quiz attempts</h3>
-      {loading ? <LoadingState label="આંકડા લોડ થઈ રહ્યા છે…" className="py-8" /> : null}
-      {!loading && attempts.length === 0 ? (
-        <EmptyState
-          title="હજી કોઈ પ્રયાસ નથી"
-          description="ક્વિઝ પૂરી કરો એટલે તમારો ઇતિહાસ અહીં દેખાશે."
-        />
-      ) : null}
-      <ul className="space-y-2">
-        {attempts.map((attempt) => (
-          <li key={attempt.attemptId}>
-            <button
-              type="button"
-              onClick={() => onOpen(attempt.attemptId)}
-              className="flex w-full items-start gap-3 rounded-2xl bg-[#F8FAFC] p-3 text-left"
-            >
-              <span
-                className={cn(
-                  "grid size-11 shrink-0 place-items-center rounded-xl font-heading text-sm font-bold",
-                  attempt.percentage >= 60 ? "bg-success/10 text-success" : "bg-warning/15 text-[#8a5a04]"
-                )}
-              >
-                {attempt.percentage}%
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-heading text-sm font-semibold">
-                  {attempt.quizTitle}
-                </span>
-                <span className="block text-xs text-muted-foreground">
-                  {attempt.correctCount}/{attempt.totalQuestions} સાચા ·{" "}
-                  {formatDuration(attempt.totalTimeMs)} ·{" "}
-                  {formatDate(new Date(attempt.completedAt).toISOString())}
-                </span>
-              </span>
-              <LineArrowRight className="mt-0.5 size-4 shrink-0 text-black" />
-            </button>
-          </li>
-        ))}
-      </ul>
-      {onClear ? (
-        <button
-          type="button"
-          onClick={onClear}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-error"
-        >
-          <Trash2 className="size-3.5" />
-          ઇતિહાસ ભૂંસો
-        </button>
-      ) : null}
-    </div>
-  );
-}
-
-function CertificatesPanel({ loading, certificates, user }) {
-  const [selected, setSelected] = useState(null);
-  const payload = useMemo(
-    () => (selected ? buildCertificatePayload(user, selected) : null),
-    [user, selected]
-  );
-
-  return (
-    <div className="space-y-3">
-      <h3 className="font-heading text-base font-bold">Certificates</h3>
-      {loading ? <LoadingState className="py-8" /> : null}
-      {!loading && certificates.length === 0 ? (
-        <EmptyState
-          title="હજી કોઈ પ્રમાણપત્ર નથી"
-          description="60% કે વધુ સાથે ક્વિઝ પૂરી કરો એટલે પ્રમાણપત્ર અહીં દેખાશે."
-        />
-      ) : null}
-      <ul className="space-y-2">
-        {certificates.map((attempt) => (
-          <li key={attempt.attemptId}>
-            <button
-              type="button"
-              onClick={() => setSelected(attempt)}
-              className="flex w-full items-start gap-3 rounded-2xl bg-[#F8FAFC] p-3 text-left"
-            >
-              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#FFF1E6]">
-                <BrandIcon src={BRAND_ICONS.certificates} alt="" className="size-6" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-heading text-sm font-semibold">
-                  {attempt.quizTitle}
-                </span>
-                <span className="block text-xs text-muted-foreground">
-                  {attempt.percentage}% · {formatDate(new Date(attempt.completedAt).toISOString())}
-                </span>
-              </span>
-              <LineArrowRight className="mt-0.5 size-4 shrink-0 text-black" />
-            </button>
-          </li>
-        ))}
-      </ul>
-      <CertificateViewer
-        open={Boolean(payload)}
-        payload={payload}
-        onClose={() => setSelected(null)}
-      />
-    </div>
-  );
-}
-
-function HelplinePanel() {
-  const { phone, display } = appConfig.profile.helpline;
-
-  return (
-    <div className="space-y-3">
-      <h3 className="font-heading text-base font-bold">Helpline</h3>
-      <p className="text-sm text-muted-foreground">
-        મદદ માટે નીચેના નંબર પર સંપર્ક કરો.
-      </p>
-      <a
-        href={`tel:${phone}`}
-        className="flex items-center gap-3 rounded-2xl bg-[#F8FAFC] p-3"
-      >
-        <span className="grid size-11 place-items-center rounded-full bg-[#EEF4E8]">
-          <BrandIcon src={BRAND_ICONS.helpline} alt="" className="size-6" />
-        </span>
-        <span className="font-heading text-base font-semibold tracking-wide">{display}</span>
-      </a>
-    </div>
   );
 }

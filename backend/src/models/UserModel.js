@@ -1,5 +1,9 @@
 import { prisma } from '../config/prisma.client.js';
-import { credentialFieldFor } from '../config/roles.js';
+import { credentialFieldFor, ROLE } from '../config/roles.js';
+
+function phoneDigits(value) {
+  return String(value ?? '').replace(/\D/g, '').slice(-10);
+}
 
 /** Fields exposed to clients — mirrors roster + login identity. */
 const toRaw = (user) => {
@@ -39,6 +43,43 @@ export class UserModel {
 
   static async findById(id) {
     const user = await prisma.user.findUnique({ where: { id } });
+    return toRaw(user);
+  }
+
+  static async findByPhone(role, phone) {
+    const digits = phoneDigits(phone);
+    if (!digits) return null;
+    const user = await prisma.user.findFirst({
+      where: { role, phone: digits },
+    });
+    return toRaw(user);
+  }
+
+  static async createCitizen({ name, district, taluka, phone }) {
+    const user = await prisma.user.create({
+      data: {
+        role: ROLE.CITIZEN,
+        name: String(name).trim(),
+        district: String(district).trim(),
+        taluka: String(taluka).trim(),
+        phone: phoneDigits(phone),
+        institute: 'નાગરિક સહભાગી',
+        joinedOn: new Date(),
+      },
+    });
+    return toRaw(user);
+  }
+
+  static async updateCitizenProfile(id, { name, district, taluka }) {
+    const user = await prisma.user.update({
+      where: { id },
+      data: {
+        name: String(name).trim(),
+        district: String(district).trim(),
+        taluka: String(taluka).trim(),
+        institute: 'નાગરિક સહભાગી',
+      },
+    });
     return toRaw(user);
   }
 }

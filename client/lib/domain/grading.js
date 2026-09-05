@@ -33,6 +33,7 @@ const sameMap = (a, b) => {
 /** The value an unanswered question starts from, per type. */
 const EMPTY_ANSWER = {
   [QUESTION_TYPE.SINGLE_CHOICE]: () => [],
+  [QUESTION_TYPE.TRUE_FALSE]: () => [],
   [QUESTION_TYPE.IMAGE_CHOICE]: () => [],
   [QUESTION_TYPE.MATCH_FOLLOWING]: () => ({}),
   [QUESTION_TYPE.DRAG_DROP]: (question) =>
@@ -43,6 +44,7 @@ const EMPTY_ANSWER = {
 /** Whether the user has supplied enough input for Submit to appear. */
 const IS_ANSWERED = {
   [QUESTION_TYPE.SINGLE_CHOICE]: (_q, a) => (a ?? []).length === 1,
+  [QUESTION_TYPE.TRUE_FALSE]: (_q, a) => (a ?? []).length === 1,
   [QUESTION_TYPE.IMAGE_CHOICE]: (_q, a) => (a ?? []).length === 1,
   [QUESTION_TYPE.MATCH_FOLLOWING]: (q, a) =>
     Object.keys(a ?? {}).length === (q.left ?? []).length,
@@ -57,6 +59,7 @@ const IS_ANSWERED = {
 
 const GRADERS = {
   [QUESTION_TYPE.SINGLE_CHOICE]: (q, a) => sameSet(a, q.answer),
+  [QUESTION_TYPE.TRUE_FALSE]: (q, a) => sameSet(a, q.answer),
   [QUESTION_TYPE.IMAGE_CHOICE]: (q, a) => sameSet(a, q.answer),
   [QUESTION_TYPE.MATCH_FOLLOWING]: (q, a) => sameMap(a, q.answer),
   [QUESTION_TYPE.DRAG_DROP]: (q, a) => sameOrder(a, q.answer),

@@ -16,11 +16,24 @@ export const authRepository = {
   },
 
   async verifyOtp({ requestId, otp, role, credential }) {
-    const { user, token } = await getDataSource().verifyOtp({
+    const result = await getDataSource().verifyOtp({
       requestId,
       otp,
       role,
       credential,
+    });
+    if (result?.needsProfile) {
+      return { needsProfile: true };
+    }
+    return { user: toUser(result.user), token: result.token, needsProfile: false };
+  },
+
+  async registerCitizen({ requestId, name, district, taluka }) {
+    const { user, token } = await getDataSource().registerCitizen({
+      requestId,
+      name,
+      district,
+      taluka,
     });
     return { user: toUser(user), token };
   },

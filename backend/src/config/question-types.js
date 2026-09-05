@@ -4,6 +4,7 @@
  */
 export const QUESTION_TYPE = {
   SINGLE_CHOICE: 'single_choice',
+  TRUE_FALSE: 'true_false',
   MATCH_FOLLOWING: 'match_following',
   IMAGE_CHOICE: 'image_choice',
   DRAG_DROP: 'drag_drop',

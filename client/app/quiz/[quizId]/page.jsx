@@ -30,8 +30,7 @@ const QUIZ_QUESTION_BGS = [
 ];
 
 function quizPlayBackground(index) {
-  const src = QUIZ_QUESTION_BGS[index] ?? QUIZ_PLAY_BG;
-  return { src, faded: index > 0 };
+  return QUIZ_QUESTION_BGS[index] ?? QUIZ_PLAY_BG;
 }
 
 /**
@@ -135,26 +134,22 @@ function QuizScreen({ params }) {
     );
   }
 
-  const { src: playBg, faded: playBgFaded } = quizPlayBackground(currentIndex);
+  const playBg = quizPlayBackground(currentIndex);
 
   return (
     <AppShell className="font-canva">
-      {/* Full-bleed play backdrop — question 1 keeps the original art; 2–6 use quiz-bg at 50%. */}
+      {/* Full-bleed play backdrop — 30% opacity on every question. */}
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-[#EEF2F6]" />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: `url('${playBg}')`,
-          opacity: playBgFaded ? 0.5 : 1,
-        }}
+        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
+        style={{ backgroundImage: `url('${playBg}')` }}
       />
-      {playBgFaded ? null : (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/20 via-white/35 to-white/65"
-        />
-      )}
+      {/* Soft top wash for prompt readability only. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-[38%] bg-gradient-to-b from-white/25 to-transparent"
+      />
 
       <div className="relative z-10 flex h-full min-h-0 flex-col">
         <QuizHeader
@@ -165,50 +160,53 @@ function QuizScreen({ params }) {
           onExit={() => setConfirmExit(true)}
         />
 
-        <main className="no-scrollbar relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <ContentWidth size="phone" className="px-5 py-5 sm:px-6 sm:py-6 md:max-w-none md:px-6">
-            {loading && !question ? <LoadingState label="ક્વિઝ તૈયાર થઈ રહી છે…" /> : null}
-            {error ? (
-              <ErrorState message={error} onRetry={() => loadQuiz(quizId, { restart: true })} />
-            ) : null}
+        {/*
+          Mobile: scroll pane + Submit as siblings (not an overlay).
+          Overlay footers clipped match chips into a fake “box” behind Submit.
+        */}
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <ContentWidth size="phone" className="px-5 py-5 sm:px-6 sm:py-6 md:max-w-none md:px-6">
+              {loading && !question ? <LoadingState label="ક્વિઝ તૈયાર થઈ રહી છે…" /> : null}
+              {error ? (
+                <ErrorState message={error} onRetry={() => loadQuiz(quizId, { restart: true })} />
+              ) : null}
 
-            {question ? (
-              <div key={question.id} className="animate-screen-in mx-auto max-w-[26.5rem] md:max-w-none">
-                <h2 className="font-canva text-[1.08rem] leading-[1.55] font-bold text-[#111] drop-shadow-[0_1px_0_rgb(255_255_255/0.65)] sm:text-[1.18rem]">
-                  {question.prompt}
-                </h2>
+              {question ? (
+                <div key={question.id} className="animate-screen-in mx-auto max-w-[26.5rem] md:max-w-none">
+                  <h2 className="font-canva text-[1.08rem] leading-[1.55] font-bold text-[#111] drop-shadow-[0_1px_0_rgb(255_255_255/0.65)] sm:text-[1.18rem]">
+                    {question.prompt}
+                  </h2>
 
-                <div className="mt-7 sm:mt-8">
-                  <QuestionRenderer
-                    question={question}
-                    value={value}
-                    onChange={setAnswer}
-                    disabled={!answering}
-                    revealed={reviewing && verdictRevealed}
-                  />
-                </div>
-
-                <div className="mt-6 hidden pt-1 md:block">
-                  {!explanationOpen ? (
-                    <QuizAction
-                      answering={answering}
-                      answered={answered}
-                      isLast={isLast}
-                      loading={loading}
-                      onSubmit={handleSubmit}
-                      onNext={handleNext}
+                  <div className="mt-7 sm:mt-8">
+                    <QuestionRenderer
+                      question={question}
+                      value={value}
+                      onChange={setAnswer}
+                      disabled={!answering}
+                      revealed={reviewing && verdictRevealed}
                     />
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
-          </ContentWidth>
-        </main>
+                  </div>
 
-        {question ? (
-          <footer className="relative z-20 shrink-0 pb-[max(0.85rem,env(safe-area-inset-bottom))] md:hidden">
-            <div className="pointer-events-none absolute inset-x-0 -top-10 h-10 bg-gradient-to-t from-white/50 to-transparent" />
-            <ContentWidth size="play" className="relative px-5 py-3 sm:px-6">
+                  <div className="mt-6 hidden pt-1 md:block">
+                    {!explanationOpen ? (
+                      <QuizAction
+                        answering={answering}
+                        answered={answered}
+                        isLast={isLast}
+                        loading={loading}
+                        onSubmit={handleSubmit}
+                        onNext={handleNext}
+                      />
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+            </ContentWidth>
+          </div>
+
+          {question ? (
+            <div className="shrink-0 px-5 pt-1 pb-[max(0.85rem,env(safe-area-inset-bottom))] sm:px-6 md:hidden">
               <QuizAction
                 answering={answering}
                 answered={answered}
@@ -217,9 +215,9 @@ function QuizScreen({ params }) {
                 onSubmit={handleSubmit}
                 onNext={handleNext}
               />
-            </ContentWidth>
-          </footer>
-        ) : null}
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {reviewing && explanationOpen && question ? (

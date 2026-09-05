@@ -111,7 +111,7 @@ export function LandingActionNav({
           style={{ top: PLAY_TOP }}
         >
           <span
-            className="grid place-items-center rounded-full font-canva"
+            className="grid place-items-center rounded-full"
             style={{
               width: PLAY_SIZE,
               height: PLAY_SIZE,
@@ -119,11 +119,20 @@ export function LandingActionNav({
               boxShadow: "0 8px 22px rgba(45, 104, 157, 0.30)",
             }}
           >
-            <span className="select-none text-center text-[14px] font-bold leading-[1.08] text-white">
-              Play
-              <br />
-              Quiz
-            </span>
+            <span
+              aria-hidden
+              className="block size-[2.15rem] bg-white"
+              style={{
+                WebkitMaskImage: `url(${BRAND_ICONS.navPlayQuiz})`,
+                maskImage: `url(${BRAND_ICONS.navPlayQuiz})`,
+                WebkitMaskSize: "contain",
+                maskSize: "contain",
+                WebkitMaskRepeat: "no-repeat",
+                maskRepeat: "no-repeat",
+                WebkitMaskPosition: "center",
+                maskPosition: "center",
+              }}
+            />
           </span>
         </button>
       </div>

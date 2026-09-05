@@ -70,8 +70,8 @@ export function MatchFollowingQuestion({ question, value, onChange, disabled, re
   });
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2">
         {question.left.map((left) => {
           const pairedTo = pairs[left.id];
           const isOverTarget = overLeftId === left.id;
@@ -82,7 +82,7 @@ export function MatchFollowingQuestion({ question, value, onChange, disabled, re
                 onClick={() => handleLeftClick(left.id)}
                 {...dropHandlers(left.id)}
                 className={cn(
-                  "flex min-h-[4.2rem] items-center rounded-[1.15rem] border border-[#E2E8F0] bg-white px-3.5 py-3 text-sm font-medium",
+                  "flex min-h-[3.6rem] items-center justify-center rounded-[1.15rem] border border-[#E2E8F0] bg-white px-3.5 py-2.5 text-sm font-medium",
                   !disabled && "cursor-pointer"
                 )}
               >
@@ -95,8 +95,8 @@ export function MatchFollowingQuestion({ question, value, onChange, disabled, re
                 onClick={() => handleSlotClick(left.id)}
                 {...dropHandlers(left.id)}
                 className={cn(
-                  "flex min-h-12 items-center justify-center rounded-[1.15rem] border px-3.5 py-3 text-center text-sm font-semibold transition-all",
-                  !pairedTo && !isOverTarget && "border-dashed border-[#C5D0DA] text-muted-foreground/60",
+                  "flex min-h-11 items-center justify-center rounded-[1.15rem] border px-3.5 py-2.5 text-center text-sm transition-all bg-[#f5f5f5]",
+                  !pairedTo && !isOverTarget && "border-dashed border-[#d9d9d9] text-muted-foreground/60",
                   isOverTarget && "border-primary-500 bg-primary-50 text-primary-700",
                   pairedTo && !isOverTarget && "border-primary-700 bg-primary-700 text-white"
                 )}
@@ -110,11 +110,11 @@ export function MatchFollowingQuestion({ question, value, onChange, disabled, re
 
       {!revealed ? (
         <>
-          <p className="flex items-center gap-1.5 pt-5 pb-5 text-sm font-medium text-primary-600">
+          <p className="flex items-center gap-1.5 pt-2 pb-2 text-[14px] text-primary-600">
             <BrandIcon src={BRAND_ICONS.drag} alt="" className="size-4 shrink-0" />
             વિકલ્પ પસંદ કરીને ડાબી બાજુ પર ટૅપ કરો, અથવા ખેંચીને મૂકો
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 pb-1">
             {question.right.map((right) => {
               const used = usedRightIds.has(right.id);
 
@@ -131,7 +131,8 @@ export function MatchFollowingQuestion({ question, value, onChange, disabled, re
                   }}
                   onClick={() => setSelected((current) => (current === right.id ? null : right.id))}
                   className={cn(
-                    "rounded-full h-[3.2rem] border px-4 py-2 font-heading text-sm font-medium transition-all",
+                    "h-[2.85rem] rounded-full px-7 py-2 font-heading text-[14px] font-medium transition-all",
+                    "shadow-[0_2.5px_0_#d9d9d9]",
                     !disabled && "cursor-grab active:scale-95 active:cursor-grabbing",
                     used && "border-dashed border-[#C5D0DA] bg-[#EEF1F4] text-muted-foreground/50",
                     !used && selected === right.id

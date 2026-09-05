@@ -37,8 +37,8 @@ export const appConfig = {
 
   auth: {
     // Static OTP for the MVP. The real flow will verify server-side.
-    staticOtp: "123456",
-    otpLength: 6,
+    staticOtp: "1234",
+    otpLength: 4,
     resendSeconds: 30,
     phoneLength: 10,
   },

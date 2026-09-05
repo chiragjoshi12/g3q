@@ -5,6 +5,7 @@
 export const ROLE = {
   STUDENT: 'student',
   COLLEGE: 'college',
+  CITIZEN: 'citizen',
 };
 
 /** Per-role credential rules, driving both lookup and OTP request validation. */
@@ -22,9 +23,23 @@ export const CREDENTIAL = {
     pattern: /^\d{12}$/,
     error: 'ABC ID 12 અંકનો હોવો જોઈએ.',
   },
+  [ROLE.CITIZEN]: {
+    key: 'phone',
+    label: 'મોબાઈલ નંબર',
+    pattern: /^\d{10}$/,
+    error: 'મોબાઇલ નંબર 10 અંકનો હોવો જોઈએ.',
+  },
 };
 
 const PHONE_PATTERN = /^\d{10}$/;
+
+export function isCitizen(role) {
+  return role === ROLE.CITIZEN;
+}
+
+export function usesRosterIdentity(role) {
+  return role === ROLE.STUDENT || role === ROLE.COLLEGE;
+}
 
 export function validateRole(role) {
   return CREDENTIAL[role] ? null : 'અમાન્ય પ્રકાર.';
@@ -43,6 +58,15 @@ export function validatePhone(value) {
   const trimmed = String(value ?? '').trim();
   if (!trimmed) return 'મોબાઇલ નંબર દાખલ કરો.';
   if (!PHONE_PATTERN.test(trimmed)) return 'મોબાઇલ નંબર 10 અંકનો હોવો જોઈએ.';
+  return null;
+}
+
+export function validateCitizenProfile({ name, district, taluka }) {
+  const fullName = String(name ?? '').trim();
+  if (!fullName) return 'પૂરું નામ દાખલ કરો.';
+  if (fullName.length < 2) return 'પૂરું નામ ઓછામાં ઓછા 2 અક્ષરનું હોવું જોઈએ.';
+  if (!String(district ?? '').trim()) return 'જિલ્લો દાખલ કરો.';
+  if (!String(taluka ?? '').trim()) return 'તાલુકો દાખલ કરો.';
   return null;
 }
 

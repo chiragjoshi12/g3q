@@ -69,7 +69,7 @@ export function OtpStep({
             Submit
           </AppButton>
         </div>
-        <div className="text-center text-[#000000]">
+        <div className="text-center text-color-[#000000]">
           <AuthLink onClick={onBack}>મોબાઈલ નંબર બદલો</AuthLink>
         </div>
       </div>
