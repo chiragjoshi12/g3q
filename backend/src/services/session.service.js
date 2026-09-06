@@ -156,7 +156,7 @@ export const sessionService = {
     const lang = language || CONFIG.QUIZ.DEFAULT_LANGUAGE;
     const bankRows = await allocateBankQuestions(user, questionCount);
 
-    // Optional Gemini pass: reframe the 20 Qs with student profile before persist/serve.
+    // Optional Gemini pass: reframe the session questions with student profile before persist/serve.
     let rowsForSession = bankRows;
     let aiMeta = { aiEnhanced: false, aiEnhancementMs: 0 };
     if (aiEnhancementService.isEnabled()) {

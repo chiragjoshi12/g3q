@@ -13,10 +13,10 @@
     "prisma:pull": "prisma db pull --schema=src/prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema=src/prisma/schema.prisma",
     "prisma:seed": "node src/prisma/seed.js",
+    "seed:demo": "node scripts/seed-demo-leaderboard-data.js",
     "import:bank": "node scripts/import-bank-csv.js",
     "import:legacy-bank": "node scripts/import-legacy-bank.js",
-    "import:students": "node scripts/import-students.js",
-    "seed:demo-plays": "node scripts/seed-demo-plays.js"
+    "import:students": "node scripts/import-students.js"
   },
   "prisma": {
     "seed": "node src/prisma/seed.js"

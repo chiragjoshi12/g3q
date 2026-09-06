@@ -50,8 +50,10 @@ export class UserModel {
     const digits = phoneDigits(phone);
     if (!digits) return null;
     const user = await prisma.user.findFirst({
-      where: { role, phone: digits },
+      where: { phone: digits },
     });
+    if (!user) return null;
+    if (role && user.role !== role) return null;
     return toRaw(user);
   }
 

@@ -10,6 +10,51 @@ const optionText = (row, letter, lang) => {
   return map[letter] ?? null;
 };
 
+const explanationBody = (row, language = 'gu') => {
+  const lang = language === 'en' ? 'en' : 'gu';
+  const department =
+    lang === 'en' ? row.departmentEn || row.departmentGu : row.departmentGu || row.departmentEn;
+  const correctText =
+    optionText(row, row.correctOption, lang) ||
+    optionText(row, row.correctOption, lang === 'en' ? 'gu' : 'en') ||
+    row.correctOption;
+
+  if (lang === 'en') {
+    return [
+      department ? `This question belongs to ${department}.` : 'This question is from the current quiz set.',
+      `The correct answer is ${correctText}.`,
+      'Read the options carefully and connect the answer to the key fact in the question.',
+    ].join(' ');
+  }
+
+  return [
+    department ? `આ પ્રશ્ન ${department} વિષય સાથે સંબંધિત છે.` : 'આ પ્રશ્ન વર્તમાન ક્વિઝ સેટમાંથી લેવામાં આવ્યો છે.',
+    `સાચો જવાબ ${correctText} છે.`,
+    'પ્રશ્નના મુખ્ય તથ્ય સાથે વિકલ્પોને જોડીને જવાબ યાદ રાખો.',
+  ].join(' ');
+};
+
+const toPlayExplanation = (row, language = 'gu') => {
+  const lang = language === 'en' ? 'en' : 'gu';
+  const correctText =
+    optionText(row, row.correctOption, lang) ||
+    optionText(row, row.correctOption, lang === 'en' ? 'gu' : 'en') ||
+    row.correctOption;
+  return {
+    questionId: row.bankQueId,
+    model: 'G3Q',
+    summary:
+      lang === 'en'
+        ? `Correct answer: ${correctText}`
+        : `સાચો જવાબ: ${correctText}`,
+    body: explanationBody(row, lang),
+    keyPoints:
+      lang === 'en'
+        ? ['Review the core fact in the prompt.', `Remember: ${correctText}`]
+        : ['પ્રશ્નનો મુખ્ય તથ્ય ફરી વાંચો.', `યાદ રાખો: ${correctText}`],
+  };
+};
+
 /** Client-facing question — never includes correctOption. */
 export const toPlayQuestion = (row, language = 'gu') => {
   const lang = language === 'en' ? 'en' : 'gu';
@@ -53,6 +98,12 @@ export const toSessionPlayPayload = (session) => ({
     .slice()
     .sort((a, b) => a.order - b.order)
     .map((q) => toPlayQuestion(q, session.language)),
+  explanations: Object.fromEntries(
+    (session.questions || [])
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .map((q) => [q.bankQueId, toPlayExplanation(q, session.language)])
+  ),
 });
 
 export const toSessionResult = (session) => {

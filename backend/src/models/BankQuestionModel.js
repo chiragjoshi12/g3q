@@ -22,6 +22,15 @@ const deriveAnswer = (row, map) => {
 
 const hasText = (value) => Boolean(value && String(value).trim());
 
+const reviewerLabel = (row) => {
+  if (row.reviewedBy) return row.reviewedBy.fullName || row.reviewedBy.username;
+  const act = (row.activities || []).find(
+    (a) => a.action === 'ACCEPTED' || a.action === 'REJECTED'
+  );
+  if (!act) return null;
+  return act.admin?.fullName || act.username || null;
+};
+
 const toListItem = (row) => {
   if (!row) return null;
   return {
@@ -40,12 +49,16 @@ const toListItem = (row) => {
     district: row.district ?? null,
     caste_category: row.casteCategory ?? null,
     review_status: row.reviewStatus,
-    reviewed_by_username: row.reviewedBy?.username ?? null,
+    reviewed_by_username: reviewerLabel(row),
     reviewed_at: row.reviewedAt ? row.reviewedAt.toISOString() : null,
-    last_edited_by_username: row.lastEditedBy?.username ?? null,
+    last_edited_by_username: row.lastEditedBy
+      ? row.lastEditedBy.fullName || row.lastEditedBy.username
+      : null,
     last_edited_at: row.lastEditedAt ? row.lastEditedAt.toISOString() : null,
     assigned_to_id: row.assignment?.adminId ?? row.assignment?.admin?.id ?? null,
-    assigned_to_username: row.assignment?.admin?.username ?? null,
+    assigned_to_username: row.assignment?.admin
+      ? row.assignment.admin.fullName || row.assignment.admin.username
+      : null,
     assignment_date: row.assignment?.assignmentDate
       ? ymdFromDate(row.assignment.assignmentDate)
       : null,
@@ -91,10 +104,16 @@ const toDetail = (row) => {
 };
 
 const auditInclude = {
-  reviewedBy: { select: { username: true } },
-  lastEditedBy: { select: { username: true } },
+  reviewedBy: { select: { username: true, fullName: true } },
+  lastEditedBy: { select: { username: true, fullName: true } },
   assignment: {
-    include: { admin: { select: { id: true, username: true } } },
+    include: { admin: { select: { id: true, username: true, fullName: true } } },
+  },
+  activities: {
+    where: { action: { in: ['ACCEPTED', 'REJECTED'] } },
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+    include: { admin: { select: { username: true, fullName: true } } },
   },
 };
 
@@ -273,6 +292,19 @@ export class BankQuestionModel {
       }),
     ]);
 
+    return this.findByQueId(queId);
+  }
+
+  static async findComment(queId, commentId) {
+    return prisma.bankQuestionComment.findFirst({
+      where: { id: commentId, queId },
+    });
+  }
+
+  static async deleteComment(queId, commentId) {
+    const comment = await this.findComment(queId, commentId);
+    if (!comment) return this.findByQueId(queId);
+    await prisma.bankQuestionComment.delete({ where: { id: comment.id } });
     return this.findByQueId(queId);
   }
 

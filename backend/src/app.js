@@ -14,6 +14,7 @@ import adminRoutes from './routes/admin.routes.js';
 import sessionRoutes from './routes/session.routes.js';
 import leaderboardRoutes from './routes/leaderboard.routes.js';
 import g3qAiRoutes from './routes/g3qAi.routes.js';
+import landingRoutes from './routes/landing.routes.js';
 
 const app = express();
 
@@ -51,6 +52,7 @@ app.get('/api/v1/health', (req, res) => {
 // NEXT_PUBLIC_API_BASE_URL in gujarat-gov-quiz/config/app.config.js — point
 // it at this server's origin + /api and the REST data source works as-is.
 app.use('/api/auth', authRoutes);
+app.use('/api/landing', landingRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/quizzes', quizRoutes);

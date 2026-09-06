@@ -5,7 +5,8 @@ import {
   adminLoginSchema,
   adminProfileUpdateSchema,
   adminCreateUserSchema,
-  adminWorkQuotaSchema,
+  adminWorkAllocateSchema,
+  adminWorkUnassignSchema,
   questionUpdateSchema,
   questionReviewSchema,
   questionCommentSchema,
@@ -15,17 +16,15 @@ import {
   adminMe,
   adminUpdateMe,
   adminStats,
-  adminAnalyticsDashboard,
-  adminAnalyticsGeo,
-  adminAnalyticsWeekly,
-  adminAnalyticsCaste,
   adminWorkDashboard,
-  adminSetWorkQuota,
+  adminAllocateWork,
+  adminUnassignWork,
   adminListQuestions,
   adminGetQuestion,
   adminUpdateQuestion,
   adminReviewQuestion,
   adminCommentQuestion,
+  adminDeleteComment,
   adminListUsers,
   adminCreateUser,
   adminSetUserActive,
@@ -42,11 +41,8 @@ router.patch('/me', validateRequest(adminProfileUpdateSchema), adminUpdateMe);
 
 router.get('/stats', adminStats);
 router.get('/work/dashboard', adminWorkDashboard);
-router.post('/work/quota', requireMaster, validateRequest(adminWorkQuotaSchema), adminSetWorkQuota);
-router.get('/analytics', adminAnalyticsDashboard);
-router.get('/analytics/geo', adminAnalyticsGeo);
-router.get('/analytics/weekly', adminAnalyticsWeekly);
-router.get('/analytics/caste', adminAnalyticsCaste);
+router.post('/work/allocate', requireMaster, validateRequest(adminWorkAllocateSchema), adminAllocateWork);
+router.post('/work/unassign', requireMaster, validateRequest(adminWorkUnassignSchema), adminUnassignWork);
 
 router.get('/questions', adminListQuestions);
 router.get('/questions/:queId', adminGetQuestion);
@@ -61,6 +57,7 @@ router.post(
   validateRequest(questionCommentSchema),
   adminCommentQuestion
 );
+router.delete('/questions/:queId/comments/:commentId', adminDeleteComment);
 
 router.get('/users', requireMaster, adminListUsers);
 router.post('/users', requireMaster, validateRequest(adminCreateUserSchema), adminCreateUser);

@@ -54,12 +54,13 @@ export const CONFIG = {
 
   // Bank-backed quiz sessions (allocate from ACCEPTED bank_questions).
   QUIZ: {
-    QUESTION_COUNT: parseInt(process.env.QUIZ_SESSION_QUESTION_COUNT) || 20,
+    QUESTION_COUNT: parseInt(process.env.QUIZ_SESSION_QUESTION_COUNT) || 15,
     // Soft personalisation: target this many profile-tagged (district / caste) Qs.
     PERSONALIZED_MIN: parseInt(process.env.QUIZ_PERSONALIZED_MIN) || 4,
     PERSONALIZED_MAX: parseInt(process.env.QUIZ_PERSONALIZED_MAX) || 5,
     EXPIRY_MINUTES: parseInt(process.env.QUIZ_SESSION_EXPIRY_MINUTES) || 90,
     DEFAULT_LANGUAGE: process.env.QUIZ_DEFAULT_LANGUAGE || 'gu',
+    CURRENT_WEEK: parseInt(process.env.QUIZ_CURRENT_WEEK) || 5,
   },
 
   /**
@@ -70,7 +71,7 @@ export const CONFIG = {
   AI: {
     ENABLED: parseBool(process.env.AI_ENHANCEMENT_ENABLED, false),
     API_KEY: process.env.GEMINI_API_KEY || '',
-    MODEL: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
+    MODEL: process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite',
     // Typical enhance pass is ~8–10s; keep headroom for slow responses.
     TIMEOUT_MS: parseInt(process.env.GEMINI_TIMEOUT_MS) || 20000,
   },

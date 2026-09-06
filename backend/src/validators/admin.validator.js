@@ -25,11 +25,15 @@ export const adminCreateUserSchema = z.object({
   ),
 });
 
-export const adminWorkQuotaSchema = z.object({
+export const adminWorkAllocateSchema = z.object({
   admin_id: z.coerce.number().int().positive(),
-  daily_quota: z.coerce.number().int().min(1).max(2000),
-  is_active: z.boolean().optional().default(true),
-  notes: z.string().trim().max(500).nullable().optional(),
+  count: z.coerce.number().int().min(1).max(2000),
+});
+
+export const adminWorkUnassignSchema = z.object({
+  admin_id: z.coerce.number().int().positive(),
+  count: z.coerce.number().int().min(1).max(2000),
+  batch_id: z.coerce.number().int().positive().optional(),
 });
 
 export const questionUpdateSchema = z
@@ -89,4 +93,5 @@ export const questionListQuerySchema = z.object({
     .trim()
     .optional()
     .transform((v) => (v && v !== '' ? v : undefined)),
+  has_comments: z.enum(['all', 'yes', 'no']).optional().default('all'),
 });

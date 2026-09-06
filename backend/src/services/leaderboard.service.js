@@ -1,6 +1,8 @@
 import { prisma } from '../config/prisma.client.js';
+import { CONFIG } from '../config/index.js';
 import { AppError, ERROR_CODE } from '../utils/appError.js';
 import { UserModel } from '../models/UserModel.js';
+import { ROLE } from '../config/roles.js';
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
@@ -21,6 +23,10 @@ const toEntry = (row, rank, meId) => ({
   sessionsCompleted: Number(row.sessions_completed) || 0,
   you: row.user_id === meId,
 });
+
+const schoolLabel = (scopeName, week) =>
+  `${scopeName || 'રાજ્ય'} - ${week} મું અઠવાડિયું`;
+const categoryLabel = (title, week) => `${title} - ${week} મું અઠવાડિયું`;
 
 /**
  * Aggregates submitted quiz_sessions per user, ranked by:
@@ -136,6 +142,9 @@ export const leaderboardService = {
       scope: 'school',
       schoolId: scopeSchoolId,
       institute: scopeInstitute,
+      taluka: me.taluka || null,
+      week: CONFIG.QUIZ.CURRENT_WEEK,
+      label: schoolLabel(me.taluka || me.district || scopeInstitute, CONFIG.QUIZ.CURRENT_WEEK),
       total: items.length,
       items,
       me: meEntry,
@@ -166,9 +175,45 @@ export const leaderboardService = {
     return {
       scope: 'taluka',
       taluka: scopeTaluka,
+      week: CONFIG.QUIZ.CURRENT_WEEK,
+      label: schoolLabel(scopeTaluka, CONFIG.QUIZ.CURRENT_WEEK),
       total: items.length,
       items,
       me: meEntry,
     };
+  },
+
+  async globalByRole({ userId, role, limit }) {
+    const me = await UserModel.findById(userId);
+    if (!me) throw new AppError(ERROR_CODE.UNAUTHORIZED);
+
+    const whereSql = 'u.role = ?';
+    const params = [role];
+    const cap = clampLimit(limit);
+
+    const [items, meEntry] = await Promise.all([
+      rankedUsers({ whereSql, params, limit: cap, meId: userId }),
+      findMyRank({ whereSql, params, meId: userId }),
+    ]);
+
+    return {
+      scope: role,
+      week: CONFIG.QUIZ.CURRENT_WEEK,
+      label:
+        role === ROLE.COLLEGE
+          ? categoryLabel('કોલેજ કેટેગરી', CONFIG.QUIZ.CURRENT_WEEK)
+          : categoryLabel('નાગરિક કેટેગરી', CONFIG.QUIZ.CURRENT_WEEK),
+      total: items.length,
+      items,
+      me: meEntry,
+    };
+  },
+
+  async college({ userId, limit }) {
+    return this.globalByRole({ userId, role: ROLE.COLLEGE, limit });
+  },
+
+  async citizen({ userId, limit }) {
+    return this.globalByRole({ userId, role: ROLE.CITIZEN, limit });
   },
 };

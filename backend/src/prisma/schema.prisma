@@ -73,6 +73,16 @@ model User {
   @@map("users")
 }
 
+model District {
+  id        Int      @id
+  nameEn    String   @unique @map("name_en") @db.VarChar(128)
+  nameGu    String   @unique @map("name_gu") @db.VarChar(128)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("districts")
+}
+
 /// Bank-backed play session: N questions allocated once at start, then graded on submit.
 enum SessionStatus {
   in_progress
@@ -332,6 +342,8 @@ model AdminUser {
   quotasCreated     AdminWorkQuota[] @relation("QuotaSetter")
   assignedWork      AdminQuestionAssignment[] @relation("AssignedAdmin")
   assignmentsMade   AdminQuestionAssignment[] @relation("AssignmentCreator")
+  workBatches       AdminWorkBatch[] @relation("BatchReviewer")
+  batchesCreated    AdminWorkBatch[] @relation("BatchCreator")
 
   @@map("admin_users")
 }
@@ -436,22 +448,43 @@ model AdminWorkQuota {
   @@map("admin_work_quotas")
 }
 
+/// One Allocate click. History lists these rows, not calendar days.
+model AdminWorkBatch {
+  id             Int      @id @default(autoincrement())
+  adminId        Int      @map("admin_id")
+  assignedById   Int      @map("assigned_by_id")
+  assignmentDate DateTime @map("assignment_date") @db.Date
+  allocated      Int
+  released       Int      @default(0)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  admin       AdminUser                 @relation("BatchReviewer", fields: [adminId], references: [id], onDelete: Cascade)
+  assignedBy  AdminUser                 @relation("BatchCreator", fields: [assignedById], references: [id])
+  assignments AdminQuestionAssignment[]
+
+  @@index([adminId, createdAt])
+  @@map("admin_work_batches")
+}
+
 /// One bank question reserved for one reviewer. Unique on que_id so two
 /// sub-admins never share the same pending row.
 model AdminQuestionAssignment {
   id             Int      @id @default(autoincrement())
   adminId        Int      @map("admin_id")
   queId          String   @map("que_id") @db.VarChar(32)
+  batchId        Int      @map("batch_id")
   assignmentDate DateTime @map("assignment_date") @db.Date
   assignedById   Int      @map("assigned_by_id")
   createdAt      DateTime @default(now()) @map("created_at")
 
-  admin      AdminUser    @relation("AssignedAdmin", fields: [adminId], references: [id], onDelete: Cascade)
-  assignedBy AdminUser    @relation("AssignmentCreator", fields: [assignedById], references: [id])
-  question   BankQuestion @relation(fields: [queId], references: [queId], onDelete: Cascade)
+  admin      AdminUser     @relation("AssignedAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+  assignedBy AdminUser     @relation("AssignmentCreator", fields: [assignedById], references: [id])
+  batch      AdminWorkBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  question   BankQuestion  @relation(fields: [queId], references: [queId], onDelete: Cascade)
 
   @@unique([queId])
   @@index([adminId, assignmentDate])
   @@index([assignmentDate])
+  @@index([batchId])
   @@map("admin_question_assignments")
 }

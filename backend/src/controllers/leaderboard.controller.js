@@ -1,6 +1,7 @@
 import { asyncHandler } from '../middlewares/error.middleware.js';
 import { leaderboardService } from '../services/leaderboard.service.js';
 import {
+  globalLeaderboardQuerySchema,
   schoolLeaderboardQuerySchema,
   talukaLeaderboardQuerySchema,
 } from '../validators/leaderboard.validator.js';
@@ -21,6 +22,24 @@ export const talukaLeaderboard = asyncHandler(async (req, res) => {
   const result = await leaderboardService.taluka({
     userId: req.user.id,
     taluka: query.taluka,
+    limit: query.limit,
+  });
+  return res.status(200).json(result);
+});
+
+export const collegeLeaderboard = asyncHandler(async (req, res) => {
+  const query = globalLeaderboardQuerySchema.parse(req.query);
+  const result = await leaderboardService.college({
+    userId: req.user.id,
+    limit: query.limit,
+  });
+  return res.status(200).json(result);
+});
+
+export const citizenLeaderboard = asyncHandler(async (req, res) => {
+  const query = globalLeaderboardQuerySchema.parse(req.query);
+  const result = await leaderboardService.citizen({
+    userId: req.user.id,
     limit: query.limit,
   });
   return res.status(200).json(result);

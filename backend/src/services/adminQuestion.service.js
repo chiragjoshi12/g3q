@@ -3,7 +3,7 @@ import { ADMIN_ROLE } from '../config/admin.roles.js';
 import { BankQuestionModel } from '../models/BankQuestionModel.js';
 import { AdminWorkModel } from '../models/AdminWorkModel.js';
 
-const buildListWhere = ({ language, review_status, q, correct_option, assigned_to }, admin) => {
+const buildListWhere = ({ language, review_status, q, correct_option, assigned_to, has_comments }, admin) => {
   const where = {};
 
   if (review_status && review_status !== 'all') {
@@ -42,6 +42,12 @@ const buildListWhere = ({ language, review_status, q, correct_option, assigned_t
     where.assignment = { is: null };
   } else if (assigned && /^\d+$/.test(assigned)) {
     where.assignment = { is: { adminId: Number(assigned) } };
+  }
+
+  if (has_comments === 'yes') {
+    where.comments = { some: {} };
+  } else if (has_comments === 'no') {
+    where.comments = { none: {} };
   }
 
   return where;
@@ -92,5 +98,16 @@ export const adminQuestionService = {
     const exists = await BankQuestionModel.findRowByQueId(queId);
     if (!exists) throw new AppError(ERROR_CODE.NOT_FOUND, 'Question not found.');
     return BankQuestionModel.addComment(queId, body.body, admin);
+  },
+
+  async deleteComment(queId, commentId, admin) {
+    const exists = await BankQuestionModel.findRowByQueId(queId);
+    if (!exists) throw new AppError(ERROR_CODE.NOT_FOUND, 'Question not found.');
+    const comment = await BankQuestionModel.findComment(queId, commentId);
+    if (!comment) throw new AppError(ERROR_CODE.NOT_FOUND, 'Comment not found.');
+    if (admin.role !== ADMIN_ROLE.MASTER && comment.userId !== admin.id) {
+      throw new AppError(ERROR_CODE.FORBIDDEN, 'You can only delete your own comments.');
+    }
+    return BankQuestionModel.deleteComment(queId, commentId);
   },
 };
