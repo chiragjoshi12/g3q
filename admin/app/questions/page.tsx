@@ -14,7 +14,7 @@ import { AdminShell } from "@/components/AdminShell";
 import { ReviewStatusBadge } from "@/components/QuestionDetail";
 import { QuestionReviewModal } from "@/components/QuestionReviewModal";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 100;
 
 export default function QuestionsPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
