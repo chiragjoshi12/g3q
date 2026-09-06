@@ -21,7 +21,7 @@ export const DATA_SOURCE = {
 
 export const appConfig = {
   name: "ગુજરાત ક્વિઝ",
-  dataSource: process.env.NEXT_PUBLIC_DATA_SOURCE || DATA_SOURCE.JSON,
+  dataSource: process.env.NEXT_PUBLIC_DATA_SOURCE || DATA_SOURCE.REST,
 
   api: {
     baseUrl: resolveApiBaseUrl(),
@@ -36,7 +36,7 @@ export const appConfig = {
   },
 
   auth: {
-    // Static OTP for the MVP. The real flow will verify server-side.
+    // Mirrors backend OTP defaults for dev/test flows.
     staticOtp: "1234",
     otpLength: 4,
     resendSeconds: 30,

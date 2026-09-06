@@ -4,7 +4,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
 import { authController } from "@/controllers/auth.controller";
-import { appConfig } from "@/config/app.config";
+import { appConfig, DATA_SOURCE } from "@/config/app.config";
 import { toMessage } from "@/lib/core/errors";
 import { isCitizen } from "@/lib/domain/roles";
 import { STORAGE_KEYS, zustandStorage } from "@/lib/storage/storage";
@@ -220,6 +220,17 @@ export const useAuthStore = create()(
         token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (
+          appConfig.dataSource === DATA_SOURCE.REST &&
+          typeof state?.token === "string" &&
+          state.token.startsWith("static.")
+        ) {
+          state.user = null;
+          state.token = null;
+          state.isAuthenticated = false;
+        }
+      },
     }
   )
 );

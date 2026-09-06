@@ -10,7 +10,7 @@ import { IdentityStep } from "@/components/auth/IdentityStep";
 import { OtpStep } from "@/components/auth/OtpStep";
 import { WelcomeStep } from "@/components/auth/WelcomeStep";
 import { AppShell } from "@/components/layout/AppShell";
-import { ROUTES } from "@/config/routes";
+import { consumePostAuthPath, markLoginToast, ROUTES } from "@/config/routes";
 import { useStoreHydrated } from "@/hooks/useStoreHydrated";
 import { isCitizen } from "@/lib/domain/roles";
 import { AUTH_STEP, useAuthStore } from "@/store/auth.store";
@@ -61,7 +61,8 @@ export default function AuthPage() {
 
   const goHomeFromWelcome = () => {
     completeLogin();
-    router.replace(ROUTES.home);
+    markLoginToast();
+    router.replace(consumePostAuthPath());
   };
 
   useEffect(() => {

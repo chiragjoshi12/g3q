@@ -1,6 +1,15 @@
+import { appConfig, DATA_SOURCE } from "@/config/app.config";
+import { getDataSource } from "@/lib/data/sources";
 import { attemptRepository } from "@/lib/data/repositories/attempt.repository";
+import { toUser } from "@/lib/domain/models";
 
 export const profileController = {
+  async loadMe() {
+    if (appConfig.dataSource !== DATA_SOURCE.REST) return null;
+    const raw = await getDataSource().getMe();
+    return toUser(raw);
+  },
+
   async loadOverview(userId) {
     const [attempts, stats] = await Promise.all([
       attemptRepository.list(userId),

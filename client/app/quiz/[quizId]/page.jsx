@@ -75,8 +75,8 @@ function QuizScreen({ params }) {
   const error = useQuizStore((state) => state.error);
 
   useEffect(() => {
-    if (ready) loadQuiz(quizId);
-  }, [ready, quizId, loadQuiz]);
+    if (ready) loadQuiz(quizId, { practice });
+  }, [ready, quizId, practice, loadQuiz]);
 
   const question = questions[currentIndex] ?? null;
   const answering = phase === QUIZ_PHASE.ANSWERING;
@@ -169,7 +169,10 @@ function QuizScreen({ params }) {
             <ContentWidth size="phone" className="px-5 py-5 sm:px-6 sm:py-6 md:max-w-none md:px-6">
               {loading && !question ? <LoadingState label="ક્વિઝ તૈયાર થઈ રહી છે…" /> : null}
               {error ? (
-                <ErrorState message={error} onRetry={() => loadQuiz(quizId, { restart: true })} />
+                <ErrorState
+                  message={error}
+                  onRetry={() => loadQuiz(quizId, { restart: true, practice })}
+                />
               ) : null}
 
               {question ? (

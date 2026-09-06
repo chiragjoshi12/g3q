@@ -10,7 +10,10 @@ import { HelplineSheet } from "@/components/common/HelplineSheet";
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { AuroraWash } from "@/components/layout/AuroraWash";
 import { BrandHeader } from "@/components/layout/BrandHeader";
+import { appConfig, DATA_SOURCE } from "@/config/app.config";
 import { ROUTES } from "@/config/routes";
+import { profileController } from "@/controllers/profile.controller";
+import { useAsyncData } from "@/hooks/useAsyncData";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
@@ -20,11 +23,17 @@ const COLUMN = "mx-auto w-full max-w-[26.5rem] md:max-w-[32rem]";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const user = useAuthStore((state) => state.user);
+  const sessionUser = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const resetSession = useQuizStore((state) => state.resetSession);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [helplineOpen, setHelplineOpen] = useState(false);
+  const { data: liveUser } = useAsyncData(
+    () => profileController.loadMe(),
+    [],
+    appConfig.dataSource === DATA_SOURCE.REST
+  );
+  const user = liveUser || sessionUser;
 
   const handleLogout = () => {
     resetSession();

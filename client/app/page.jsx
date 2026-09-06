@@ -6,13 +6,16 @@ import { BrandIcon } from "@/components/common/BrandIcon";
 import { BannerSlider } from "@/components/landing/BannerSlider";
 import { LandingActionNav } from "@/components/landing/LandingActionNav";
 import { LeaderboardPreviewCard } from "@/components/landing/LeaderboardList";
+import { ErrorState } from "@/components/common/StateViews";
 import { AppShell } from "@/components/layout/AppShell";
 import { BrandHeader } from "@/components/layout/BrandHeader";
-import { appConfig } from "@/config/app.config";
+import { appConfig, DATA_SOURCE } from "@/config/app.config";
 import { FEATURED_QUIZ_ID, ROUTES, setPostAuthPath } from "@/config/routes";
 import { ABHIYAN } from "@/data/abhiyan";
 import { LANDING_PLAYS_COUNT, LANDING_WEEK_PLAYS_COUNT } from "@/data/leaderboard";
+import { useAsyncData } from "@/hooks/useAsyncData";
 import { BRAND_ICONS } from "@/lib/brand-icons";
+import { getDataSource } from "@/lib/data/sources";
 import { formatTalukaLabel } from "@/lib/format-taluka";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useStoreHydrated } from "@/hooks/useStoreHydrated";
@@ -30,10 +33,24 @@ export default function LandingPage() {
   const hydrated = useStoreHydrated(useAuthStore);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
+  const liveLanding = appConfig.dataSource === DATA_SOURCE.REST;
+  const {
+    status: landingStatus,
+    data: landingData,
+    error: landingError,
+    reload: reloadLanding,
+  } = useAsyncData(() => getDataSource().getLandingSummary(), [], liveLanding);
 
   const talukaLabel = formatTalukaLabel(hydrated ? user?.taluka : null);
   const week = Number.isFinite(appConfig.certificate.week) ? appConfig.certificate.week : 5;
-  const playsCount = useCountUp(LANDING_PLAYS_COUNT, { durationMs: 1600 });
+  const totalPlays = liveLanding
+    ? Number(landingData?.totalPlays ?? 0)
+    : Number(LANDING_PLAYS_COUNT);
+  const weeklyPlays = liveLanding
+    ? Number(landingData?.weeklyPlays ?? 0)
+    : Number(LANDING_WEEK_PLAYS_COUNT);
+  const practiceQuizId = landingData?.featuredQuizId || FEATURED_QUIZ_ID;
+  const playsCount = useCountUp(totalPlays, { durationMs: 1600 });
 
   const go = (path) => {
     if (hydrated && isAuthenticated) {
@@ -89,6 +106,9 @@ export default function LandingPage() {
 
             {/* Card 2 — plays count */}
             <section className="rounded-[2rem] bg-white px-9 pt-7 pb-5">
+              {landingStatus === "error" ? (
+                <ErrorState message={landingError} onRetry={reloadLanding} className="py-6" />
+              ) : null}
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-6">
                   <BrandIcon
@@ -103,7 +123,7 @@ export default function LandingPage() {
                 </div>
                 <p className="pl-[3.75rem] text-[1.15rem] font-medium text-black">વખત ક્વિઝ રમાઈ</p>
                 <span className="ml-[3.75rem] inline-flex w-fit items-baseline whitespace-nowrap rounded-full bg-[#e8f8ed] px-4 py-2 text-left text-[13px] font-medium text-black">
-                  {new Intl.NumberFormat("en-IN").format(LANDING_WEEK_PLAYS_COUNT)} in {week}<sup>th</sup>{" week"}
+                  {new Intl.NumberFormat("en-IN").format(weeklyPlays)} in {week}<sup>th</sup>{" week"}
                 </span>
               </div>
             </section>
@@ -120,7 +140,7 @@ export default function LandingPage() {
 
         <LandingActionNav
           floating
-          onPractice={() => router.push(ROUTES.quiz(FEATURED_QUIZ_ID, { practice: true }))}
+          onPractice={() => router.push(ROUTES.quiz(practiceQuizId, { practice: true }))}
           onPlayQuiz={() => go(ROUTES.home)}
           onG3qAi={() => router.push(ROUTES.g3qAi)}
         />

@@ -1,23 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 
 import { BrandIcon } from "@/components/common/BrandIcon";
+import { ErrorState } from "@/components/common/StateViews";
 import { FeaturedQuizCard } from "@/components/home/FeaturedQuizCard";
 import { QuizPersonalizationOverlay } from "@/components/home/QuizPersonalizationOverlay";
 import { QuestionTypeGuide } from "@/components/home/QuestionTypeGuide";
 import { QuestionTypeGrid } from "@/components/home/QuestionTypeGrid";
 import { LeaderboardPreviewCard } from "@/components/landing/LeaderboardList";
-import { appConfig } from "@/config/app.config";
+import { appConfig, DATA_SOURCE } from "@/config/app.config";
 import { FEATURED_QUIZ_ID, PLAY_QUIZ_ID, ROUTES } from "@/config/routes";
-import quizzesJson from "@/data/quizzes.json";
+import { quizController } from "@/controllers/quiz.controller";
 import { useAsyncData } from "@/hooks/useAsyncData";
 import { useStoreHydrated } from "@/hooks/useStoreHydrated";
-import { BRAND_ICONS } from "@/lib/brand-icons";
 import { attemptRepository } from "@/lib/data/repositories/attempt.repository";
+import { BRAND_ICONS } from "@/lib/brand-icons";
+import { getDataSource } from "@/lib/data/sources";
 import { formatTalukaLabel, formatTalukaWeekPill } from "@/lib/format-taluka";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -34,6 +36,14 @@ function pickFeaturedQuiz(list) {
 /** Latest finished attempt for this quiz (skips abandoned early exits). */
 function pickQuizScore(attempts, quizId) {
   if (!quizId || !Array.isArray(attempts)) return null;
+  if (appConfig.dataSource === DATA_SOURCE.REST) {
+    const latest = attempts.find((attempt) => !attempt.abandoned);
+    if (!latest) return null;
+    return {
+      correctCount: Number(latest.correctCount) || 0,
+      totalQuestions: Number(latest.totalQuestions) || 0,
+    };
+  }
   const match = attempts.find(
     (attempt) => attempt.quizId === quizId && !attempt.abandoned
   );
@@ -50,7 +60,29 @@ export default function HomePage() {
   const user = useAuthStore((state) => state.user);
   const [guideType, setGuideType] = useState(null);
   const [preparingQuiz, setPreparingQuiz] = useState(false);
-  const quiz = pickFeaturedQuiz(quizzesJson);
+  const [nextQuizPath, setNextQuizPath] = useState(null);
+  const [overlayDone, setOverlayDone] = useState(false);
+  const usingRest = appConfig.dataSource === DATA_SOURCE.REST;
+
+  const {
+    status: quizzesStatus,
+    data: quizzes = [],
+    error: quizzesError,
+    reload: reloadQuizzes,
+  } = useAsyncData(() => quizController.listQuizzes(), [], !usingRest);
+  const {
+    data: landingSummary,
+    error: landingError,
+    reload: reloadLanding,
+  } = useAsyncData(() => getDataSource().getLandingSummary(), [], usingRest);
+  const quiz = usingRest
+    ? {
+        id: landingSummary?.featuredQuizId || PLAY_QUIZ_ID,
+        title: landingSummary?.playTitle || "G3Q Quiz",
+        subtitle: landingSummary?.playSubtitle || "વિદ્યાર્થી પ્રોફાઇલ મુજબ 15 પ્રશ્નો",
+        totalQuestions: Number(landingSummary?.playQuestionCount ?? 15),
+      }
+    : pickFeaturedQuiz(quizzes);
 
   const { data: attempts } = useAsyncData(
     () => attemptRepository.list(user?.id),
@@ -58,12 +90,31 @@ export default function HomePage() {
     hydrated && Boolean(user?.id)
   );
 
-  const week = Number.isFinite(appConfig.certificate.week) ? appConfig.certificate.week : 5;
+  const week = Number(landingSummary?.week) || appConfig.certificate.week || 5;
   const score = pickQuizScore(attempts, quiz?.id);
 
-  const startQuiz = () => {
+  useEffect(() => {
+    if (preparingQuiz && overlayDone && nextQuizPath) {
+      router.push(nextQuizPath);
+    }
+  }, [preparingQuiz, overlayDone, nextQuizPath, router]);
+
+  const startQuiz = async () => {
     if (!quiz || preparingQuiz) return;
     setPreparingQuiz(true);
+    setOverlayDone(false);
+    setNextQuizPath(null);
+    try {
+      if (usingRest) {
+        const session = await quizController.startSession({ language: "gu" });
+        setNextQuizPath(ROUTES.quiz(session.sessionId));
+        return;
+      }
+      setNextQuizPath(ROUTES.quiz(quiz.id));
+    } catch {
+      setPreparingQuiz(false);
+      setNextQuizPath(null);
+    }
   };
 
   return (
@@ -100,6 +151,13 @@ export default function HomePage() {
           </div>
 
           <div className="mt-5">
+            {((!usingRest && quizzesStatus === "error") || (usingRest && landingError)) ? (
+              <ErrorState
+                message={usingRest ? landingError : quizzesError}
+                onRetry={usingRest ? reloadLanding : reloadQuizzes}
+                className="py-8"
+              />
+            ) : null}
             {quiz ? (
               <FeaturedQuizCard quiz={quiz} onStart={startQuiz} score={score} />
             ) : null}
@@ -129,7 +187,7 @@ export default function HomePage() {
             <QuizPersonalizationOverlay
               name={user?.name}
               taluka={user?.taluka}
-              onComplete={() => router.push(ROUTES.quiz(quiz.id))}
+              onComplete={() => setOverlayDone(true)}
             />,
             document.body
           )

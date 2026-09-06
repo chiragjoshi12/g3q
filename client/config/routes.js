@@ -4,6 +4,7 @@ export const ROUTES = {
   abhiyan: "/abhiyan",
   leaderboard: "/leaderboard",
   g3qAi: "/g3q-ai",
+  questionRewrite: "/question-rewrite",
   home: "/home",
   profile: "/profile",
   quizAttempts: "/quiz-attempts",

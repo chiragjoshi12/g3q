@@ -5,10 +5,11 @@ import { BRAND_ICONS } from "@/lib/brand-icons";
 
 const TYPES = [
   { id: "mcq", label: "MCQ", icon: BRAND_ICONS.queTypeMcq },
-  { id: "truefalse", label: "સાચું / ખોટું", Icon: TrueFalseIcon },
   { id: "blanks", label: "ખાલી જગ્યા પૂરો", Icon: BlanksIcon },
   { id: "match", label: "Match the pair", icon: BRAND_ICONS.queTypeMatch },
+  { id: "truefalse", label: "સાચું / ખોટું", icon: BRAND_ICONS.queTypeTrueFalse },
   { id: "sequence", label: "Sequence", icon: BRAND_ICONS.queTypeSequence },
+  { id: "image", label: "Image Question", icon: BRAND_ICONS.queTypeImage },
 ];
 
 /** Question-type pills under the featured quiz — width follows the label. */
@@ -36,30 +37,6 @@ export function QuestionTypeGrid({ onSelect }) {
         ))}
       </div>
     </section>
-  );
-}
-
-function TrueFalseIcon({ className }) {
-  return (
-    <svg viewBox="0 0 32 32" className={className} aria-hidden>
-      <circle cx="11" cy="16" r="8" fill="#E6F4EA" />
-      <path
-        d="M7.6 16.2l2.2 2.2 4.6-5"
-        fill="none"
-        stroke="#16A34A"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="22.5" cy="16" r="8" fill="#F8E6F0" />
-      <path
-        d="M20 13.5l5 5M25 13.5l-5 5"
-        fill="none"
-        stroke="#DC2626"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-    </svg>
   );
 }
 

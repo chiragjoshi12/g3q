@@ -10,6 +10,7 @@ import { ErrorState, LoadingState } from "@/components/common/StateViews";
 import { AppShell } from "@/components/layout/AppShell";
 import { AuroraWash } from "@/components/layout/AuroraWash";
 import { ScoreSummary } from "@/components/result/ScoreSummary";
+import { appConfig, DATA_SOURCE } from "@/config/app.config";
 import { ROUTES } from "@/config/routes";
 import { quizController } from "@/controllers/quiz.controller";
 import { useAsyncData } from "@/hooks/useAsyncData";
@@ -48,10 +49,13 @@ function ResultScreen({ params }) {
       if (!attempt) {
         throw new AppError(ERROR_CODE.NOT_FOUND, "આ પરિણામ મળ્યું નથી.");
       }
-      const bundle = await quizController.loadBundle(attempt.quizId);
-      return { attempt, bundle };
+      if (practice || appConfig.dataSource !== DATA_SOURCE.REST) {
+        const bundle = await quizController.loadBundle(attempt.quizId);
+        return { attempt, bundle };
+      }
+      return { attempt, bundle: null };
     },
-    [attemptId],
+    [attemptId, practice],
     ready
   );
 
