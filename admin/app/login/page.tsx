@@ -12,7 +12,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (getToken()) router.replace("/analytics");
+    if (getToken()) router.replace("/questions");
   }, [router]);
 
   async function onSubmit(e: FormEvent) {
@@ -29,7 +29,7 @@ export default function LoginPage() {
         false
       );
       setAuth(data.access_token, data.username, data.role);
-      router.replace("/analytics");
+      router.replace("/questions");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {

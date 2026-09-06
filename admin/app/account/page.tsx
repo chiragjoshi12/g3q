@@ -1,10 +1,12 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AdminShell } from "@/components/AdminShell";
-import { AdminProfile, api } from "@/lib/api";
+import { AdminProfile, api, clearAuth } from "@/lib/api";
 
 export default function AccountPage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<AdminProfile | null>(null);
   const [fullName, setFullName] = useState("");
   const [university, setUniversity] = useState("");
@@ -51,42 +53,17 @@ export default function AccountPage() {
     }
   }
 
+  function logout() {
+    clearAuth();
+    router.replace("/login");
+  }
+
   const roleLabel =
     profile?.role === "master" ? "Master Admin" : profile ? "Admin" : "—";
 
   return (
     <AdminShell title="Account">
       <section className="account-layout">
-        <aside className="account-summary">
-          {loading || !profile ? (
-            <p className="muted-note">Loading profile…</p>
-          ) : (
-            <>
-              <div className="account-avatar">
-                {(profile.full_name || profile.username || "A")
-                  .charAt(0)
-                  .toUpperCase()}
-              </div>
-              <h2>{profile.full_name || profile.username}</h2>
-              <p className="account-role">{roleLabel}</p>
-              <dl className="account-meta">
-                <div>
-                  <dt>Username</dt>
-                  <dd>{profile.username}</dd>
-                </div>
-                <div>
-                  <dt>University</dt>
-                  <dd>{profile.university || "—"}</dd>
-                </div>
-                <div>
-                  <dt>Mobile</dt>
-                  <dd>{profile.mobile_number || "—"}</dd>
-                </div>
-              </dl>
-            </>
-          )}
-        </aside>
-
         <section className="account-panel">
           <div className="panel-head">
             <div>
@@ -118,7 +95,7 @@ export default function AccountPage() {
                 />
               </label>
               <label>
-                University
+                University/College
                 <input
                   value={university}
                   onChange={(e) => setUniversity(e.target.value)}
@@ -139,6 +116,9 @@ export default function AccountPage() {
               <div className="form-actions">
                 <button type="submit" disabled={saving}>
                   {saving ? "Saving…" : "Save changes"}
+                </button>
+                <button type="button" className="ghost" onClick={logout}>
+                  Log out
                 </button>
                 {error ? <p className="form-error">{error}</p> : null}
                 {saved ? <p className="form-ok">Saved</p> : null}

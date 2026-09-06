@@ -143,38 +143,45 @@ export type WorkDayCount = {
   remaining?: number;
 };
 
+export type WorkAssignmentBatch = {
+  id: number;
+  date: string;
+  created_at: string;
+  count: number;
+  remaining: number;
+  released: number;
+  status: string;
+};
+
 export type WorkReviewer = {
   admin_id: number;
   username: string;
   full_name: string | null;
   role: string;
   is_active: boolean;
-  daily_quota: number;
-  quota_active: boolean;
-  quota_notes: string | null;
-  assigned_today: number;
-  reviewed_today: number;
-  accepted_today: number;
-  rejected_today: number;
-  remaining_today: number;
-  queue_pending: number;
-  backlog_pending: number;
-  lifetime_accepted: number;
-  lifetime_rejected: number;
-  lifetime_reviewed: number;
+  assigned_total: number;
+  assigned_open: number;
+  remaining: number;
+  reviewed: number;
+  accepted: number;
+  rejected: number;
   progress_pct: number;
   status: string;
   recent_days?: WorkDayCount[];
+  assignment_history?: WorkAssignmentBatch[];
 };
 
-export type WorkQueueItem = {
+export type WorkCommentItem = {
   que_id: string;
   question_en: string | null;
   question_gu: string | null;
-  department_en: string | null;
-  department_gu: string | null;
   review_status: string;
-  assignment_date: string | null;
+  comment_count: number;
+  latest_comment: {
+    id: number;
+    body: string;
+    created_at: string | null;
+  };
 };
 
 export type WorkDashboard = {
@@ -188,72 +195,10 @@ export type WorkDashboard = {
     unassigned_pending: number;
   };
   me: WorkReviewer;
-  my_queue: WorkQueueItem[];
+  my_comments: WorkCommentItem[];
   reviewers?: WorkReviewer[];
   recent_days?: WorkDayCount[];
   warnings?: string[];
-};
-
-export type AnalyticsGeoItem = {
-  label: string;
-  school_id?: string | null;
-  institute?: string | null;
-  registered_students: number;
-  students_played: number;
-  sessions_completed: number;
-  questions_attempted: number;
-  questions_correct: number;
-  avg_percentage: number;
-  play_rate_pct: number;
-};
-
-export type AnalyticsWeeklyItem = {
-  year_week: string;
-  week_start: string;
-  sessions_completed: number;
-  students_played: number;
-  questions_attempted: number;
-  avg_percentage: number;
-};
-
-export type AnalyticsCasteItem = {
-  caste_category: string;
-  registered_students: number;
-  students_played: number;
-  sessions_completed: number;
-  questions_attempted: number;
-  questions_correct: number;
-  avg_percentage: number;
-  play_rate_pct: number;
-};
-
-export type AnalyticsDashboard = {
-  overview: {
-    total_students: number;
-    students_played: number;
-    students_not_played: number;
-    play_rate_pct: number;
-    sessions_completed: number;
-    questions_attempted: number;
-    questions_correct: number;
-    questions_wrong: number;
-    accuracy_pct: number;
-    avg_percentage: number;
-    best_percentage: number;
-    total_time_ms: number;
-    avg_time_per_session_ms: number;
-  };
-  bank: {
-    total: number;
-    pending: number;
-    accepted: number;
-    rejected: number;
-  };
-  by_district: AnalyticsGeoItem[];
-  by_taluka: AnalyticsGeoItem[];
-  by_school: AnalyticsGeoItem[];
-  weekly: AnalyticsWeeklyItem[];
-  by_caste: AnalyticsCasteItem[];
 };
 
 const API_URL =

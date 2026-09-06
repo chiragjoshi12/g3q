@@ -6,6 +6,8 @@ import { ReviewStatusBadge } from "@/components/QuestionDetail";
 import {
   api,
   formatWhen,
+  getRole,
+  getUsername,
   QuestionDetail,
   QuestionUpdatePayload,
 } from "@/lib/api";
@@ -188,6 +190,29 @@ export function QuestionReviewModal({
     }
   }
 
+  async function onDeleteComment(commentId: number) {
+    setBusyAction(`del-${commentId}`);
+    setError(null);
+    setOk(null);
+    try {
+      const updated = await api<QuestionDetail>(
+        `/api/v1/admin/questions/${encodeURIComponent(queId)}/comments/${commentId}`,
+        { method: "DELETE" }
+      );
+      setItem(updated);
+      setForm(toForm(updated));
+      setOk("Comment deleted");
+      onChanged?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not delete comment");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  const username = getUsername();
+  const canModerateComments = getRole() === "master";
+
   if (!mounted) return null;
 
   return createPortal(
@@ -216,8 +241,16 @@ export function QuestionReviewModal({
                 Edit
               </button>
             ) : null}
-            <button type="button" className="ghost compact" onClick={onClose}>
-              Close
+            <button
+              type="button"
+              className="ghost compact modal-close"
+              onClick={onClose}
+              aria-label="Close"
+              title="Close"
+            >
+              <svg viewBox="0 0 16 16" aria-hidden>
+                <path d="M4 4 12 12M12 4 4 12" />
+              </svg>
             </button>
           </div>
         </header>
@@ -426,17 +459,31 @@ export function QuestionReviewModal({
                 </form>
                 <ul className="comment-list">
                   {(item.comments || []).length === 0 ? (
-                    <li className="muted-note">No comments yet.</li>
+                    <li className="empty-comment">No comments yet.</li>
                   ) : (
-                    (item.comments || []).map((c) => (
-                      <li key={c.id}>
-                        <div className="comment-meta">
-                          <strong>{c.username}</strong>
-                          <span>{formatWhen(c.created_at)}</span>
-                        </div>
-                        <p>{c.body}</p>
-                      </li>
-                    ))
+                    (item.comments || []).map((c) => {
+                      const canDelete =
+                        canModerateComments || c.username === username;
+                      return (
+                        <li key={c.id}>
+                          <div className="comment-meta">
+                            <strong>{c.username}</strong>
+                            <span>{formatWhen(c.created_at)}</span>
+                            {canDelete ? (
+                              <button
+                                type="button"
+                                className="ghost compact comment-delete"
+                                disabled={!!busyAction}
+                                onClick={() => onDeleteComment(c.id)}
+                              >
+                                {busyAction === `del-${c.id}` ? "Deleting…" : "Delete"}
+                              </button>
+                            ) : null}
+                          </div>
+                          <p>{c.body}</p>
+                        </li>
+                      );
+                    })
                   )}
                 </ul>
               </section>
@@ -446,9 +493,6 @@ export function QuestionReviewModal({
 
         {item && !loading ? (
           <footer className="modal-foot">
-            <p className="modal-foot-hint">
-              Accept when the question is ready for the bank, or reject if it needs rework.
-            </p>
             <div className="review-actions modal-foot-actions">
               <button
                 type="button"

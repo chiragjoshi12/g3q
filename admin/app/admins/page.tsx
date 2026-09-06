@@ -140,7 +140,7 @@ export default function AdminsPage() {
           </label>
           <div className="field-row">
             <label>
-              University
+              University/College
               <input
                 value={university}
                 onChange={(e) => setUniversity(e.target.value)}

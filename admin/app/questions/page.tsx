@@ -27,6 +27,7 @@ export default function QuestionsPage() {
   const [correctOption, setCorrectOption] = useState("");
   const [reviewStatus, setReviewStatus] = useState("all");
   const [assignedTo, setAssignedTo] = useState("all");
+  const [hasComments, setHasComments] = useState("all");
   const [filtersReady, setFiltersReady] = useState(false);
   const [reviewers, setReviewers] = useState<AdminUserItem[]>([]);
   const [role, setRole] = useState("admin");
@@ -52,6 +53,7 @@ export default function QuestionsPage() {
       if (query.trim()) params.set("q", query.trim());
       if (correctOption) params.set("correct_option", correctOption);
       if (assignedTo && assignedTo !== "all") params.set("assigned_to", assignedTo);
+      if (hasComments && hasComments !== "all") params.set("has_comments", hasComments);
       const data = await api<QuestionListResponse>(
         `/api/v1/admin/questions?${params}`
       );
@@ -63,7 +65,7 @@ export default function QuestionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, query, language, correctOption, reviewStatus, assignedTo]);
+  }, [page, query, language, correctOption, reviewStatus, assignedTo, hasComments]);
 
   useEffect(() => {
     if (!getToken()) return;
@@ -144,7 +146,7 @@ export default function QuestionsPage() {
             if (e.key === "Enter") onSearch();
           }}
         />
-        <select
+        {/* <select
           value={language}
           onChange={(e) => {
             setLanguage(e.target.value);
@@ -155,7 +157,7 @@ export default function QuestionsPage() {
           <option value="both">Bilingual only</option>
           <option value="gu_only">Gujarati only</option>
           <option value="en_only">English only</option>
-        </select>
+        </select> */}
         <select
           value={reviewStatus}
           onChange={(e) => {
@@ -196,21 +198,19 @@ export default function QuestionsPage() {
             </option>
           ))}
         </select>
+          </>
+        ) : null}
         <select
-          value={correctOption}
+          value={hasComments}
           onChange={(e) => {
-            setCorrectOption(e.target.value);
+            setHasComments(e.target.value);
             setPage(1);
           }}
         >
-          <option value="">Any answer</option>
-          <option value="A">Correct A</option>
-          <option value="B">Correct B</option>
-          <option value="C">Correct C</option>
-          <option value="D">Correct D</option>
+          <option value="all">All comments</option>
+          <option value="yes">Has comments</option>
+          <option value="no">No comments</option>
         </select>
-          </>
-        ) : null}
         <button type="button" onClick={onSearch}>
           Search
         </button>
@@ -224,26 +224,22 @@ export default function QuestionsPage() {
               <th>Question</th>
               <th>Status</th>
               <th>Ans</th>
-              {isMaster ? (
-                <>
-                  <th>Assigned</th>
-                  <th>Reviewed by</th>
-                </>
-              ) : null}
+              {isMaster ? <th>Assigned</th> : null}
+              <th>Reviewed by</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={isMaster ? 6 : 4}>Loading…</td>
+                <td colSpan={isMaster ? 6 : 5}>Loading…</td>
               </tr>
             ) : error ? (
               <tr>
-                <td colSpan={isMaster ? 6 : 4}>{error}</td>
+                <td colSpan={isMaster ? 6 : 5}>{error}</td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={isMaster ? 6 : 4}>No questions found.</td>
+                <td colSpan={isMaster ? 6 : 5}>No questions found.</td>
               </tr>
             ) : (
               items.map((item) => (
@@ -259,13 +255,17 @@ export default function QuestionsPage() {
                   </td>
                   <td className="ans">{item.correct_option || "—"}</td>
                   {isMaster ? (
-                    <>
-                      <td>{item.assigned_to_username || "—"}</td>
-                      <td className="reviewed-by">
-                        {item.reviewed_by_username || "—"}
-                      </td>
-                    </>
+                    <td>{item.assigned_to_username || "—"}</td>
                   ) : null}
+                  <td>
+                    {item.reviewed_by_username ? (
+                      <>
+                        <div>{item.reviewed_by_username}</div>
+                      </>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
                 </tr>
               ))
             )}
