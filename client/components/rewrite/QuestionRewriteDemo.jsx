@@ -102,73 +102,14 @@ function ImprovedPreview({ item, response, onChange }) {
 
 function RewriteCard({
   item,
-  index,
-  total,
-  isFirst,
-  isLast,
   mobileView,
   response,
-  onChangeMobileView,
   onResponseChange,
-  onPrevious,
-  onNext,
 }) {
   const showBeforeMobile = mobileView === "before";
 
   return (
-    <section className="rounded-[2rem] border border-[#d8e0ea] bg-white p-4 shadow-m2 sm:p-6">
-      <div className="mb-4 rounded-[1.6rem] bg-[#f7fafc] p-3 sm:p-4">
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="grid size-11 shrink-0 place-items-center rounded-[1.3rem] bg-[#2c6698] text-base font-bold text-white sm:size-12">
-              {index + 1}
-            </span>
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6a7a8a]">
-                Department
-              </p>
-              <h2 className="text-lg font-bold leading-tight text-[#143250] sm:text-xl">
-                {item.department}
-              </h2>
-            </div>
-          </div>
-
-          <div className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-bold tabular-nums text-[#6a7a8a] ring-1 ring-[#d8e0ea]">
-            {index + 1} / {total}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:justify-end">
-          <button
-            type="button"
-            onClick={onPrevious}
-            disabled={isFirst}
-            className={cn(
-              "inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border px-4 py-2.5 text-sm font-bold",
-              isFirst
-                ? "cursor-not-allowed border-[#d8e0ea] bg-[#f4f6f8] text-[#9aa8b6]"
-                : "border-[#d8e0ea] bg-white text-[#143250] hover:bg-[#f4f8fb] active:scale-[0.98]"
-            )}
-          >
-            <NavChevron direction="left" />
-            Previous
-          </button>
-          <button
-            type="button"
-            onClick={onNext}
-            disabled={isLast}
-            className={cn(
-              "inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold sm:w-auto sm:min-w-32",
-              isLast
-                ? "cursor-not-allowed bg-[#9bb8d4] text-white"
-                : "bg-[#2c6698] text-white hover:bg-[#245580] active:scale-[0.98]"
-            )}
-          >
-            Next
-            <NavChevron direction="right" />
-          </button>
-        </div>
-      </div>
+    <section className="rounded-[2rem] p-0 sm:p-6">
 
       <div className="hidden gap-4 lg:grid lg:grid-cols-2">
         <article className="rounded-[1.5rem] border border-[#eadfd4] bg-[#faf6f2] p-4 sm:p-5">
@@ -199,7 +140,7 @@ function RewriteCard({
 
       <div className="lg:hidden">
         {showBeforeMobile ? (
-          <article className="rounded-[1.5rem] border border-[#eadfd4] bg-[#faf6f2] p-4">
+          <article className="-mx-1 rounded-[1.6rem] border border-[#eadfd4] bg-[#faf6f2] p-5">
             <div className="mb-3 inline-flex rounded-full bg-[#c2410c] px-3 py-1 text-xs font-bold text-white">
               પહેલાં
             </div>
@@ -213,7 +154,7 @@ function RewriteCard({
             />
           </article>
         ) : (
-          <article className="rounded-[1.5rem] border border-[#dbe7f2] bg-[#f8fbff] p-4">
+          <article className="-mx-1 rounded-[1.6rem] border border-[#dbe7f2] bg-[#f8fbff] p-5">
             <div className="mb-3 inline-flex rounded-full bg-[#15803d] px-3 py-1 text-xs font-bold text-white">
               પછી
             </div>
@@ -225,14 +166,6 @@ function RewriteCard({
             />
           </article>
         )}
-
-        <div className="mt-4 rounded-[1.4rem] border border-[#d8e0ea] bg-[#f4f8fb] p-2">
-          <SegmentedToggle
-            items={MOBILE_VIEW_ITEMS}
-            value={mobileView}
-            onChange={onChangeMobileView}
-          />
-        </div>
       </div>
     </section>
   );
@@ -288,32 +221,68 @@ export function QuestionRewriteDemo() {
           </Link>
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#2c6698]">
-              G3Q 2.0
+              G3Q 3.0
             </p>
-            <h1 className="text-lg font-bold text-primary-700 sm:text-2xl">
-              સરળ Before / After Overview
-            </h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIndex((current) => Math.max(0, current - 1))}
+              disabled={isFirst}
+              className={cn(
+                "inline-flex size-10 items-center justify-center rounded-full border",
+                isFirst
+                  ? "cursor-not-allowed border-[#d8e0ea] bg-[#f4f6f8] text-[#9aa8b6]"
+                  : "border-[#d8e0ea] bg-white text-[#143250] hover:bg-[#f4f8fb] active:scale-[0.98]"
+              )}
+              aria-label="Previous question"
+            >
+              <NavChevron direction="left" />
+            </button>
+            {/* write the question number between the next and previous buttons */}
+            <span className="text-sm font-semibold text-[#143250]">
+              {index + 1} / {total}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIndex((current) => Math.min(total - 1, current + 1))}
+              disabled={isLast}
+              className={cn(
+                "inline-flex size-10 items-center justify-center rounded-full",
+                isLast
+                  ? "cursor-not-allowed bg-[#9bb8d4] text-white"
+                  : "bg-[#2c6698] text-white hover:bg-[#245580] active:scale-[0.98]"
+              )}
+              aria-label="Next question"
+            >
+              <NavChevron direction="right" />
+            </button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8">
+      <main className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-6 pb-28 sm:px-6 sm:py-8">
         <RewriteCard
           item={item}
           index={index}
           total={total}
-          isFirst={isFirst}
-          isLast={isLast}
           mobileView={mobileView}
           response={responses[item.id]}
-          onChangeMobileView={setMobileView}
           onResponseChange={(next) =>
             setResponses((current) => ({ ...current, [item.id]: next }))
           }
-          onPrevious={() => setIndex((current) => Math.max(0, current - 1))}
-          onNext={() => setIndex((current) => Math.min(total - 1, current + 1))}
         />
       </main>
+
+      <div className="fixed inset-x-0 bottom-4 z-30 px-4 lg:hidden">
+        <div className="mx-auto max-w-md rounded-[1.6rem] border border-[#d8e0ea] bg-white/92 p-2 shadow-[0_18px_44px_rgb(15_23_42/0.16)] backdrop-blur">
+          <SegmentedToggle
+            items={MOBILE_VIEW_ITEMS}
+            value={mobileView}
+            onChange={setMobileView}
+          />
+        </div>
+      </div>
     </div>
   );
 }
