@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useI18n } from "@/lib/i18n";
 
 /**
  * Full-screen "AI is personalising your quiz" scene shown after Play Quiz.
@@ -68,22 +69,18 @@ const SPARKLES = [
 
 export function QuizPersonalizationOverlay({ name, taluka, onComplete }) {
   const firstName = String(name || "").trim().split(/\s+/)[0];
+  const { t } = useI18n();
+  const reduceMotion =
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   const [revealed, setRevealed] = useState(0);
   const [progress, setProgress] = useState(0);
   const doneRef = useRef(false);
-  const totalMsRef = useRef(
-    DURATION_OPTIONS_MS[Math.floor(Math.random() * DURATION_OPTIONS_MS.length)]
-  );
+  const totalMsRef = useRef(DURATION_OPTIONS_MS[1]);
 
   useEffect(() => {
     const totalMs = totalMsRef.current;
-    const reduce =
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-
-    if (reduce) {
-      setRevealed(SIGNALS.length);
-      setProgress(100);
+    if (reduceMotion) {
       const t = window.setTimeout(() => onComplete?.(), 900);
       return () => window.clearTimeout(t);
     }
@@ -118,13 +115,13 @@ export function QuizPersonalizationOverlay({ name, taluka, onComplete }) {
       window.clearInterval(progressTimer);
       window.clearTimeout(doneTimer);
     };
-  }, [onComplete]);
+  }, [onComplete, reduceMotion]);
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="AI તમારી ક્વિઝ તૈયાર કરી રહ્યું છે"
+      aria-label={t("quizPreparing")}
       className="fixed inset-0 z-[100] flex flex-col items-center overflow-hidden px-6"
     >
       <div
@@ -147,7 +144,7 @@ export function QuizPersonalizationOverlay({ name, taluka, onComplete }) {
       <div className="relative flex w-full max-w-[26rem] flex-1 flex-col items-center justify-center">
       <div className="relative w-full">
       <h2 className="mt-2 -translate-y-16 py-1 text-[1.35rem] leading-tight font-bold bg-gradient-to-r from-[#7C5CE0] via-[#2D689D] to-[#61A5D8] bg-clip-text text-transparent">
-            {firstName ? `${firstName}, ` : ""} તમારા માટે પર્સનલાઈઝ્ડ પ્રશ્નો બની રહ્યા છે...
+            {t("aiPreparingQuiz", { name: firstName || "" }).trim()}
           </h2>
         </div>
 

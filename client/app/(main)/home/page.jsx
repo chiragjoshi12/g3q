@@ -20,6 +20,7 @@ import { useStoreHydrated } from "@/hooks/useStoreHydrated";
 import { attemptRepository } from "@/lib/data/repositories/attempt.repository";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { getDataSource } from "@/lib/data/sources";
+import { useI18n } from "@/lib/i18n";
 import { formatTalukaLabel, formatTalukaWeekPill } from "@/lib/format-taluka";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -56,6 +57,7 @@ function pickQuizScore(attempts, quizId) {
 
 export default function HomePage() {
   const router = useRouter();
+  const { language, appName } = useI18n();
   const hydrated = useStoreHydrated(useAuthStore);
   const user = useAuthStore((state) => state.user);
   const [guideType, setGuideType] = useState(null);
@@ -78,8 +80,8 @@ export default function HomePage() {
   const quiz = usingRest
     ? {
         id: landingSummary?.featuredQuizId || PLAY_QUIZ_ID,
-        title: landingSummary?.playTitle || "G3Q Quiz",
-        subtitle: landingSummary?.playSubtitle || "વિદ્યાર્થી પ્રોફાઇલ મુજબ 15 પ્રશ્નો",
+        title: landingSummary?.playTitle || appName,
+        subtitle: landingSummary?.playSubtitle || "",
         totalQuestions: Number(landingSummary?.playQuestionCount ?? 15),
       }
     : pickFeaturedQuiz(quizzes);
@@ -106,7 +108,7 @@ export default function HomePage() {
     setNextQuizPath(null);
     try {
       if (usingRest) {
-        const session = await quizController.startSession({ language: "gu" });
+        const session = await quizController.startSession({ language });
         setNextQuizPath(ROUTES.quiz(session.sessionId));
         return;
       }
@@ -137,16 +139,16 @@ export default function HomePage() {
             <div className="mt-6 mb-3 grid size-[4.75rem] place-items-center overflow-hidden rounded-full bg-white">
               <BrandIcon
                 src={BRAND_ICONS.logo}
-                alt="G3Q 2.0"
+                alt={appName}
                 priority
                 className="size-[4.4rem]"
               />
             </div>
             <h1 className="mt-1 font-heading text-[1.5rem] leading-none font-bold tracking-tight text-white">
-              {appConfig.name}
+              {appName}
             </h1>
             <p className="mt-[1.5rem] mb-3 w-[60%] rounded-full bg-white/55 px-3.5 py-1.5 text-center font-heading text-[14px] font-medium text-[#111] backdrop-blur-[6px]">
-              {formatTalukaWeekPill(user?.taluka, week)}
+              {formatTalukaWeekPill(user?.taluka, week, language)}
             </p>
           </div>
 
@@ -174,7 +176,7 @@ export default function HomePage() {
         />
         <div className="mt-7.5">
           <LeaderboardPreviewCard
-            talukaLabel={formatTalukaLabel(user?.taluka)}
+            talukaLabel={formatTalukaLabel(user?.taluka, language)}
             week={week}
             iconColor="#2d689d"
             onClick={() => router.push(ROUTES.leaderboard)}

@@ -1,5 +1,7 @@
+"use client";
+
 import { BrandIcon } from "@/components/common/BrandIcon";
-import { appConfig } from "@/config/app.config";
+import { useI18n } from "@/lib/i18n";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { cn } from "@/lib/utils";
 
@@ -8,6 +10,8 @@ import { cn } from "@/lib/utils";
  * White bar on landing; `plain` sits on the aurora wash on Home / Profile.
  */
 export function BrandHeader({ trailing = null, priority = false, plain = false }) {
+  const { appName } = useI18n();
+
   return (
     <header
       className={cn(
@@ -18,7 +22,7 @@ export function BrandHeader({ trailing = null, priority = false, plain = false }
       <div className="flex items-center gap-2">
         <BrandIcon
           src={BRAND_ICONS.logo}
-          alt="G3Q 2.0"
+          alt="G3Q 3.0"
           priority={priority}
           className="size-12 shrink-0"
         />
@@ -28,7 +32,7 @@ export function BrandHeader({ trailing = null, priority = false, plain = false }
             plain ? "text-white" : "text-primary-600"
           )}
         >
-          {appConfig.name}
+          {appName}
         </h1>
         {trailing ? (
           <div className="grid size-12 shrink-0 place-items-center">{trailing}</div>

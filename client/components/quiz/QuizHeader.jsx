@@ -5,6 +5,7 @@ import { Pause, X } from "@/components/icons";
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { formatClock } from "@/lib/domain/format";
 import { BRAND_ICONS } from "@/lib/brand-icons";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 /**
@@ -12,6 +13,7 @@ import { cn } from "@/lib/utils";
  * Questions + Time share the same icon → label sequence.
  */
 export function QuizHeader({ index, total, elapsedMs, paused, onExit }) {
+  const { t } = useI18n();
   return (
     <header className="relative z-30 shrink-0 px-3.5 pt-[max(0.55rem,env(safe-area-inset-top))] pb-1.5 sm:px-5">
       <div
@@ -31,7 +33,7 @@ export function QuizHeader({ index, total, elapsedMs, paused, onExit }) {
         <button
           type="button"
           onClick={onExit}
-          aria-label="ક્વિઝ છોડો"
+          aria-label={t("leaveQuizTitle")}
           // move close button to left side
           className="relative grid size-10 shrink-0 place-items-center rounded-full bg-white transition-transform active:scale-95 ml-[-5px]"
         >
@@ -40,11 +42,11 @@ export function QuizHeader({ index, total, elapsedMs, paused, onExit }) {
 
         <StatBlock
           icon={<BrandIcon src={BRAND_ICONS.questionsCount} alt="" className="size-5" />}
-          label={`પ્રશ્ન ${index + 1}/${total || "–"}`}
+          label={`${t("questions")} ${index + 1}/${total || "–"}`}
         />
 
         <StatBlock
-          title={paused ? "જવાબ સબમિટ થયો — સમય થંભેલો છે" : "સમય ચાલુ છે"}
+          title={paused ? t("submit") : t("totalTime")}
           className="-translate-x-2.5"
           icon={
             paused ? (

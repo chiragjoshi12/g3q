@@ -2,23 +2,24 @@
 
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { BRAND_ICONS } from "@/lib/brand-icons";
-
-const TYPES = [
-  { id: "mcq", label: "MCQ", icon: BRAND_ICONS.queTypeMcq },
-  { id: "blanks", label: "ખાલી જગ્યા પૂરો", Icon: BlanksIcon },
-  { id: "match", label: "Match the pair", icon: BRAND_ICONS.queTypeMatch },
-  { id: "truefalse", label: "સાચું / ખોટું", icon: BRAND_ICONS.queTypeTrueFalse },
-  { id: "sequence", label: "Sequence", icon: BRAND_ICONS.queTypeSequence },
-  { id: "image", label: "Image Question", icon: BRAND_ICONS.queTypeImage },
-];
+import { useI18n } from "@/lib/i18n";
 
 /** Question-type pills under the featured quiz — width follows the label. */
 export function QuestionTypeGrid({ onSelect }) {
+  const { t } = useI18n();
+  const types = [
+    { id: "mcq", label: "MCQ", icon: BRAND_ICONS.queTypeMcq },
+    { id: "blanks", label: t("fillBlanks"), Icon: BlanksIcon },
+    { id: "match", label: t("matchThePair"), icon: BRAND_ICONS.queTypeMatch },
+    { id: "truefalse", label: t("trueFalse"), icon: BRAND_ICONS.queTypeTrueFalse },
+    { id: "sequence", label: t("sequence"), icon: BRAND_ICONS.queTypeSequence },
+    { id: "image", label: t("imageQuestion"), icon: BRAND_ICONS.queTypeImage },
+  ];
   return (
     <section className="mt-5">
-      <h2 className="font-heading text-[1.15rem] font-bold text-[#111]">Question types</h2>
+      <h2 className="font-heading text-[1.15rem] font-bold text-[#111]">{t("questionTypes")}</h2>
       <div className="mt-2.5 flex flex-wrap gap-2.5">
-        {TYPES.map((type) => (
+        {types.map((type) => (
           <button
             key={type.id}
             type="button"

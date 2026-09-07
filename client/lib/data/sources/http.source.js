@@ -6,6 +6,15 @@ const inflightGetRequests = new Map();
 const recentGetResponses = new Map();
 const GET_RESPONSE_TTL_MS = 800;
 
+function cacheTtlMsForPath(path) {
+  if (path.startsWith("/landing/summary")) return 30_000;
+  if (path.startsWith("/leaderboard")) return 15_000;
+  if (path.startsWith("/users/me")) return 30_000;
+  if (path.startsWith("/sessions?page=")) return 10_000;
+  if (path.startsWith("/sessions/stats")) return 10_000;
+  return GET_RESPONSE_TTL_MS;
+}
+
 /**
  * REST implementation of the same DataSource contract as jsonSource.
  *
@@ -38,7 +47,7 @@ async function request(path, { method = "GET", body, signal } = {}) {
 
   if (requestKey) {
     const cached = recentGetResponses.get(requestKey);
-    if (cached && now - cached.at < GET_RESPONSE_TTL_MS) {
+    if (cached && now - cached.at < cached.ttlMs) {
       return cached.payload;
     }
     const inflight = inflightGetRequests.get(requestKey);
@@ -64,17 +73,29 @@ async function request(path, { method = "GET", body, signal } = {}) {
       if (!response.ok) {
         throw new AppError(
           payload?.code || (response.status === 404 ? ERROR_CODE.NOT_FOUND : ERROR_CODE.UNKNOWN),
-          payload?.message || ERROR_MESSAGE[ERROR_CODE.UNKNOWN],
+          payload?.message || (typeof ERROR_MESSAGE[ERROR_CODE.UNKNOWN] === "function"
+            ? ERROR_MESSAGE[ERROR_CODE.UNKNOWN]()
+            : ERROR_MESSAGE[ERROR_CODE.UNKNOWN]),
           payload
         );
       }
       if (requestKey) {
-        recentGetResponses.set(requestKey, { at: Date.now(), payload });
+        recentGetResponses.set(requestKey, {
+          at: Date.now(),
+          ttlMs: cacheTtlMsForPath(path),
+          payload,
+        });
       }
       return payload;
     } catch (error) {
       if (error instanceof AppError) throw error;
-      throw new AppError(ERROR_CODE.NETWORK, ERROR_MESSAGE[ERROR_CODE.NETWORK], error);
+      throw new AppError(
+        ERROR_CODE.NETWORK,
+        typeof ERROR_MESSAGE[ERROR_CODE.NETWORK] === "function"
+          ? ERROR_MESSAGE[ERROR_CODE.NETWORK]()
+          : ERROR_MESSAGE[ERROR_CODE.NETWORK],
+        error
+      );
     } finally {
       clearTimeout(timeout);
       if (requestKey) {
@@ -109,6 +130,12 @@ export const httpSource = {
     request("/auth/citizen/register", {
       method: "POST",
       body: { requestId, name, district, taluka },
+    }),
+
+  betaLogin: ({ firstName, lastName, district, taluka, phone }) =>
+    request("/auth/beta/login", {
+      method: "POST",
+      body: { firstName, lastName, district, taluka, phone },
     }),
 
   getLandingSummary: () => request("/landing/summary"),
@@ -151,23 +178,38 @@ export const httpSource = {
 
   clearMyAttempts: () => request("/users/me/attempts", { method: "DELETE" }),
 
-  getSchoolLeaderboard: ({ limit, schoolId, institute } = {}) => {
+  getLeaderboardOverview: ({ limit, taluka } = {}) => {
+    const params = new URLSearchParams();
+    if (limit) params.set("limit", String(limit));
+    if (taluka) params.set("taluka", taluka);
+    const qs = params.toString();
+    return request(`/leaderboard${qs ? `?${qs}` : ""}`);
+  },
+
+  getSchoolLeaderboard: ({ limit, schoolId, institute, taluka } = {}) => {
     const params = new URLSearchParams();
     if (limit) params.set("limit", String(limit));
     if (schoolId) params.set("school_id", schoolId);
     if (institute) params.set("institute", institute);
+    if (taluka) params.set("taluka", taluka);
     const qs = params.toString();
     return request(`/leaderboard/school${qs ? `?${qs}` : ""}`);
   },
 
-  getCollegeLeaderboard: ({ limit } = {}) => {
-    const qs = limit ? `?limit=${encodeURIComponent(limit)}` : "";
-    return request(`/leaderboard/college${qs}`);
+  getCollegeLeaderboard: ({ limit, taluka } = {}) => {
+    const params = new URLSearchParams();
+    if (limit) params.set("limit", String(limit));
+    if (taluka) params.set("taluka", taluka);
+    const qs = params.toString();
+    return request(`/leaderboard/college${qs ? `?${qs}` : ""}`);
   },
 
-  getCitizenLeaderboard: ({ limit } = {}) => {
-    const qs = limit ? `?limit=${encodeURIComponent(limit)}` : "";
-    return request(`/leaderboard/citizen${qs}`);
+  getCitizenLeaderboard: ({ limit, taluka } = {}) => {
+    const params = new URLSearchParams();
+    if (limit) params.set("limit", String(limit));
+    if (taluka) params.set("taluka", taluka);
+    const qs = params.toString();
+    return request(`/leaderboard/citizen${qs ? `?${qs}` : ""}`);
   },
 
   getTalukaLeaderboard: ({ limit, taluka } = {}) => {

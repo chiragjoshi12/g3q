@@ -1,4 +1,4 @@
-import { CREDENTIAL, ROLE } from "@/lib/domain/roles";
+import { getCredentialRule, ROLE } from "@/lib/domain/roles";
 import { QUESTION_TYPE } from "@/config/question-types";
 
 /**
@@ -32,7 +32,7 @@ export function toUser(raw) {
     phone: raw.phone ?? "",
     joinedOn: raw.joinedOn ?? null,
     credential,
-    credentialLabel: CREDENTIAL[role]?.label ?? "",
+    credentialLabel: getCredentialRule(role)?.label ?? "",
   };
 }
 

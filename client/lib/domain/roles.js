@@ -1,48 +1,57 @@
+import { translateCurrent } from "@/lib/i18n";
+
 export const ROLE = {
   STUDENT: "student",
   COLLEGE: "college",
   CITIZEN: "citizen",
 };
 
-/** Per-role credential rules, driving both the login form and its validation. */
-export const CREDENTIAL = {
-  [ROLE.STUDENT]: {
-    key: "udiseCode",
-    label: "તમારો CTS નંબર",
-    hint: "તમારો 11 અંકનો CTS કોડ દાખલ કરો",
-    placeholder: "CTS Number અહીં લખો",
-    length: 18,
-    pattern: /^\d{11}$|^\d{18}$/,
-    inputMode: "numeric",
-    error: "CTS Number 11 અથવા 18 અંકનો હોવો જોઈએ.",
-  },
-  [ROLE.COLLEGE]: {
-    key: "abcId",
-    label: "ABC (Academic Bank of Credits) ID",
-    hint: "તમારો 12 અંકનો ABC ID દાખલ કરો",
-    placeholder: "ABC ID અહીં લખો",
-    length: 12,
-    pattern: /^\d{12}$/,
-    inputMode: "numeric",
-    error: "ABC ID 12 અંકનો હોવો જોઈએ.",
-  },
-  [ROLE.CITIZEN]: {
-    key: "phone",
-    label: "મોબાઈલ નંબર",
-    hint: "તમારો 10 અંકનો મોબાઈલ નંબર દાખલ કરો",
-    placeholder: "મોબાઈલ નંબર અહીં લખો",
-    length: 10,
-    pattern: /^\d{10}$/,
-    inputMode: "numeric",
-    error: "મોબાઈલ નંબર 10 અંકનો હોવો જોઈએ.",
-  },
-};
+export function getCredentialRules() {
+  return {
+    [ROLE.STUDENT]: {
+      key: "udiseCode",
+      label: translateCurrent("yourCtsNumber"),
+      hint: translateCurrent("enterCtsCode"),
+      placeholder: translateCurrent("yourCtsNumber"),
+      length: 18,
+      pattern: /^\d{11}$|^\d{18}$/,
+      inputMode: "numeric",
+      error: "CTS Number must be 11 or 18 digits.",
+    },
+    [ROLE.COLLEGE]: {
+      key: "abcId",
+      label: "ABC (Academic Bank of Credits) ID",
+      hint: translateCurrent("enterCtsCode").replace("CTS", "ABC"),
+      placeholder: "ABC ID",
+      length: 12,
+      pattern: /^\d{12}$/,
+      inputMode: "numeric",
+      error: "ABC ID must be 12 digits.",
+    },
+    [ROLE.CITIZEN]: {
+      key: "phone",
+      label: translateCurrent("mobileNumber"),
+      hint: translateCurrent("enterMobileNumber"),
+      placeholder: translateCurrent("mobileNumber"),
+      length: 10,
+      pattern: /^\d{10}$/,
+      inputMode: "numeric",
+      error: translateCurrent("errorInvalidPhone"),
+    },
+  };
+}
 
-export const ROLE_TABS = [
-  { id: ROLE.STUDENT, label: "શાળા વિદ્યાર્થી", icon: "/icons/Login Student.png" },
-  { id: ROLE.COLLEGE, label: "કોલેજ વિદ્યાર્થી", icon: "/icons/Login College.png" },
-  { id: ROLE.CITIZEN, label: "નાગરિક", icon: "/icons/Login Civilian.png" },
-];
+export function getCredentialRule(role) {
+  return getCredentialRules()[role];
+}
+
+export function getRoleTabs() {
+  return [
+    { id: ROLE.STUDENT, label: translateCurrent("schoolStudent"), icon: "/icons/Login Student.png" },
+    { id: ROLE.COLLEGE, label: translateCurrent("collegeStudent"), icon: "/icons/Login College.png" },
+    { id: ROLE.CITIZEN, label: translateCurrent("citizen"), icon: "/icons/Login Civilian.png" },
+  ];
+}
 
 export function isCitizen(role) {
   return role === ROLE.CITIZEN;
@@ -53,10 +62,10 @@ export function usesRosterIdentity(role) {
 }
 
 export function validateCredential(role, value) {
-  const rule = CREDENTIAL[role];
-  if (!rule) return "અમાન્ય પ્રકાર.";
+  const rule = getCredentialRule(role);
+  if (!rule) return translateCurrent("somethingWentWrong");
   const trimmed = String(value || "").trim();
-  if (!trimmed) return `${rule.label} દાખલ કરો.`;
+  if (!trimmed) return `${rule.label} ${translateCurrent("submit")}`;
   if (!rule.pattern.test(trimmed)) return rule.error;
   return null;
 }
@@ -65,16 +74,25 @@ const PHONE_PATTERN = /^\d{10}$/;
 
 export function validatePhone(value) {
   const trimmed = String(value || "").trim();
-  if (!trimmed) return "મોબાઇલ નંબર દાખલ કરો.";
-  if (!PHONE_PATTERN.test(trimmed)) return "મોબાઇલ નંબર 10 અંકનો હોવો જોઈએ.";
+  if (!trimmed) return translateCurrent("mobileNumber");
+  if (!PHONE_PATTERN.test(trimmed)) return translateCurrent("errorInvalidPhone");
   return null;
 }
 
 export function validateCitizenProfile({ name, district, taluka }) {
   const fullName = String(name || "").trim();
-  if (!fullName) return "પૂરું નામ દાખલ કરો.";
-  if (fullName.length < 2) return "પૂરું નામ ઓછામાં ઓછા 2 અક્ષરનું હોવું જોઈએ.";
-  if (!String(district || "").trim()) return "જિલ્લો દાખલ કરો.";
-  if (!String(taluka || "").trim()) return "તાલુકો દાખલ કરો.";
+  if (!fullName) return translateCurrent("yourFullName");
+  if (fullName.length < 2) return translateCurrent("yourFullName");
+  if (!String(district || "").trim()) return translateCurrent("district");
+  if (!String(taluka || "").trim()) return translateCurrent("taluka");
   return null;
+}
+
+export function validateBetaLoginProfile({ firstName, lastName, district, taluka, phone }) {
+  const joinedName = [String(firstName || "").trim(), String(lastName || "").trim()]
+    .filter(Boolean)
+    .join(" ");
+  const nameError = validateCitizenProfile({ name: joinedName, district, taluka });
+  if (nameError) return nameError;
+  return validatePhone(phone);
 }

@@ -1,8 +1,12 @@
+"use client";
+
 import { AlertCircle, Inbox, Loader2 } from "@/components/icons";
 
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-export function LoadingState({ label = "લોડ થઈ રહ્યું છે…", className }) {
+export function LoadingState({ label, className }) {
+  const { t } = useI18n();
   return (
     <div
       className={cn(
@@ -11,12 +15,13 @@ export function LoadingState({ label = "લોડ થઈ રહ્યું છ�
       )}
     >
       <Loader2 className="size-8 animate-spin text-primary-600" />
-      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="text-sm text-muted-foreground">{label || t("statsLoading")}</p>
     </div>
   );
 }
 
 export function ErrorState({ message, onRetry, className }) {
+  const { t } = useI18n();
   return (
     <div
       className={cn(
@@ -34,7 +39,7 @@ export function ErrorState({ message, onRetry, className }) {
           onClick={onRetry}
           className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-transform active:scale-95"
         >
-          ફરી પ્રયાસ કરો
+          {t("retry")}
         </button>
       ) : null}
     </div>

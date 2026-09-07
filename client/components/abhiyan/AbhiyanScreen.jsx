@@ -83,7 +83,7 @@ export function AbhiyanScreen() {
             </button>
             <BrandIcon
               src={BRAND_ICONS.logo}
-              alt="G3Q 2.0"
+              alt="G3Q 3.0"
               priority
               className="size-10 shrink-0"
             />

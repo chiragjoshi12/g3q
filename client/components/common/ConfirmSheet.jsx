@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
 
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 /**
@@ -18,13 +19,8 @@ export function ConfirmSheet({
   onCancel,
   onConfirm,
 }) {
-  const [frame, setFrame] = useState(() =>
-    typeof document === "undefined" ? null : document.querySelector("[data-app-frame]")
-  );
-
-  useEffect(() => {
-    setFrame(document.querySelector("[data-app-frame]"));
-  }, []);
+  const { t } = useI18n();
+  const frame = typeof document === "undefined" ? null : document.querySelector("[data-app-frame]");
 
   useEffect(() => {
     if (!open) return undefined;
@@ -41,7 +37,7 @@ export function ConfirmSheet({
     <div className="absolute inset-0 z-[60] flex items-end justify-center">
       <button
         type="button"
-        aria-label="રદ કરો"
+        aria-label={t("cancel")}
         onClick={busy ? undefined : onCancel}
         className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
       />
@@ -76,7 +72,7 @@ export function ConfirmSheet({
             disabled={busy}
             className="py-3.5 text-center text-[1.05rem] font-bold text-[#111] transition-colors hover:bg-black/[0.03] active:bg-black/[0.05] disabled:opacity-45"
           >
-            ના
+            {t("cancel")}
           </button>
           <button
             type="button"
@@ -87,7 +83,7 @@ export function ConfirmSheet({
               "transition-colors hover:bg-black/[0.03] active:bg-black/[0.05] disabled:opacity-45"
             )}
           >
-            {busy ? "…" : "હા"}
+            {busy ? "…" : t("yes")}
           </button>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { BrandIcon } from "@/components/common/BrandIcon";
 import { ConfettiBurst } from "@/components/quiz/ConfettiBurst";
 import { formatDuration } from "@/lib/domain/format";
 import { BRAND_ICONS } from "@/lib/brand-icons";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 /**
@@ -11,6 +12,7 @@ import { cn } from "@/lib/utils";
  * Correct gets a burst + pop; wrong gets a shake and a hard red mark.
  */
 export function AnswerVerdict({ correct, timeSpentMs }) {
+  const { language, t } = useI18n();
   return (
     <div
       className={cn(
@@ -34,7 +36,7 @@ export function AnswerVerdict({ correct, timeSpentMs }) {
           {correct ? <ConfettiBurst /> : null}
           <BrandIcon
             src={correct ? BRAND_ICONS.correct : BRAND_ICONS.incorrect}
-            alt={correct ? "સાચો જવાબ" : "ખોટો જવાબ"}
+            alt={correct ? t("correctAnswer") : t("incorrect")}
             className="relative size-14 animate-verdict-pop"
           />
         </div>
@@ -46,7 +48,7 @@ export function AnswerVerdict({ correct, timeSpentMs }) {
               correct ? "text-[#15803D]" : "text-[#B91C1C]"
             )}
           >
-            {correct ? "સાચો જવાબ!" : "ખોટો જવાબ"}
+            {correct ? `${t("correctAnswer")}!` : t("incorrect")}
           </p>
           <p
             className={cn(
@@ -54,7 +56,9 @@ export function AnswerVerdict({ correct, timeSpentMs }) {
               correct ? "text-[#166534]" : "text-[#991B1B]"
             )}
           >
-            {correct ? "શાબાશ — આગળ વધો." : "કોઈ વાંધો નહીં, આગળ શીખો."}
+            {correct
+              ? (language === "gu" ? "શાબાશ, આગળ વધો." : language === "hi" ? "बहुत बढ़िया, आगे बढ़ें।" : "Well done, keep going.")
+              : (language === "gu" ? "કોઈ વાંધો નહીં, આગળ શીખો." : language === "hi" ? "कोई बात नहीं, आगे सीखें।" : "No problem, keep learning.")}
           </p>
         </div>
 
@@ -64,7 +68,7 @@ export function AnswerVerdict({ correct, timeSpentMs }) {
             correct ? "bg-white/80 text-[#15803D]" : "bg-white/80 text-[#B91C1C]"
           )}
         >
-          {formatDuration(timeSpentMs)}
+          {formatDuration(timeSpentMs, language)}
         </span>
       </div>
     </div>

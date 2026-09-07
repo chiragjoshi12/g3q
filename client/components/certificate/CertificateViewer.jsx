@@ -8,11 +8,14 @@ import { downloadCertificatePng } from "@/components/certificate/draw-certificat
 import { ACTION_BUTTON_CLASS, ActionButtonRow, AppButton } from "@/components/common/AppButton";
 import { X } from "@/components/icons";
 import { certificateFileName } from "@/lib/domain/certificate";
+import { createAnalyticsEventId, trackAnalyticsEvent } from "@/lib/analytics-client";
+import { useI18n } from "@/lib/i18n";
 
 /**
  * Full-screen landscape certificate preview with a PNG download.
  */
 export function CertificateViewer({ open, payload, onClose }) {
+  const { t } = useI18n();
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -22,9 +25,22 @@ export function CertificateViewer({ open, payload, onClose }) {
     setError(null);
     setDownloading(true);
     try {
-      await downloadCertificatePng(payload, certificateFileName(payload));
+      const fileName = certificateFileName(payload);
+      await downloadCertificatePng(payload, fileName);
+      void trackAnalyticsEvent({
+        eventId: createAnalyticsEventId("cert"),
+        eventType: "certificate_download",
+        source: "certificate_viewer",
+        success: true,
+        metadata: {
+          g3qId: payload.g3qId,
+          week: payload.week,
+          category: payload.categoryInline,
+          fileName,
+        },
+      });
     } catch {
-      setError("પ્રમાણપત્ર ડાઉનલોડ થઈ શક્યું નથી. ફરી પ્રયાસ કરો.");
+      setError(t("somethingWentWrong"));
     } finally {
       setDownloading(false);
     }
@@ -36,14 +52,14 @@ export function CertificateViewer({ open, payload, onClose }) {
         <button
           type="button"
           onClick={onClose}
-          aria-label="બંધ કરો"
+          aria-label={t("close")}
           className="grid size-10 shrink-0 place-items-center rounded-full bg-white shadow-[0_2px_8px_rgb(15_23_42/0.08)] transition-transform active:scale-95"
         >
           <X className="size-4 text-[#111]" strokeWidth={2.2} />
         </button>
         <div className="min-w-0 flex-1">
           <h2 className="font-heading text-base font-bold text-[#111] md:text-lg">
-            Certificate of Participation
+            {t("certificate")}
           </h2>
           <p className="truncate text-xs text-[#6B7280]">G3Q ID: {payload.g3qId}</p>
         </div>
@@ -60,7 +76,7 @@ export function CertificateViewer({ open, payload, onClose }) {
         <div className="mx-auto w-full max-w-5xl">
           <ActionButtonRow>
             <AppButton loading={downloading} onClick={handleDownload} className={ACTION_BUTTON_CLASS}>
-              Download certificate
+              {t("download")}
             </AppButton>
           </ActionButtonRow>
         </div>

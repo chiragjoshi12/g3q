@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { BrandGlyph, BrandIcon } from "@/components/common/BrandIcon";
-import { BOTTOM_NAV_ITEMS } from "@/config/navigation";
+import { getBottomNavItems } from "@/config/navigation";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const ACTIVE = "#2d689d";
@@ -16,10 +17,12 @@ const INACTIVE = "#000000";
  */
 export function BottomNav() {
   const pathname = usePathname();
+  const { t } = useI18n();
+  const items = getBottomNavItems(t);
 
   return (
     <nav
-      aria-label="Main"
+      aria-label={t("mainNav")}
       className="pointer-events-none absolute inset-x-0 bottom-0 z-30 bg-transparent px-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3"
     >
       <ul
@@ -29,7 +32,7 @@ export function BottomNav() {
             "0 14px 40px rgb(15 23 42 / 0.18), 0 4px 14px rgb(15 23 42 / 0.10), 0 0 0 1px rgb(15 23 42 / 0.04)",
         }}
       >
-        {BOTTOM_NAV_ITEMS.map((item) => {
+        {items.map((item) => {
           const active =
             pathname === item.href || pathname.startsWith(`${item.href}/`);
           const color = active ? ACTIVE : INACTIVE;

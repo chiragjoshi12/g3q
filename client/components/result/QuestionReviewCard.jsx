@@ -7,12 +7,14 @@ import { BrandIcon } from "@/components/common/BrandIcon";
 import { describeAnswer, describeCorrectAnswer } from "@/lib/domain/answer-format";
 import { formatDuration } from "@/lib/domain/format";
 import { BRAND_ICONS } from "@/lib/brand-icons";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const CARD_SHADOW = "shadow-[0_10px_28px_rgb(15_23_42/0.06)]";
 
 /** One row of the review list. Collapsed: number, prompt, verdict, chevron. */
 export function QuestionReviewCard({ index, question, row }) {
+  const { language, t } = useI18n();
   const [open, setOpen] = useState(false);
 
   const given = open ? describeAnswer(question, row.answer) : [];
@@ -58,16 +60,16 @@ export function QuestionReviewCard({ index, question, row }) {
             {row.timeSpentMs > 0 ? (
               <p className="flex items-center gap-1.5 font-canva text-xs font-medium text-[#6B7280]">
                 <BrandIcon src={BRAND_ICONS.time} alt="" className="size-3.5" />
-                {formatDuration(row.timeSpentMs)}
+                {formatDuration(row.timeSpentMs, language)}
               </p>
             ) : null}
             <AnswerBlock
-              label="તમારો જવાબ"
+              label={t("myAnswer")}
               lines={given}
               tone={row.correct ? "correct" : "incorrect"}
-              emptyText="કોઈ જવાબ આપ્યો નથી"
+              emptyText={t("noAnswer")}
             />
-            <AnswerBlock label="સાચો જવાબ" lines={expected} tone="correct" />
+            <AnswerBlock label={t("correctAnswer")} lines={expected} tone="correct" />
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@
 
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { BRAND_ICONS } from "@/lib/brand-icons";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const BLUE = "#2d689d";
@@ -27,6 +28,8 @@ export function LandingActionNav({
   className,
   floating = false,
 }) {
+  const { t } = useI18n();
+
   return (
     <footer
       className={cn(
@@ -73,11 +76,11 @@ export function LandingActionNav({
           />
 
           <nav
-            aria-label="Primary actions"
+            aria-label={t("primaryActions")}
             className="relative z-[1] px-3.5 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
           >
             <div className="flex items-center justify-between">
-              <SideAction onClick={onPractice} label="Practice">
+              <SideAction onClick={onPractice} label={t("practice")}>
                 <BrandIcon src={BRAND_ICONS.navPractice} alt="" className="size-[1.5rem]" priority />
               </SideAction>
 
@@ -93,7 +96,7 @@ export function LandingActionNav({
         <button
           type="button"
           onClick={onPlayQuiz}
-          aria-label="Play Quiz"
+          aria-label={t("playQuiz")}
           className="absolute left-1/2 z-10 -translate-x-1/2 transition-transform active:scale-[0.975]"
           style={{ top: PLAY_TOP }}
         >
@@ -107,8 +110,8 @@ export function LandingActionNav({
             }}
           >
             <span className="leading-[1.06] font-bold tracking-[-0.02em]">
-              <span className="block text-[0.95rem]">Play</span>
-              <span className="mt-0.5 block text-[0.95rem]">Quiz</span>
+              <span className="block text-[0.95rem]">{t("playQuiz").split(" ")[0]}</span>
+              <span className="mt-0.5 block text-[0.95rem]">{t("playQuiz").split(" ").slice(1).join(" ") || "\u00A0"}</span>
             </span>
           </span>
         </button>

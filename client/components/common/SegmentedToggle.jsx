@@ -16,7 +16,7 @@ export function SegmentedToggle({ items, value, onChange, className }) {
     <div
       role="tablist"
       className={cn(
-        "relative grid rounded-full border border-[#D5DCE3] bg-white p-1",
+        "relative grid rounded-full p-1",
         className
       )}
       style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}

@@ -18,6 +18,14 @@ export const profileController = {
     return { attempts, stats };
   },
 
+  async loadAttempts(userId) {
+    return attemptRepository.list(userId);
+  },
+
+  async loadStats(userId) {
+    return attemptRepository.stats(userId);
+  },
+
   async clearHistory(userId) {
     await attemptRepository.clear(userId);
     return attemptRepository.stats(userId);

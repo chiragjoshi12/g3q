@@ -23,24 +23,27 @@ import {
   certificateFileName,
 } from "@/lib/domain/certificate";
 import { formatGujaratiDate } from "@/lib/domain/format";
+import { createAnalyticsEventId, trackAnalyticsEvent } from "@/lib/analytics-client";
 import { BRAND_ICONS } from "@/lib/brand-icons";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
 
 export default function CertificatesPage() {
   const router = useRouter();
+  const { language, t } = useI18n();
   const { ready } = useAuthGuard();
   const user = useAuthStore((state) => state.user);
   const [previewAttempt, setPreviewAttempt] = useState(null);
   const [busy, setBusy] = useState(null);
 
   const { status, data } = useAsyncData(
-    () => profileController.loadOverview(user?.id),
+    () => profileController.loadAttempts(user?.id),
     [user?.id],
     ready
   );
 
-  const certificates = (data?.attempts ?? []).filter(attemptEarnsCertificate);
+  const certificates = (data ?? []).filter(attemptEarnsCertificate);
   const payload = useMemo(
     () => (previewAttempt ? buildCertificatePayload(user, previewAttempt) : null),
     [user, previewAttempt]
@@ -64,24 +67,24 @@ export default function CertificatesPage() {
           <button
             type="button"
             onClick={() => router.push(ROUTES.profile)}
-            aria-label="પાછળ જાઓ"
+            aria-label={t("close")}
             className="absolute left-4 grid size-10 place-items-center rounded-full bg-white transition-transform active:scale-95"
           >
             <BrandIcon src={BRAND_ICONS.back} alt="" className="size-3.5" />
           </button>
-          <h1 className="font-heading text-[1.25rem] font-bold text-[#111]">સર્ટિફિકેટ</h1>
+          <h1 className="font-heading text-[1.25rem] font-bold text-[#111]">{t("certificates")}</h1>
         </header>
 
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
           <div className="mx-auto w-full max-w-[26.5rem] space-y-4 pt-1 md:max-w-[32rem]">
             {!ready || status === "loading" ? (
-              <LoadingState label="પ્રમાણપત્ર લોડ થઈ રહ્યા છે…" className="py-16" />
+              <LoadingState label={t("certificatesLoading")} className="py-16" />
             ) : null}
 
             {status === "ready" && certificates.length === 0 ? (
               <EmptyState
-                title="હજી કોઈ પ્રમાણપત્ર નથી"
-                description="ક્વિઝ પૂરી કરો એટલે પ્રમાણપત્ર અહીં દેખાશે."
+                title={t("noCertificatesTitle")}
+                description={t("noCertificatesDescription")}
               />
             ) : null}
 
@@ -92,13 +95,31 @@ export default function CertificatesPage() {
                     <CertificateCard
                       key={attempt.attemptId}
                       attempt={attempt}
+                      language={language}
                       payload={cardPayload}
                       busy={busy?.attemptId === attempt.attemptId ? busy.action : null}
                       onPreview={() => setPreviewAttempt(attempt)}
                       onDownload={() =>
-                        runAction(attempt.attemptId, "download", () =>
-                          downloadCertificatePng(cardPayload, certificateFileName(cardPayload))
-                        )
+                        runAction(attempt.attemptId, "download", async () => {
+                          const fileName = certificateFileName(cardPayload);
+                          await downloadCertificatePng(cardPayload, fileName);
+                          void trackAnalyticsEvent({
+                            eventId: createAnalyticsEventId("cert"),
+                            eventType: "certificate_download",
+                            source: "certificates_page",
+                            attemptId: attempt.attemptId,
+                            quizId: attempt.quizId,
+                            role: user?.role,
+                            district: user?.district || attempt?.district,
+                            taluka: user?.taluka || attempt?.taluka,
+                            metadata: {
+                              g3qId: cardPayload.g3qId,
+                              week: cardPayload.week,
+                              category: cardPayload.categoryInline,
+                              fileName,
+                            },
+                          });
+                        })
                       }
                       onShare={() =>
                         runAction(attempt.attemptId, "share", () =>
@@ -126,13 +147,14 @@ export default function CertificatesPage() {
   );
 }
 
-function CertificateCard({ attempt, payload, busy, onPreview, onDownload, onShare }) {
+function CertificateCard({ attempt, payload, language, busy, onPreview, onDownload, onShare }) {
+  const { t } = useI18n();
   return (
     <article className="overflow-hidden rounded-[1.5rem] bg-white shadow-[0_1px_3px_rgb(15_23_42/0.06)]">
       <button
         type="button"
         onClick={onPreview}
-        aria-label={`${attempt.quizTitle} પ્રમાણપત્ર જુઓ`}
+        aria-label={`${attempt.quizTitle} ${t("viewCertificate")}`}
         className="block w-full px-3.5 pt-3.5"
       >
         <span className="relative block w-full overflow-hidden rounded-[1rem] bg-white">
@@ -149,13 +171,13 @@ function CertificateCard({ attempt, payload, busy, onPreview, onDownload, onShar
             {attempt.quizTitle}
           </h2>
           <p className="mt-2.5 font-heading text-[14px] text-[#111]">
-            {formatGujaratiDate(attempt.completedAt)}
+            {formatGujaratiDate(attempt.completedAt, language)}
           </p>
         </div>
         {/* move entire box slide on bottom side */}
         <div className="flex shrink-0 items-center gap-2 mb-[-12px]">
           <IconButton
-            label="ડાઉનલોડ"
+            label={t("download")}
             onClick={onDownload}
             disabled={Boolean(busy)}
             className="bg-[#f5f5f5]"
@@ -167,7 +189,7 @@ function CertificateCard({ attempt, payload, busy, onPreview, onDownload, onShar
             )}
           </IconButton>
           <IconButton
-            label="શેર કરો"
+            label={t("share")}
             onClick={onShare}
             disabled={Boolean(busy)}
             className="bg-[#f5f5f5]"

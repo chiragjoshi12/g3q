@@ -1,6 +1,7 @@
 "use client";
 
 import { AppButton } from "@/components/common/AppButton";
+import { useI18n } from "@/lib/i18n";
 
 const ICON_CONFETTI = [
   { className: "left-1 top-5 h-2.5 w-1 rounded-sm bg-[#FB7185] rotate-[-25deg]" },
@@ -18,6 +19,7 @@ const ICON_CONFETTI = [
 /** Success state shown inside the auth screen before routing home. */
 export function WelcomeStep({ name, onContinue }) {
   const firstName = String(name || "").trim().split(/\s+/)[0];
+  const { t } = useI18n();
 
   return (
     <div
@@ -47,12 +49,12 @@ export function WelcomeStep({ name, onContinue }) {
           </div>
 
           <h2 className="mt-4 font-sans text-[24px] font-semibold leading-none text-[#111]">
-            Successful!
+            {t("successful")}
           </h2>
           <p className="mt-6 px-2 text-[16px] leading-7 text-[#3F3F46]">
             {firstName
-              ? `નમસ્તે ${firstName}, Your account is created successfully and ready now.`
-              : "Your account is created successfully and ready now."}
+              ? t("accountCreated", { name: firstName })
+              : t("accountCreatedNoName")}
           </p>
         </div>
 
@@ -61,7 +63,7 @@ export function WelcomeStep({ name, onContinue }) {
             onClick={onContinue}
             className="h-16 w-[80%] rounded-full bg-black text-[18px] font-semibold text-white hover:bg-black/90"
           >
-            Let's Start
+            {t("letsStart")}
           </AppButton>
         </div>
       </section>

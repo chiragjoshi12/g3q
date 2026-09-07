@@ -16,6 +16,7 @@ import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { usePracticeMode } from "@/hooks/usePracticeMode";
 import { useQuestionTimer } from "@/hooks/useQuestionTimer";
 import { isAnswered, isCorrect } from "@/lib/domain/grading";
+import { useI18n } from "@/lib/i18n";
 import { unlockQuizSounds } from "@/lib/quiz-sounds";
 import { QUIZ_PHASE, useQuizStore } from "@/store/quiz.store";
 
@@ -53,6 +54,7 @@ export default function QuizPage({ params }) {
 function QuizScreen({ params }) {
   const { quizId } = use(params);
   const router = useRouter();
+  const { t } = useI18n();
   const practice = usePracticeMode();
   const { ready, user } = useAuthGuard({ optional: practice });
   const [confirmExit, setConfirmExit] = useState(false);
@@ -110,20 +112,20 @@ function QuizScreen({ params }) {
       nextQuestion();
       return;
     }
-    const attemptId = await finishQuiz(user);
+    const attemptId = await finishQuiz(user, { practice });
     if (attemptId) router.replace(ROUTES.result(attemptId, { practice }));
   };
 
   const handleLeave = async () => {
     if (leaving) return;
     setLeaving(true);
-    const attemptId = await finishQuiz(user, { abandoned: true });
+    const attemptId = await finishQuiz(user, { abandoned: true, practice });
     if (attemptId) {
       router.replace(ROUTES.result(attemptId, { practice }));
       return;
     }
     setLeaving(false);
-    router.replace(practice && !user ? ROUTES.root : ROUTES.home);
+    router.replace(practice && !user ? ROUTES.welcome : ROUTES.home);
   };
 
   if (!ready) {
@@ -167,7 +169,7 @@ function QuizScreen({ params }) {
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain">
             <ContentWidth size="phone" className="px-5 py-5 sm:px-6 sm:py-6 md:max-w-none md:px-6">
-              {loading && !question ? <LoadingState label="ક્વિઝ તૈયાર થઈ રહી છે…" /> : null}
+              {loading && !question ? <LoadingState label={t("quizPreparing")} /> : null}
               {error ? (
                 <ErrorState
                   message={error}
@@ -243,8 +245,8 @@ function QuizScreen({ params }) {
       <ConfirmSheet
         open={confirmExit}
         icon={LogOut}
-        title="ક્વિઝ છોડો"
-        description="અત્યાર સુધીના સાચા અને ખોટા જવાબ પર પરિણામ બતાવવામાં આવશે. શું તમે ક્વિઝ છોડવા માંગો છો?"
+        title={t("leaveQuizTitle")}
+        description={t("leaveQuizDescription")}
         busy={leaving}
         onCancel={() => {
           if (!leaving) setConfirmExit(false);
@@ -256,6 +258,8 @@ function QuizScreen({ params }) {
 }
 
 function QuizAction({ answering, answered, isLast, loading, onSubmit, onNext }) {
+  const { t } = useI18n();
+
   if (answering) {
     return (
       <ActionButtonRow>
@@ -264,7 +268,7 @@ function QuizAction({ answering, answered, isLast, loading, onSubmit, onNext }) 
           onClick={onSubmit}
           disabled={!answered}
         >
-          Submit
+          {t("submit")}
         </AppButton>
       </ActionButtonRow>
     );
@@ -277,7 +281,7 @@ function QuizAction({ answering, answered, isLast, loading, onSubmit, onNext }) 
         onClick={onNext}
         loading={loading}
       >
-        {isLast ? "પરિણામ જુઓ" : "Next"}
+        {isLast ? t("viewResult") : t("next")}
       </AppButton>
     </ActionButtonRow>
   );

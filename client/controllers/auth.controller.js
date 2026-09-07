@@ -4,6 +4,7 @@ import { AppError, ERROR_CODE, ERROR_MESSAGE } from "@/lib/core/errors";
 import {
   isCitizen,
   usesRosterIdentity,
+  validateBetaLoginProfile,
   validateCitizenProfile,
   validateCredential,
   validatePhone,
@@ -92,6 +93,30 @@ export const authController = {
       name: String(name).trim(),
       district: String(district).trim(),
       taluka: String(taluka).trim(),
+    });
+    if (!user) {
+      throw new AppError(ERROR_CODE.UNKNOWN, ERROR_MESSAGE[ERROR_CODE.UNKNOWN]);
+    }
+    return { user, token };
+  },
+
+  async betaLogin({ firstName, lastName, district, taluka, phone }) {
+    const invalid = validateBetaLoginProfile({
+      firstName,
+      lastName,
+      district,
+      taluka,
+      phone: String(phone || "").trim(),
+    });
+    if (invalid) {
+      throw new AppError(ERROR_CODE.INVALID_CREDENTIAL, invalid);
+    }
+    const { user, token } = await authRepository.betaLogin({
+      firstName: String(firstName).trim(),
+      lastName: String(lastName).trim(),
+      district: String(district).trim(),
+      taluka: String(taluka).trim(),
+      phone: String(phone).trim(),
     });
     if (!user) {
       throw new AppError(ERROR_CODE.UNKNOWN, ERROR_MESSAGE[ERROR_CODE.UNKNOWN]);

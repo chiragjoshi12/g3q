@@ -1,8 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
+import { SegmentedToggle } from "@/components/common/SegmentedToggle";
+import { QuestionRenderer } from "@/components/quiz/QuestionRenderer";
 import { QUESTION_REWRITES } from "@/data/question-rewrites";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { cn } from "@/lib/utils";
@@ -58,29 +61,57 @@ function OptionList({ options, answer, tone = "before" }) {
   );
 }
 
-function RewriteCard({ item, index }) {
-  return (
-    <section className="rounded-[2rem] border border-[#d8e0ea] bg-white p-4 shadow-m2 sm:p-6">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-[#2c6698] text-sm font-bold text-white">
-            {index + 1}
-          </span>
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6a7a8a]">
-              Department
-            </p>
-            <h2 className="text-base font-bold text-[#143250] sm:text-lg">
-              {item.department}
-            </h2>
-          </div>
-        </div>
-        <div className="rounded-full bg-[#eef3f7] px-3 py-1 text-xs font-semibold text-[#2c6698]">
-          Before vs After
-        </div>
-      </div>
+const MOBILE_VIEW_ITEMS = [
+  { id: "before", label: "પહેલાં" },
+  { id: "after", label: "પછી" },
+];
 
-      <div className="grid gap-4 lg:grid-cols-2">
+function PreviewAnswer({ answer }) {
+  if (!answer) return null;
+
+  return (
+    <div className="mt-4 rounded-[1.15rem] bg-white/80 px-3.5 py-3 text-sm text-[#245580] ring-1 ring-[#d7e5f2]">
+      <span className="font-semibold text-[#143250]">સાચો જવાબ:</span> {answer}
+    </div>
+  );
+}
+
+function ImprovedPreview({ item, response, onChange }) {
+  return (
+    <>
+      {item.after.intro ? (
+        <p className="mb-3 text-sm leading-6 text-[#4c657d]">{item.after.intro}</p>
+      ) : null}
+
+      <p className="mb-4 text-[1.02rem] font-semibold leading-[1.7] text-[#143250]">
+        {item.after.question}
+      </p>
+
+      <QuestionRenderer
+        question={item.after.previewQuestion}
+        value={response}
+        onChange={onChange}
+        disabled={false}
+        revealed={false}
+      />
+
+      <PreviewAnswer answer={item.after.answerText} />
+    </>
+  );
+}
+
+function RewriteCard({
+  item,
+  mobileView,
+  response,
+  onResponseChange,
+}) {
+  const showBeforeMobile = mobileView === "before";
+
+  return (
+    <section className="rounded-[2rem] p-0 sm:p-6">
+
+      <div className="hidden gap-4 lg:grid lg:grid-cols-2">
         <article className="rounded-[1.5rem] border border-[#eadfd4] bg-[#faf6f2] p-4 sm:p-5">
           <div className="mb-3 inline-flex rounded-full bg-[#c2410c] px-3 py-1 text-xs font-bold text-white">
             પહેલાં
@@ -99,35 +130,81 @@ function RewriteCard({ item, index }) {
           <div className="mb-3 inline-flex rounded-full bg-[#15803d] px-3 py-1 text-xs font-bold text-white">
             પછી
           </div>
-
-          {item.after.facts?.length ? (
-            <div className="mb-3 flex flex-wrap gap-1.5">
-              {item.after.facts.map((fact) => (
-                <span
-                  key={fact}
-                  className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-[#245580] ring-1 ring-[#d7e5f2]"
-                >
-                  {fact}
-                </span>
-              ))}
-            </div>
-          ) : null}
-
-          <p className="mb-4 text-[1.02rem] font-semibold leading-[1.7] text-[#143250]">
-            {item.after.question}
-          </p>
-          <OptionList
-            options={item.after.options}
-            answer={item.after.answer}
-            tone="after"
+          <ImprovedPreview
+            item={item}
+            response={response}
+            onChange={onResponseChange}
           />
         </article>
+      </div>
+
+      <div className="lg:hidden">
+        {showBeforeMobile ? (
+          <article className="-mx-1 rounded-[1.6rem] border border-[#eadfd4] bg-[#faf6f2] p-5">
+            <div className="mb-3 inline-flex rounded-full bg-[#c2410c] px-3 py-1 text-xs font-bold text-white">
+              પહેલાં
+            </div>
+            <p className="mb-4 text-[0.98rem] leading-[1.8] text-[#4a3b32]">
+              {item.before.question}
+            </p>
+            <OptionList
+              options={item.before.options}
+              answer={item.before.answer}
+              tone="before"
+            />
+          </article>
+        ) : (
+          <article className="-mx-1 rounded-[1.6rem] border border-[#dbe7f2] bg-[#f8fbff] p-5">
+            <div className="mb-3 inline-flex rounded-full bg-[#15803d] px-3 py-1 text-xs font-bold text-white">
+              પછી
+            </div>
+
+            <ImprovedPreview
+              item={item}
+              response={response}
+              onChange={onResponseChange}
+            />
+          </article>
+        )}
       </div>
     </section>
   );
 }
 
+function NavChevron({ direction }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="size-4 shrink-0"
+      aria-hidden
+    >
+      {direction === "left" ? (
+        <path d="M14.5 5.5 8.5 12l6 6.5" />
+      ) : (
+        <path d="M9.5 5.5 15.5 12l-6 6.5" />
+      )}
+    </svg>
+  );
+}
+
 export function QuestionRewriteDemo() {
+  const [index, setIndex] = useState(0);
+  const [mobileView, setMobileView] = useState("before");
+  const [responses, setResponses] = useState({});
+  const item = QUESTION_REWRITES[index];
+  const total = QUESTION_REWRITES.length;
+  const isFirst = index === 0;
+  const isLast = index === total - 1;
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [index]);
+
   return (
     <div className="min-h-dvh bg-[#eceff3] text-[#1a2430]">
       <header className="border-b border-black/5 bg-white">
@@ -144,27 +221,68 @@ export function QuestionRewriteDemo() {
           </Link>
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#2c6698]">
-              G3Q 2.0
+              G3Q 3.0
             </p>
-            <h1 className="text-lg font-bold text-primary-700 sm:text-2xl">
-              સરળ Before / After Overview
-            </h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIndex((current) => Math.max(0, current - 1))}
+              disabled={isFirst}
+              className={cn(
+                "inline-flex size-10 items-center justify-center rounded-full border",
+                isFirst
+                  ? "cursor-not-allowed border-[#d8e0ea] bg-[#f4f6f8] text-[#9aa8b6]"
+                  : "border-[#d8e0ea] bg-white text-[#143250] hover:bg-[#f4f8fb] active:scale-[0.98]"
+              )}
+              aria-label="Previous question"
+            >
+              <NavChevron direction="left" />
+            </button>
+            {/* write the question number between the next and previous buttons */}
+            <span className="text-sm font-semibold text-[#143250]">
+              {index + 1} / {total}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIndex((current) => Math.min(total - 1, current + 1))}
+              disabled={isLast}
+              className={cn(
+                "inline-flex size-10 items-center justify-center rounded-full",
+                isLast
+                  ? "cursor-not-allowed bg-[#9bb8d4] text-white"
+                  : "bg-[#2c6698] text-white hover:bg-[#245580] active:scale-[0.98]"
+              )}
+              aria-label="Next question"
+            >
+              <NavChevron direction="right" />
+            </button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8">
-        <section className="rounded-[2rem] bg-[#143250] px-5 py-5 text-white shadow-m2 sm:px-6">
-          <p className="text-sm leading-7 text-white/85 sm:text-base">
-            નીચે બધા ૨૦ પ્રશ્નોનું સીધું comparison છે. ડાબી બાજુ મૂળ અઘરું
-            version, જમણી બાજુ સરળ અને સમજાય એવું version.
-          </p>
-        </section>
-
-        {QUESTION_REWRITES.map((item, index) => (
-          <RewriteCard key={item.id} item={item} index={index} />
-        ))}
+      <main className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-6 pb-28 sm:px-6 sm:py-8">
+        <RewriteCard
+          item={item}
+          index={index}
+          total={total}
+          mobileView={mobileView}
+          response={responses[item.id]}
+          onResponseChange={(next) =>
+            setResponses((current) => ({ ...current, [item.id]: next }))
+          }
+        />
       </main>
+
+      <div className="fixed inset-x-0 bottom-4 z-30 px-4 lg:hidden">
+        <div className="mx-auto max-w-md rounded-[1.6rem] border border-[#d8e0ea] bg-white/92 p-2 shadow-[0_18px_44px_rgb(15_23_42/0.16)] backdrop-blur">
+          <SegmentedToggle
+            items={MOBILE_VIEW_ITEMS}
+            value={mobileView}
+            onChange={setMobileView}
+          />
+        </div>
+      </div>
     </div>
   );
 }

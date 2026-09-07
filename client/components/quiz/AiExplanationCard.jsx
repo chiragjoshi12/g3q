@@ -5,6 +5,7 @@ import { ChevronDown, Sparkles } from "@/components/icons";
 
 import { ChatMarkdown } from "@/components/g3q-ai/ChatMarkdown";
 import { useTypewriter } from "@/hooks/useTypewriter";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 /**
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
  * re-opening a past answer wants the full text immediately, not a replay.
  */
 export function AiExplanationCard({ explanation, defaultOpen = false, animated = false, onDone }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(defaultOpen);
 
   const { text: body, done: bodyDone } = useTypewriter(explanation?.body, {
@@ -58,7 +60,7 @@ export function AiExplanationCard({ explanation, defaultOpen = false, animated =
         />
         <span className="min-w-0 flex-1">
           <span className="font-heading text-sm font-semibold text-foreground">
-            AI સમજૂતી
+            G3Q AI
           </span>
           <span className="mt-0.5 block text-[13px] leading-snug text-muted-foreground">
             {explanation.summary}
@@ -114,8 +116,8 @@ export function AiExplanationCard({ explanation, defaultOpen = false, animated =
 
             <p className="text-[11px] text-muted-foreground/70">
               {animated && !bodyDone
-                ? "AI લખી રહ્યું છે… જવાબ સાચો છે કે ખોટો તે પછી બતાવાશે."
-                : `AI જનરેટેડ · ${explanation.model}`}
+                ? `${t("checkingAnswer")}...`
+                : `AI generated · ${explanation.model}`}
             </p>
           </div>
         </div>

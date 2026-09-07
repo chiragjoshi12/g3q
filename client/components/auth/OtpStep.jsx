@@ -7,6 +7,7 @@ import { AUTH_BUTTON_CLASS, AuthLink } from "@/components/auth/AuthBrandHeader";
 import { AppButton } from "@/components/common/AppButton";
 import { OtpInput } from "@/components/common/OtpInput";
 import { appConfig } from "@/config/app.config";
+import { useI18n } from "@/lib/i18n";
 
 /** Step 3: static OTP verification. */
 export function OtpStep({
@@ -17,6 +18,7 @@ export function OtpStep({
   onVerify,
   onBack,
 }) {
+  const { t } = useI18n();
   const [resendIn, setResendIn] = useState(appConfig.auth.resendSeconds);
 
   useEffect(() => {
@@ -28,7 +30,7 @@ export function OtpStep({
   return (
     <div className="animate-screen-in space-y-7">
       <div className="space-y-4">
-        <h2 className="text-left text-xl font-bold text-[#111]">OTP અહીં નાખો</h2>
+        <h2 className="text-left text-xl font-bold text-[#111]">{t("enterOtp")}</h2>
         <OtpInput
           length={appConfig.auth.otpLength}
           value={otp}
@@ -39,13 +41,13 @@ export function OtpStep({
         />
         <div className="text-sm">
           {resendIn > 0 ? (
-            <span className="text-muted-foreground">ફરી OTP મંગાવો · {resendIn}s</span>
+            <span className="text-muted-foreground">{t("resendOtp")} · {resendIn}s</span>
           ) : (
             <AuthLink
               className="text-foreground no-underline hover:text-primary-700 hover:underline"
               onClick={() => setResendIn(appConfig.auth.resendSeconds)}
             >
-              ફરી OTP મંગાવો
+              {t("resendOtp")}
             </AuthLink>
           )}
         </div>
@@ -66,11 +68,11 @@ export function OtpStep({
             onClick={onVerify}
             className={AUTH_BUTTON_CLASS}
           >
-            Submit
+            {t("submit")}
           </AppButton>
         </div>
         <div className="text-center text-color-[#000000]">
-          <AuthLink onClick={onBack}>મોબાઈલ નંબર બદલો</AuthLink>
+          <AuthLink onClick={onBack}>{t("changeMobileNumber")}</AuthLink>
         </div>
       </div>
     </div>

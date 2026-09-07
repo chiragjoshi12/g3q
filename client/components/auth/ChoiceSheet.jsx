@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
 
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 /**
@@ -10,13 +11,8 @@ import { cn } from "@/lib/utils";
  * stays inside the phone chrome.
  */
 export function ChoiceSheet({ open, title, options, value, onSelect, onClose }) {
-  const [frame, setFrame] = useState(() =>
-    typeof document === "undefined" ? null : document.querySelector("[data-app-frame]")
-  );
-
-  useEffect(() => {
-    setFrame(document.querySelector("[data-app-frame]"));
-  }, []);
+  const { t } = useI18n();
+  const frame = typeof document === "undefined" ? null : document.querySelector("[data-app-frame]");
 
   useEffect(() => {
     if (!open) return undefined;
@@ -33,7 +29,7 @@ export function ChoiceSheet({ open, title, options, value, onSelect, onClose }) 
     <div className="absolute inset-0 z-[60] flex items-end justify-center">
       <button
         type="button"
-        aria-label="બંધ કરો"
+        aria-label={t("close")}
         onClick={onClose}
         className="absolute inset-0 bg-black/35"
       />

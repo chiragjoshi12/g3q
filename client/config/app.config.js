@@ -13,6 +13,15 @@
  */
 
 import { resolveApiBaseUrl } from "@/config/backend-origin.mjs";
+import { getActivePlatformWeek, PLATFORM_WEEKS } from "@/config/platformWeeks";
+
+function parseBool(value, fallback = false) {
+  if (value == null || String(value).trim() === "") return fallback;
+  const normalized = String(value).trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) return true;
+  if (["0", "false", "no", "off"].includes(normalized)) return false;
+  return fallback;
+}
 
 export const DATA_SOURCE = {
   JSON: "json",
@@ -43,6 +52,10 @@ export const appConfig = {
     phoneLength: 10,
   },
 
+  beta: {
+    isBetaTime: parseBool(process.env.NEXT_PUBLIC_IS_BETA_TIME, false),
+  },
+
   storage: {
     namespace: "ggq",
     version: 1,
@@ -61,6 +74,8 @@ export const appConfig = {
   },
 
   certificate: {
-    week: Number(process.env.NEXT_PUBLIC_G3Q_WEEK || 5),
+    weeks: PLATFORM_WEEKS,
+    currentWeek: getActivePlatformWeek(),
+    week: getActivePlatformWeek().id,
   },
 };

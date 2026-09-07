@@ -5,6 +5,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 
 import { appConfig, DATA_SOURCE } from "@/config/app.config";
 import { createAttemptId, quizController } from "@/controllers/quiz.controller";
+import { createAnalyticsEventId, trackAnalyticsEvent } from "@/lib/analytics-client";
 import { toMessage } from "@/lib/core/errors";
 import { emptyAnswerFor, isAnswered } from "@/lib/domain/grading";
 import { STORAGE_KEYS, zustandStorage } from "@/lib/storage/storage";
@@ -178,6 +179,7 @@ export const useQuizStore = create()(
             return;
           }
 
+          const localAttemptId = createAttemptId(quizId);
           set({
             quiz,
             questions,
@@ -186,10 +188,25 @@ export const useQuizStore = create()(
             quizId,
             ...blankSession,
             answers: withSeededAnswer({}, questions[0]),
-            attemptId: createAttemptId(quizId),
+            attemptId: localAttemptId,
             startedAt: Date.now(),
             runningSince: Date.now(),
           });
+          if (practice) {
+            void trackAnalyticsEvent({
+              eventId: createAnalyticsEventId("practice_start"),
+              eventType: "practice_quiz_start",
+              source: "practice_quiz",
+              quizId,
+              attemptId: localAttemptId,
+              questionCount: Array.isArray(questions) ? questions.length : 0,
+              success: true,
+              metadata: {
+                practice: true,
+                restart,
+              },
+            });
+          }
         } catch (error) {
           set({ loading: false, error: toMessage(error) });
         }
@@ -234,7 +251,7 @@ export const useQuizStore = create()(
       },
 
       /** Grades and persists the attempt. Returns the attempt id for routing. */
-      finishQuiz: async (user, { abandoned = false } = {}) => {
+      finishQuiz: async (user, { abandoned = false, practice = false } = {}) => {
         const state = get();
         if (!abandoned && (state.phase !== QUIZ_PHASE.REVIEWING || !state.isLastQuestion())) {
           return null;
@@ -256,6 +273,23 @@ export const useQuizStore = create()(
             user,
             abandoned,
           });
+          if (practice) {
+            void trackAnalyticsEvent({
+              eventId: createAnalyticsEventId("practice_complete"),
+              eventType: "practice_quiz_complete",
+              source: "practice_quiz",
+              quizId: attempt.quizId,
+              attemptId: attempt.attemptId,
+              questionCount: Number(attempt.totalQuestions ?? state.questions.length ?? 0),
+              success: !abandoned,
+              metadata: {
+                practice: true,
+                abandoned,
+                percentage: attempt.percentage,
+                attemptedCount: attempt.attemptedCount,
+              },
+            });
+          }
           set({
             loading: false,
             phase: QUIZ_PHASE.COMPLETED,

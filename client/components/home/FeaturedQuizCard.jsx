@@ -4,6 +4,7 @@ import Image from "next/image";
 
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { BRAND_ICONS } from "@/lib/brand-icons";
+import { useI18n } from "@/lib/i18n";
 
 const FEATURED_IMAGE = "/home/quiz-banner.jpeg";
 
@@ -12,6 +13,7 @@ const FEATURED_IMAGE = "/home/quiz-banner.jpeg";
  * Play Quiz — or "Your Score - X/Y" once the user has already played.
  */
 export function FeaturedQuizCard({ quiz, onStart, score = null }) {
+  const { t } = useI18n();
   if (!quiz) return null;
 
   const share = async () => {
@@ -61,7 +63,7 @@ export function FeaturedQuizCard({ quiz, onStart, score = null }) {
           <button
             type="button"
             onClick={share}
-            aria-label="શેર કરો"
+            aria-label={t("share")}
             className="grid size-9 shrink-0 place-items-center rounded-full bg-[#F0F1F3] transition-transform active:scale-95"
           >
             <BrandIcon src={BRAND_ICONS.shareQuiz} alt="" className="size-[18px]" />
@@ -75,13 +77,13 @@ export function FeaturedQuizCard({ quiz, onStart, score = null }) {
               alt=""
               className="size-7 shrink-0"
             />
-            {quiz.totalQuestions} પ્રશ્નો
+            {quiz.totalQuestions} {t("questions")}
           </p>
 
           <div className="flex flex-col items-end gap-1.5">
             {hasScore ? (
               <span className="text-right font-heading text-[12px] font-medium text-[#526273]">
-                Last Score: {score.correctCount}/{score.totalQuestions}
+                {t("scoreLabel")}: {score.correctCount}/{score.totalQuestions}
               </span>
             ) : null}
             <button
@@ -103,7 +105,7 @@ export function FeaturedQuizCard({ quiz, onStart, score = null }) {
                   maskPosition: "center",
                 }}
               />
-              Play Quiz
+              {t("playQuiz")}
             </button>
           </div>
         </div>

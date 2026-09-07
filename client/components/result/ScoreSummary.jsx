@@ -13,6 +13,7 @@ import { ChevronDown, LineArrowRight, Loader2 } from "@/components/icons";
 import { appConfig } from "@/config/app.config";
 import { ROUTES } from "@/config/routes";
 import { BRAND_ICONS } from "@/lib/brand-icons";
+import { createAnalyticsEventId, trackAnalyticsEvent } from "@/lib/analytics-client";
 import {
   attemptEarnsCertificate,
   buildCertificatePayload,
@@ -20,6 +21,7 @@ import {
 } from "@/lib/domain/certificate";
 import { formatDuration } from "@/lib/domain/format";
 import { scorePraise } from "@/lib/domain/scoring";
+import { useI18n } from "@/lib/i18n";
 import { formatTalukaLabel } from "@/lib/format-taluka";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
@@ -34,6 +36,7 @@ const ROW_CLASS = cn(
 /** Headline score card, certificate row, and leaderboard shortcut. */
 export function ScoreSummary({ attempt, quiz }) {
   const router = useRouter();
+  const { language, t } = useI18n();
   const user = useAuthStore((state) => state.user);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(null);
@@ -42,7 +45,7 @@ export function ScoreSummary({ attempt, quiz }) {
     () => buildCertificatePayload(user, attempt, { week: quiz?.week }),
     [user, attempt, quiz?.week]
   );
-  const talukaLabel = formatTalukaLabel(user?.taluka || attempt?.taluka);
+  const talukaLabel = formatTalukaLabel(user?.taluka || attempt?.taluka, language);
   const week = Number.isFinite(appConfig.certificate.week) ? appConfig.certificate.week : 5;
   const fileName = certificateFileName(payload);
 
@@ -84,19 +87,19 @@ export function ScoreSummary({ attempt, quiz }) {
           <StatChip
             tone="correct"
             value={attempt.correctCount}
-            label="Correct"
+            label={t("correct")}
             iconSrc={BRAND_ICONS.correct}
           />
           <StatChip
             tone="incorrect"
             value={attempt.wrongCount}
-            label="Incorrect"
+            label={t("incorrect")}
             iconSrc={BRAND_ICONS.incorrect}
           />
           <StatChip
             tone="time"
-            value={formatDuration(attempt.totalTimeMs)}
-            label="કુલ સમય"
+            value={formatDuration(attempt.totalTimeMs, language)}
+            label={t("totalTime")}
             iconSrc={BRAND_ICONS.time}
           />
         </div>
@@ -111,7 +114,7 @@ export function ScoreSummary({ attempt, quiz }) {
         >
           <BrandIcon src={BRAND_ICONS.resultCertificate} alt="" className="size-10 shrink-0" />
           <span className="min-w-0 text-[1.35rem] font-bold leading-tight text-[#2d689d]">
-            Certificate
+            {t("certificate")}
           </span>
           <ChevronDown
             className={cn(
@@ -120,7 +123,7 @@ export function ScoreSummary({ attempt, quiz }) {
             )}
           />
           <span className="col-start-2 mt-[0.015rem] truncate text-[15px] leading-snug font-normal text-black">
-            View and download
+            {t("viewAndDownload")}
           </span>
         </button>
 
@@ -137,10 +140,28 @@ export function ScoreSummary({ attempt, quiz }) {
                 {open ? (
                   <div className="absolute right-2.5 bottom-2.5 flex items-center gap-2">
                     <CertActionButton
-                      label="ડાઉનલોડ"
+                      label={t("download")}
                       disabled={Boolean(busy)}
                       onClick={() =>
-                        runCertAction("download", () => downloadCertificatePng(payload, fileName))
+                        runCertAction("download", async () => {
+                          await downloadCertificatePng(payload, fileName);
+                          void trackAnalyticsEvent({
+                            eventId: createAnalyticsEventId("cert"),
+                            eventType: "certificate_download",
+                            source: "result_summary",
+                            attemptId: attempt.attemptId,
+                            quizId: attempt.quizId,
+                            role: user?.role,
+                            district: user?.district || attempt?.district,
+                            taluka: user?.taluka || attempt?.taluka,
+                            metadata: {
+                              g3qId: payload.g3qId,
+                              week: payload.week,
+                              category: payload.categoryInline,
+                              fileName,
+                            },
+                          });
+                        })
                       }
                     >
                       {busy === "download" ? (
@@ -154,7 +175,7 @@ export function ScoreSummary({ attempt, quiz }) {
                       )}
                     </CertActionButton>
                     <CertActionButton
-                      label="શેર કરો"
+                      label={t("share")}
                       disabled={Boolean(busy)}
                       onClick={() =>
                         runCertAction("share", () =>
@@ -187,11 +208,15 @@ export function ScoreSummary({ attempt, quiz }) {
           className="size-10 shrink-0"
         />
         <span className="min-w-0 text-[1.35rem] font-bold leading-tight text-[#2d689d]">
-          લીડરબોર્ડ
+          {t("leaderboard")}
         </span>
         <LineArrowRight className="size-5 shrink-0 text-black" />
         <span className="col-start-2 mt-[0.015rem] truncate text-[15px] leading-snug font-normal text-black">
-          {talukaLabel} તાલુકો - {week} મું અઠવાડિયું
+          {language === "gu"
+            ? `${talukaLabel} તાલુકો - ${week} મું અઠવાડિયું`
+            : language === "hi"
+              ? `${talukaLabel} तालुका - सप्ताह ${week}`
+              : `${talukaLabel} Taluka - Week ${week}`}
         </span>
       </button>
     </section>

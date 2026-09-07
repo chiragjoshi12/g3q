@@ -1,10 +1,13 @@
 "use client";
 
+"use client";
+
 import Image from "next/image";
 
 import { BrandGlyph, BrandIcon } from "@/components/common/BrandIcon";
 import { LineArrowRight } from "@/components/icons";
 import { BRAND_ICONS } from "@/lib/brand-icons";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_AVATAR = BRAND_ICONS.profilePhoto;
@@ -57,6 +60,7 @@ export function LeaderboardDetailRow({
   avatar,
   you = false,
 }) {
+  const { t } = useI18n();
   const showInstitute = institute && institute !== CITIZEN_INSTITUTE;
 
   return (
@@ -70,7 +74,7 @@ export function LeaderboardDetailRow({
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[16px] font-bold leading-snug text-[#2d689d]">
-            {you ? `${name} (You)` : name}
+            {you ? `${name} (${t("you")})` : name}
           </p>
           {showInstitute ? (
             <p className="mt-0.5 whitespace-normal text-[14px] leading-snug text-[#000000]">{institute}</p>
@@ -88,16 +92,17 @@ export function LeaderboardDetailRow({
 }
 
 export function LeaderboardCategoryTabs({ value, onChange }) {
+  const { t } = useI18n();
   const items = [
-    { id: "school", label: "સ્કૂલ" },
-    { id: "college", label: "કોલેજ" },
-    { id: "citizen", label: "નાગરિક" },
+    { id: "school", label: t("school") },
+    { id: "college", label: t("college") },
+    { id: "citizen", label: t("citizen") },
   ];
 
   return (
     <div
       role="tablist"
-      aria-label="Leaderboard category"
+      aria-label={t("rankCategory")}
       className="flex w-full items-end justify-center gap-x-20 px-1"
     >
       {items.map((item) => {
@@ -132,6 +137,7 @@ export function LeaderboardCategoryTabs({ value, onChange }) {
 }
 
 export function LeaderboardPreviewCard({ talukaLabel, week, onClick, iconColor = "#2d689d", className }) {
+  const { language, t } = useI18n();
   return (
     <button
       type="button"
@@ -148,10 +154,14 @@ export function LeaderboardPreviewCard({ talukaLabel, week, onClick, iconColor =
       />
       <div className="min-w-0 flex-1 text-left">
         <p className="text-[1.35rem] font-bold leading-tight" style={{ color: iconColor }}>
-          લીડરબોર્ડ
+          {t("leaderboard")}
         </p>
         <p className="mt-1 truncate text-[15px] leading-snug text-black">
-          {talukaLabel} તાલુકો - {week} મું અઠવાડિયું
+          {language === "gu"
+            ? `${talukaLabel} તાલુકો - ${week} મું અઠવાડિયું`
+            : language === "hi"
+              ? `${talukaLabel} तालुका - सप्ताह ${week}`
+              : `${talukaLabel} Taluka - Week ${week}`}
         </p>
       </div>
       <LineArrowRight className="size-5 shrink-0 text-black" />
@@ -182,6 +192,7 @@ export function PodiumIcon({ className }) {
 }
 
 export function LeaderboardRow({ rank, name, institute, grade, you = false }) {
+  const { t } = useI18n();
   const showInstitute = institute && institute !== CITIZEN_INSTITUTE;
 
   return (
@@ -192,7 +203,7 @@ export function LeaderboardRow({ rank, name, institute, grade, you = false }) {
       <Avatar name={name} className="ml-2 md:ml-3" />
       <span className="ml-3 min-w-0 flex-1 md:ml-4">
         <span className="block text-[1.05rem] font-bold text-[#111] md:text-lg">
-          {you ? `${name} (You)` : name}
+          {you ? `${name} (${t("you")})` : name}
         </span>
         {showInstitute ? (
           <span className="mt-0.5 block text-sm leading-snug text-[#374151] md:text-[15px]">
@@ -216,10 +227,11 @@ export function LeaderboardGap() {
 }
 
 export function BoardToggle({ value, onChange }) {
+  const { t } = useI18n();
   const items = [
-    { id: "school", label: "School" },
-    { id: "college", label: "College" },
-    { id: "citizen", label: "People" },
+    { id: "school", label: t("school") },
+    { id: "college", label: t("college") },
+    { id: "citizen", label: t("citizen") },
   ];
 
   return (
