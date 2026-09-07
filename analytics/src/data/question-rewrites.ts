@@ -7,6 +7,7 @@
 export type RewriteItem = {
   id: number;
   department: string;
+  visual?: string;
   before: { question: string; options: string[]; answer: string };
   after: { question: string; options: string[]; answer: string; facts?: string[]; hint?: string };
 };
