@@ -13,7 +13,7 @@ G3Q (Gujarat Gyan Guru Quiz) is a Gujarati-language quiz platform. End users (sc
 | `backend/` | Express REST API | 4000 | — (owns the DB) |
 | `client/` | Public quiz app | 3000 | Yes (`/api/*`) |
 | `admin/` | Question-bank admin console | 3001 | Yes (`/api/v1/admin/*`) |
-| `analytics/` | Participation dashboard | 3002 | No (local mock data) |
+| `analytics/` | Participation dashboard | 3003 | No (local mock data) |
 
 Do not nest a `frontend/` folder under `admin/`. The Next.js admin app lives at `admin/` itself.
 

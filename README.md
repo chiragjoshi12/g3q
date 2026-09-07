@@ -9,12 +9,12 @@ This repo is **four apps**. Three talk to one MySQL database through the backend
 | **Backend** | `backend/` | Express API: auth, quiz sessions, leaderboards, admin APIs | **4000** |
 | **Client** | `client/` | Student / college / citizen quiz app (Next.js) | **3000** |
 | **Admin** | `admin/` | Question-bank admin console (Next.js) | **3001** |
-| **Analytics** | `analytics/` | Participation dashboard by state / district / taluka (Next.js) | **3002** |
+| **Analytics** | `analytics/` | Participation dashboard by state / district / taluka (Next.js) | **3003** |
 
 ```
 client     (:3000)  ─┐
 admin      (:3001)  ─┼──►  backend  (:4000)  ──►  MySQL  (:3307)
-analytics  (:3002)  ─┘        (mock data today; no API required)
+analytics  (:3003)  ─┘        (mock data today; no API required)
 ```
 
 ---
@@ -108,12 +108,12 @@ npm run dev                   # http://localhost:3001
 
 Open http://localhost:3001/login and use the master admin credentials above.
 
-### 4. Analytics — port 3002
+### 4. Analytics — port 3003
 
 ```bash
 cd analytics
 npm install
-npm run dev                   # http://localhost:3002
+npm run dev                   # http://localhost:3003
 ```
 
 No backend or `.env` required.
@@ -133,7 +133,7 @@ cd client && npm run dev           # :3000
 cd admin && npm run dev            # :3001
 
 # Terminal 4 (optional)
-cd analytics && npm run dev        # :3002
+cd analytics && npm run dev        # :3003
 ```
 
 | URL | App |
@@ -141,4 +141,4 @@ cd analytics && npm run dev        # :3002
 | http://localhost:4000 | API |
 | http://localhost:3000 | Quiz client |
 | http://localhost:3001 | Admin console |
-| http://localhost:3002 | Analytics dashboard |
+| http://localhost:3003 | Analytics dashboard |
