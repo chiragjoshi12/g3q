@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import {
   type Category,
   type ChildRow,
@@ -14,6 +15,17 @@ import {
 } from "@/lib/g3q-data";
 
 type Order = "desc" | "asc";
+type AnalyticsSession = {
+  username: string;
+  role: string;
+  access_scope?: string | null;
+  full_name?: string | null;
+  university?: string | null;
+  mobile_number?: string | null;
+};
+
+const ANALYTICS_TOKEN_KEY = "g3q-analytics-token";
+const ANALYTICS_USER_KEY = "g3q-analytics-user";
 
 const CATEGORY_OPTIONS: { value: Category; label: string }[] = [
   { value: "all", label: "All" },
@@ -30,11 +42,169 @@ const ORDER_OPTIONS: { value: Order; label: string }[] = [
 const WEEKS = Array.from({ length: 8 }, (_, index) => index + 1);
 const RATE_COPY = { registration: "Registration", activation: "Activation", reach: "Reach" } as const;
 const PORTAL_SECTIONS = [
-  { label: "Main analytics", status: "live" },
-  { label: "Visuals", status: "Soon" },
-  { label: "Detailed data", status: "Soon" },
-  { label: "Action", status: "Soon" },
+  { label: "Main analytics", status: "live", icon: "analytics" },
+  { label: "Visuals", status: "Soon", icon: "visuals" },
+  { label: "Detailed data", status: "Soon", icon: "data" },
+  { label: "Action", status: "Soon", icon: "action" },
 ] as const;
+
+type PortalIconName = (typeof PORTAL_SECTIONS)[number]["icon"];
+
+function sessionFromPayload(payload: AnalyticsSession): AnalyticsSession {
+  return {
+    username: payload.username,
+    role: payload.role,
+    access_scope: payload.access_scope ?? null,
+    full_name: payload.full_name ?? null,
+    university: payload.university ?? null,
+    mobile_number: payload.mobile_number ?? null,
+  };
+}
+
+function roleLabel(session: AnalyticsSession) {
+  if (session.role === "master") return "Master admin";
+  if (session.role === "sub_admin" || session.access_scope === "analytics") {
+    return "Analytics admin";
+  }
+  return "Admin";
+}
+
+function PersonIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <circle cx="12" cy="8.2" r="3.1" />
+      <path d="M5.4 19.2c1.1-3.1 3.5-4.7 6.6-4.7s5.5 1.6 6.6 4.7" />
+    </svg>
+  );
+}
+
+function LogoutIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M10 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3" />
+      <path d="M15 12H8" />
+      <path d="M13 8.5 16.5 12 13 15.5" />
+    </svg>
+  );
+}
+
+function SidebarIcon({
+  name,
+  className,
+}: {
+  name: PortalIconName;
+  className?: string;
+}) {
+  const common = {
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.7,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    className,
+    "aria-hidden": true as const,
+  };
+
+  if (name === "analytics") {
+    return (
+      <svg {...common}>
+        <path d="M4 19.5h16" />
+        <path d="M7 16.5v-5" />
+        <path d="M12 16.5V7.5" />
+        <path d="M17 16.5v-8" />
+      </svg>
+    );
+  }
+
+  if (name === "visuals") {
+    return (
+      <svg {...common}>
+        <rect x="4" y="6" width="16" height="12" rx="2" />
+        <circle cx="9" cy="10.5" r="1.3" />
+        <path d="M4.8 16.2 9.2 12.6l3.1 2.7 3.3-4.2 3.6 5.1" />
+      </svg>
+    );
+  }
+
+  if (name === "data") {
+    return (
+      <svg {...common}>
+        <rect x="4.5" y="5" width="15" height="14" rx="1.8" />
+        <path d="M4.5 9.5h15" />
+        <path d="M9.5 9.5v9.5" />
+        <path d="M14.5 9.5v9.5" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...common}>
+      <path d="M13 4 6.8 13.2h4.4L11 20l6.2-9.2h-4.4z" />
+    </svg>
+  );
+}
+
+function ChevronIcon({
+  direction,
+  className,
+}: {
+  direction: "left" | "right";
+  className?: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      {direction === "left" ? (
+        <path d="M14.5 5.5 8.5 12l6 6.5" />
+      ) : (
+        <path d="M9.5 5.5 15.5 12l-6 6.5" />
+      )}
+    </svg>
+  );
+}
+
+async function analyticsRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(path, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {}),
+    },
+    cache: "no-store",
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(payload?.message || "Unable to sign in.");
+  }
+  return payload as T;
+}
 
 export function DashboardClient({ entity }: { entity: DashboardEntity }) {
   const isClient = useSyncExternalStore(
@@ -47,11 +217,13 @@ export function DashboardClient({ entity }: { entity: DashboardEntity }) {
   const [order, setOrder] = useState<Order>("desc");
   const [mobileNumber, setMobileNumber] = useState("");
   const [password, setPassword] = useState("");
-  const [sessionUser, setSessionUser] = useState<string | null>(null);
+  const [sessionUser, setSessionUser] = useState<AnalyticsSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState<boolean | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
 
-  const storedSessionUser = isClient ? window.localStorage.getItem("g3q-session-user") : null;
-  const effectiveSessionUser = sessionUser ?? storedSessionUser;
+  const effectiveSessionUser = sessionUser;
   const effectiveSidebarOpen =
     sidebarOpen ?? (isClient ? window.localStorage.getItem("g3q-sidebar-open") !== "false" : true);
 
@@ -60,6 +232,40 @@ export function DashboardClient({ entity }: { entity: DashboardEntity }) {
       window.localStorage.setItem("g3q-sidebar-open", String(sidebarOpen));
     }
   }, [isClient, sidebarOpen]);
+
+  useEffect(() => {
+    if (!isClient) return;
+    const token = window.localStorage.getItem(ANALYTICS_TOKEN_KEY);
+    const storedUser = window.localStorage.getItem(ANALYTICS_USER_KEY);
+
+    if (storedUser) {
+      try {
+        setSessionUser(JSON.parse(storedUser) as AnalyticsSession);
+      } catch {
+        window.localStorage.removeItem(ANALYTICS_USER_KEY);
+      }
+    }
+
+    if (!token) {
+      setAuthReady(true);
+      return;
+    }
+
+    analyticsRequest<AnalyticsSession>("/api/v1/analytics/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((profile) => {
+        const next = sessionFromPayload(profile);
+        window.localStorage.setItem(ANALYTICS_USER_KEY, JSON.stringify(next));
+        setSessionUser(next);
+      })
+      .catch(() => {
+        window.localStorage.removeItem(ANALYTICS_TOKEN_KEY);
+        window.localStorage.removeItem(ANALYTICS_USER_KEY);
+        setSessionUser(null);
+      })
+      .finally(() => setAuthReady(true));
+  }, [isClient]);
 
   const listRows = useMemo(() => {
     const rows =
@@ -98,23 +304,58 @@ export function DashboardClient({ entity }: { entity: DashboardEntity }) {
     return <div className="dashboard-shell min-h-screen" />;
   }
 
+  if (!authReady) {
+    return <div className="dashboard-shell min-h-screen" />;
+  }
+
   if (!effectiveSessionUser) {
     return (
       <LoginScreen
         mobileNumber={mobileNumber}
         password={password}
+        loading={authLoading}
         setMobileNumber={setMobileNumber}
         setPassword={setPassword}
-        onSubmit={() => {
+        error={authError}
+        onSubmit={async () => {
           const cleanMobile = mobileNumber.trim();
           if (!cleanMobile || !password.trim()) {
             return;
           }
-          window.localStorage.setItem("g3q-session-user", cleanMobile);
-          setSessionUser(cleanMobile);
+          setAuthLoading(true);
+          setAuthError("");
+          try {
+            const result = await analyticsRequest<AnalyticsSession & { access_token: string }>(
+              "/api/v1/analytics/login",
+              {
+                method: "POST",
+                body: JSON.stringify({
+                  username: cleanMobile,
+                  password,
+                }),
+              }
+            );
+            const profile = sessionFromPayload(result);
+            window.localStorage.setItem(ANALYTICS_TOKEN_KEY, result.access_token);
+            window.localStorage.setItem(ANALYTICS_USER_KEY, JSON.stringify(profile));
+            setSessionUser(profile);
+          } catch (error) {
+            setAuthError(error instanceof Error ? error.message : "Unable to sign in.");
+          } finally {
+            setAuthLoading(false);
+          }
         }}
       />
     );
+  }
+
+  function handleLogout() {
+    window.localStorage.removeItem(ANALYTICS_TOKEN_KEY);
+    window.localStorage.removeItem(ANALYTICS_USER_KEY);
+    setSessionUser(null);
+    setPassword("");
+    setMobileNumber("");
+    setAuthError("");
   }
 
   return (
@@ -122,14 +363,9 @@ export function DashboardClient({ entity }: { entity: DashboardEntity }) {
       <div className="mx-auto flex min-h-screen w-full max-w-[1600px]">
         <Sidebar
           open={effectiveSidebarOpen}
-          userId={effectiveSessionUser}
+          session={effectiveSessionUser}
           onToggle={() => setSidebarOpen((current) => !(current ?? effectiveSidebarOpen))}
-          onLogout={() => {
-            window.localStorage.removeItem("g3q-session-user");
-            setSessionUser(null);
-            setPassword("");
-            setMobileNumber("");
-          }}
+          onLogout={handleLogout}
         />
         <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
@@ -179,15 +415,19 @@ export function DashboardClient({ entity }: { entity: DashboardEntity }) {
 function LoginScreen({
   mobileNumber,
   password,
+  loading,
+  error,
   setMobileNumber,
   setPassword,
   onSubmit,
 }: {
   mobileNumber: string;
   password: string;
+  loading: boolean;
+  error: string;
   setMobileNumber: (value: string) => void;
   setPassword: (value: string) => void;
-  onSubmit: () => void;
+  onSubmit: () => Promise<void>;
 }) {
   return (
     <div className="dashboard-shell flex min-h-screen items-center justify-center px-4 py-10">
@@ -208,9 +448,8 @@ function LoginScreen({
           <label className="flex flex-col gap-2">
             <span className="text-sm font-semibold text-[var(--foreground)]">User ID</span>
             <input
-              type="tel"
-              inputMode="numeric"
-              placeholder="Mobile number"
+              type="text"
+              placeholder="Username"
               value={mobileNumber}
               onChange={(event) => setMobileNumber(event.target.value)}
               className="rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-base text-[var(--foreground)] outline-none"
@@ -228,10 +467,12 @@ function LoginScreen({
           </label>
           <button
             type="submit"
+            disabled={loading}
             className="mt-2 rounded-full bg-[var(--foreground)] px-5 py-3 text-base font-semibold text-white"
           >
-            Continue
+            {loading ? "Please wait..." : "Continue"}
           </button>
+          {error ? <p className="text-sm text-[#B42318]">{error}</p> : null}
         </form>
       </div>
     </div>
@@ -240,12 +481,12 @@ function LoginScreen({
 
 function Sidebar({
   open,
-  userId,
+  session,
   onToggle,
   onLogout,
 }: {
   open: boolean;
-  userId: string;
+  session: AnalyticsSession;
   onToggle: () => void;
   onLogout: () => void;
 }) {
@@ -273,27 +514,25 @@ function Sidebar({
           <button
             key={section.label}
             type="button"
-            className={`flex items-center ${open ? "justify-between px-4" : "justify-center px-2"} rounded-2xl py-3 text-left ${
+            title={section.label}
+            className={`flex items-center ${open ? "gap-3 px-4" : "justify-center px-2"} rounded-2xl py-3 text-left ${
               section.status === "live"
                 ? "bg-white font-semibold text-[var(--foreground)] shadow-[0_8px_24px_rgba(24,49,83,0.06)]"
                 : "text-[var(--ink-soft)]"
             }`}
           >
-            <span className={open ? "" : "sr-only"}>{section.label}</span>
-            {!open ? (
-              <span className="text-sm font-semibold">
-                {section.label.charAt(0)}
-              </span>
-            ) : section.status === "live" ? null : (
+            <SidebarIcon name={section.icon} className="h-5 w-5 shrink-0" />
+            <span className={open ? "min-w-0 flex-1 truncate" : "sr-only"}>{section.label}</span>
+            {open && section.status !== "live" ? (
               <span className="rounded-full bg-[rgba(24,49,83,0.06)] px-2.5 py-1 text-xs font-medium text-[var(--muted)]">
                 {section.status}
               </span>
-            )}
+            ) : null}
           </button>
         ))}
       </nav>
-      <div className={`border-t border-[rgba(24,49,83,0.1)] ${open ? "px-4 py-4" : "px-2 py-4"}`}>
-        <ProfileMenu userId={userId} onLogout={onLogout} expanded={open} />
+      <div className={`border-t border-[rgba(24,49,83,0.1)] ${open ? "px-3 py-4" : "px-2 py-4"}`}>
+        <ProfileMenu session={session} onLogout={onLogout} expanded={open} />
       </div>
     </aside>
   );
@@ -310,68 +549,194 @@ function MenuToggleButton({
     <button
       type="button"
       onClick={onClick}
-      aria-label={open ? "Close menu" : "Open menu"}
+      aria-label={open ? "Collapse menu" : "Expand menu"}
       className="rounded-xl p-2 text-[var(--foreground)] hover:bg-[rgba(24,49,83,0.05)]"
     >
-      <span className="relative block h-5 w-5">
-        <span className="absolute left-0 top-0 h-5 w-[3px] rounded-full bg-[var(--foreground)] opacity-70" />
-        <span className="absolute right-0 top-[3px] h-[2px] w-3 rounded-full bg-[var(--foreground)]" />
-        <span className="absolute right-0 top-[9px] h-[2px] w-3 rounded-full bg-[var(--foreground)]" />
-        <span className="absolute right-0 top-[15px] h-[2px] w-3 rounded-full bg-[var(--foreground)]" />
-      </span>
+      <ChevronIcon direction={open ? "left" : "right"} className="h-5 w-5" />
     </button>
   );
 }
 
 function ProfileMenu({
-  userId,
+  session,
   onLogout,
   expanded,
 }: {
-  userId: string;
+  session: AnalyticsSession;
   onLogout: () => void;
   expanded: boolean;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const ref = useDismissableLayer<HTMLDivElement>(() => setMenuOpen(false), menuOpen);
-  const shortId = userId.length > 4 ? userId.slice(-4) : userId;
+  const displayName = session.full_name?.trim() || session.username;
 
   return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setMenuOpen((current) => !current)}
-        className={`flex items-center gap-3 rounded-2xl text-left ${expanded ? "w-full px-3 py-2 hover:bg-[rgba(24,49,83,0.05)]" : "w-full justify-center px-0 py-2"}`}
-        aria-expanded={menuOpen}
-        aria-label="Open profile menu"
-      >
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(45,106,163,0.12)] text-sm font-bold text-[var(--foreground)]">
-          {shortId}
-        </div>
-        {expanded ? (
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold text-[var(--foreground)]">{userId}</div>
-            <div className="text-xs text-[var(--muted)]">Profile</div>
+    <>
+      <div className="relative" ref={ref}>
+        <button
+          type="button"
+          onClick={() => setMenuOpen((current) => !current)}
+          className={`flex items-center gap-3 rounded-2xl text-left hover:bg-[rgba(24,49,83,0.05)] ${
+            expanded ? "w-full px-3 py-2" : "w-full justify-center px-0 py-2"
+          } ${menuOpen ? "bg-[rgba(24,49,83,0.05)]" : ""}`}
+          aria-expanded={menuOpen}
+          aria-haspopup="menu"
+          aria-label="Open profile menu"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[rgba(45,106,163,0.12)] text-[var(--civic-blue)]">
+            <PersonIcon className="h-5 w-5" />
+          </span>
+          {expanded ? (
+            <>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold text-[var(--foreground)]">
+                  {displayName}
+                </span>
+                <span className="block text-xs text-[var(--muted)]">{roleLabel(session)}</span>
+              </span>
+              <span
+                className={`text-[var(--muted)] transition-transform ${menuOpen ? "rotate-180" : ""}`}
+                aria-hidden
+              >
+                <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path d="M4 6.25 8 10.25 12 6.25" />
+                </svg>
+              </span>
+            </>
+          ) : null}
+        </button>
+        {menuOpen ? (
+          <div
+            role="menu"
+            className={`profile-pop absolute z-50 w-56 rounded-[22px] border border-[var(--line)] bg-[var(--surface-strong)] p-2 shadow-[0_18px_34px_rgba(24,49,83,0.14)] ${
+              expanded ? "bottom-full left-0 mb-2" : "bottom-0 left-full ml-2"
+            }`}
+          >
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setMenuOpen(false);
+                setProfileOpen(true);
+              }}
+              className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-[var(--foreground)] hover:bg-[rgba(45,106,163,0.08)]"
+            >
+              <PersonIcon className="h-5 w-5 text-[var(--civic-blue)]" />
+              Profile
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setMenuOpen(false);
+                onLogout();
+              }}
+              className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-[var(--rose-clay)] hover:bg-[rgba(201,108,95,0.1)]"
+            >
+              <LogoutIcon className="h-5 w-5" />
+              Logout
+            </button>
           </div>
         ) : null}
-      </button>
-      {menuOpen ? (
-        <div className={`absolute ${expanded ? "left-0" : "left-full ml-2"} bottom-full mb-2 w-52 rounded-[20px] border border-[var(--line)] bg-white p-2 shadow-[0_18px_34px_rgba(24,49,83,0.12)]`}>
-          <div className="rounded-2xl px-3 py-2 text-sm font-semibold text-[var(--foreground)]">
-            {userId}
+      </div>
+      {profileOpen
+        ? createPortal(
+            <ProfileDialog session={session} onClose={() => setProfileOpen(false)} />,
+            document.body,
+          )
+        : null}
+    </>
+  );
+}
+
+function ProfileDialog({
+  session,
+  onClose,
+}: {
+  session: AnalyticsSession;
+  onClose: () => void;
+}) {
+  const displayName = session.full_name?.trim() || session.username;
+  const fields = [
+    { label: "Name", value: displayName },
+    { label: "Username", value: session.username },
+    { label: "Role", value: roleLabel(session) },
+    { label: "University", value: session.university },
+    { label: "Mobile", value: session.mobile_number },
+  ].filter((field) => field.value);
+
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" role="presentation">
+      <button
+        type="button"
+        className="absolute inset-0 bg-[rgba(24,49,83,0.32)]"
+        aria-label="Close profile"
+        onClick={onClose}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="analytics-profile-title"
+        className="profile-pop relative w-full max-w-md rounded-[28px] border border-[var(--line)] bg-[var(--surface-strong)] p-6 shadow-[0_24px_60px_rgba(24,49,83,0.18)] sm:p-8"
+      >
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-[var(--muted)]">Account</p>
+            <h2
+              id="analytics-profile-title"
+              className="mt-1 text-3xl font-extrabold tracking-[-0.05em] text-[var(--foreground)]"
+            >
+              Profile
+            </h2>
           </div>
           <button
             type="button"
-            onClick={() => {
-              setMenuOpen(false);
-              onLogout();
-            }}
-            className="block w-full rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-[var(--foreground)] hover:bg-[rgba(24,49,83,0.05)]"
+            onClick={onClose}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line)] text-[var(--foreground)] hover:bg-[rgba(24,49,83,0.05)]"
+            aria-label="Close"
           >
-            Log out
+            <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M4 4 12 12M12 4 4 12" />
+            </svg>
           </button>
         </div>
-      ) : null}
+        <div className="mb-6 flex items-center gap-4">
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[rgba(45,106,163,0.12)] text-[var(--civic-blue)]">
+            <PersonIcon className="h-7 w-7" />
+          </span>
+          <div>
+            <div className="text-lg font-bold text-[var(--foreground)]">{displayName}</div>
+            <div className="text-sm text-[var(--muted)]">{roleLabel(session)}</div>
+          </div>
+        </div>
+        <dl className="grid gap-3">
+          {fields.map((field) => (
+            <div
+              key={field.label}
+              className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] px-4 py-3"
+            >
+              <dt className="text-xs font-semibold uppercase tracking-[0.04em] text-[var(--muted)]">
+                {field.label}
+              </dt>
+              <dd className="mt-1 text-sm font-semibold text-[var(--foreground)]">{field.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
     </div>
   );
 }

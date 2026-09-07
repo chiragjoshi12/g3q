@@ -4,5 +4,5 @@ Participation dashboard for the G3Q quiz platform (state → district → taluka
 
 ```bash
 npm install
-npm run dev    # http://localhost:3002
+npm run dev    # http://localhost:3003
 ```
