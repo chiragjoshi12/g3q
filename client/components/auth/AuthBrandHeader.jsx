@@ -1,6 +1,8 @@
+"use client";
+
 import { ACTION_BUTTON_CLASS } from "@/components/common/AppButton";
 import { BrandIcon } from "@/components/common/BrandIcon";
-import { appConfig } from "@/config/app.config";
+import { useI18n } from "@/lib/i18n";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { cn } from "@/lib/utils";
 
@@ -32,17 +34,19 @@ export function AuthLink({ children, className, ...props }) {
  * White bar used on every login step: compact G3Q mark + navy title.
  */
 export function AuthBrandHeader() {
+  const { appName } = useI18n();
+
   return (
     <header className="relative z-20 shrink-0 bg-white px-4 py-2.5">
       <BrandIcon
         src={BRAND_ICONS.logo}
-        alt="G3Q 2.0"
+        alt="G3Q 3.0"
         priority
         className="size-11 shrink-0"
       />
 
       <h1 className="absolute inset-0 flex items-center justify-center font-heading text-[1.35rem] leading-none font-bold tracking-tight text-[#2C6698]">
-        {appConfig.name}
+        {appName}
       </h1>
     </header>
   );

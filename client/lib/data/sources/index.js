@@ -10,10 +10,23 @@ import { httpSource } from "@/lib/data/sources/http.source";
  *   requestOtp({ role, credential, phone })      -> { requestId, maskedPhone, resendSeconds }
  *   verifyOtp({ requestId, otp, role, ... })     -> { user, token } | { needsProfile }
  *   registerCitizen({ requestId, name, district, taluka }) -> { user, token }
+ *   getLandingSummary()                          -> { totalPlays, weeklyPlays, featuredQuizId }
+ *   getMe()                                      -> User
  *   listQuizzes()                             -> Quiz[]
  *   getQuizById(quizId)                       -> Quiz
  *   getQuestionsByQuizId(quizId)              -> Question[]
  *   getExplanationsByQuizId(quizId)           -> Record<questionId, Explanation>
+ *   startSession({ count, language })         -> SessionPlayPayload
+ *   getSession(sessionId)                     -> SessionPlayPayload | SessionResult
+ *   submitSession({ sessionId, answers, timings, startedAt }) -> SessionResult
+ *   getSessionResult(sessionId)               -> SessionResult
+ *   listMySessions({ page, pageSize })        -> { items, total, ... }
+ *   getMySessionStats()                       -> Stats
+ *   clearMyAttempts()                         -> Stats
+ *   getSchoolLeaderboard({ ... })             -> Leaderboard
+ *   getCollegeLeaderboard({ ... })            -> Leaderboard
+ *   getCitizenLeaderboard({ ... })            -> Leaderboard
+ *   getTalukaLeaderboard({ ... })             -> Leaderboard
  */
 
 const REGISTRY = {

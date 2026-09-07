@@ -14,6 +14,8 @@ import adminRoutes from './routes/admin.routes.js';
 import sessionRoutes from './routes/session.routes.js';
 import leaderboardRoutes from './routes/leaderboard.routes.js';
 import g3qAiRoutes from './routes/g3qAi.routes.js';
+import landingRoutes from './routes/landing.routes.js';
+import analyticsRoutes from './routes/analytics.routes.js';
 
 const app = express();
 
@@ -51,6 +53,7 @@ app.get('/api/v1/health', (req, res) => {
 // NEXT_PUBLIC_API_BASE_URL in gujarat-gov-quiz/config/app.config.js — point
 // it at this server's origin + /api and the REST data source works as-is.
 app.use('/api/auth', authRoutes);
+app.use('/api/landing', landingRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/quizzes', quizRoutes);
@@ -59,6 +62,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/g3q-ai', g3qAiRoutes);
 // Admin console paths kept under /api/v1/admin to match the Next.js client.
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/analytics', analyticsRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

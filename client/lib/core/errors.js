@@ -1,3 +1,5 @@
+import { translateCurrent } from "@/lib/i18n";
+
 export const ERROR_CODE = {
   NOT_FOUND: "NOT_FOUND",
   INVALID_CREDENTIAL: "INVALID_CREDENTIAL",
@@ -21,19 +23,23 @@ export function isAppError(error) {
   return error instanceof AppError;
 }
 
-/** Gujarati messages for anything that can surface to the user. */
 export const ERROR_MESSAGE = {
-  [ERROR_CODE.NOT_FOUND]: "વિગત મળી નથી.",
-  [ERROR_CODE.INVALID_CREDENTIAL]: "આ કોડ સાથે કોઈ ખાતું મળ્યું નથી.",
-  [ERROR_CODE.INVALID_PHONE]: "મોબાઇલ નંબર 10 અંકનો હોવો જોઈએ.",
-  [ERROR_CODE.INVALID_OTP]: "OTP ખોટો છે. ફરી પ્રયાસ કરો.",
-  [ERROR_CODE.NETWORK]: "કનેક્શનમાં સમસ્યા છે. ફરી પ્રયાસ કરો.",
-  [ERROR_CODE.UNKNOWN]: "કંઈક ખોટું થયું. ફરી પ્રયાસ કરો.",
+  [ERROR_CODE.NOT_FOUND]: () => translateCurrent("errorNotFound"),
+  [ERROR_CODE.INVALID_CREDENTIAL]: () => translateCurrent("errorInvalidCredential"),
+  [ERROR_CODE.INVALID_PHONE]: () => translateCurrent("errorInvalidPhone"),
+  [ERROR_CODE.INVALID_OTP]: () => translateCurrent("errorInvalidOtp"),
+  [ERROR_CODE.NETWORK]: () => translateCurrent("errorNetwork"),
+  [ERROR_CODE.UNKNOWN]: () => translateCurrent("somethingWentWrong"),
 };
+
+function resolveMessage(code) {
+  const value = ERROR_MESSAGE[code] || ERROR_MESSAGE.UNKNOWN;
+  return typeof value === "function" ? value() : value;
+}
 
 export function toMessage(error) {
   if (isAppError(error)) {
-    return error.message || ERROR_MESSAGE[error.code] || ERROR_MESSAGE.UNKNOWN;
+    return error.message || resolveMessage(error.code);
   }
-  return ERROR_MESSAGE.UNKNOWN;
+  return resolveMessage(ERROR_CODE.UNKNOWN);
 }

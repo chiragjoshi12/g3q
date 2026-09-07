@@ -8,6 +8,7 @@ import { BrandIcon } from "@/components/common/BrandIcon";
 import { ChatMarkdown } from "@/components/g3q-ai/ChatMarkdown";
 import { useTypewriter } from "@/hooks/useTypewriter";
 import { BRAND_ICONS } from "@/lib/brand-icons";
+import { useI18n } from "@/lib/i18n";
 import { playAnswerSound } from "@/lib/quiz-sounds";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +33,7 @@ export function AiExplanationSheet({
   onDismiss,
   onContinue,
 }) {
+  const { t } = useI18n();
   const source = explanation?.body ?? "";
   const streamDurationMs = Math.min(
     MAX_STREAM_DURATION_MS,
@@ -86,7 +88,7 @@ export function AiExplanationSheet({
       {bodyDone ? (
         <button
           type="button"
-          aria-label="બંધ કરો"
+          aria-label={t("close")}
           onClick={onDismiss}
           className="absolute inset-0"
         />
@@ -116,14 +118,14 @@ export function AiExplanationSheet({
                   className={cn("size-6 shrink-0", !bodyDone && "animate-pulse")}
                 />
                 <h2 className="font-canva inline-block bg-gradient-to-r from-[#8c52ff] to-[#5ce1e6] bg-clip-text text-xl font-bold text-transparent">
-                  Do you know?
+                  {t("didYouKnow")}
                 </h2>
               </div>
               {bodyDone ? (
                 <button
                   type="button"
                   onClick={onDismiss}
-                  aria-label="બંધ કરો"
+                  aria-label={t("close")}
                   className="absolute right-0 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-full bg-[#f5f5f5] text-muted-foreground transition-transform active:scale-95"
                 >
                   <X className="size-7 text-[#111]" />
@@ -150,7 +152,7 @@ export function AiExplanationSheet({
                 onClick={onContinue}
                 className={ACTION_BUTTON_CLASS}
               >
-                {isLast ? "See Result" : "Next Question"}
+                {isLast ? t("viewResult") : t("nextQuestion")}
               </AppButton>
             )}
           </ActionButtonRow>
@@ -161,6 +163,7 @@ export function AiExplanationSheet({
 }
 
 function CheckingAnswerButton({ progress }) {
+  const { t } = useI18n();
   return (
     <div className="animate-ai-check-run-border relative w-[62%] rounded-full p-[1.5px]">
       <div className="rounded-full bg-[#D6E4F0]">
@@ -174,7 +177,7 @@ function CheckingAnswerButton({ progress }) {
             className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#b99cff] to-[#a9f5f7] opacity-85 transition-[width] duration-200 ease-out"
             style={{ width: `${progress}%` }}
           />
-          <span className="relative z-10">Checking Answer...</span>
+          <span className="relative z-10">{t("checkingAnswer")}...</span>
         </AppButton>
       </div>
     </div>
@@ -182,6 +185,7 @@ function CheckingAnswerButton({ progress }) {
 }
 
 function VerdictMark({ correct }) {
+  const { t } = useI18n();
   return (
     <div className="relative mt-[-4] flex flex-col items-center justify-center overflow-visible py-2">
       <div className="relative grid size-28 place-items-center overflow-visible">
@@ -194,7 +198,7 @@ function VerdictMark({ correct }) {
         />
         <BrandIcon
           src={correct ? BRAND_ICONS.correct : BRAND_ICONS.incorrect}
-          alt={correct ? "સાચો જવાબ" : "ખોટો જવાબ"}
+          alt={correct ? t("correctAnswer") : t("incorrect")}
           className="relative size-[4rem] animate-verdict-pop"
         />
       </div>
@@ -204,7 +208,7 @@ function VerdictMark({ correct }) {
           correct ? "text-[#15803D]" : "text-[#B91C1C]"
         )}
       >
-          {correct ? "સાચો જવાબ!" : "ખોટો જવાબ"}
+          {correct ? `${t("correctAnswer")}!` : t("incorrect")}
       </p>
     </div>
   );

@@ -1,3 +1,5 @@
+import { getActivePlatformWeek, PLATFORM_WEEKS } from './platformWeeks.js';
+
 const parseOrigins = () => {
   const fromList = (process.env.FRONTEND_ORIGINS || '')
     .split(',')
@@ -52,26 +54,39 @@ export const CONFIG = {
     DEV_BYPASS_CODE: process.env.OTP_DEV_BYPASS_CODE || '1234',
   },
 
+  BETA: {
+    ENABLED: parseBool(process.env.IS_BETA_TIME, false),
+  },
+
   // Bank-backed quiz sessions (allocate from ACCEPTED bank_questions).
   QUIZ: {
-    QUESTION_COUNT: parseInt(process.env.QUIZ_SESSION_QUESTION_COUNT) || 20,
+    QUESTION_COUNT: parseInt(process.env.QUIZ_SESSION_QUESTION_COUNT) || 15,
     // Soft personalisation: target this many profile-tagged (district / caste) Qs.
     PERSONALIZED_MIN: parseInt(process.env.QUIZ_PERSONALIZED_MIN) || 4,
     PERSONALIZED_MAX: parseInt(process.env.QUIZ_PERSONALIZED_MAX) || 5,
     EXPIRY_MINUTES: parseInt(process.env.QUIZ_SESSION_EXPIRY_MINUTES) || 90,
     DEFAULT_LANGUAGE: process.env.QUIZ_DEFAULT_LANGUAGE || 'gu',
+    WEEKS: PLATFORM_WEEKS,
+    CURRENT_WEEK: getActivePlatformWeek().id,
+    CURRENT_WEEK_META: getActivePlatformWeek(),
   },
 
   /**
-   * Gemini personalisation between question allocation and client payload.
-   * When ENABLED=false, session start skips AI and serves bank text as-is.
-   * @see https://ai.google.dev/gemini-api/docs/
+   * Meta AI Model API configuration for quiz personalisation and G3Q AI chat.
+   * Falls back to older Gemini env names locally so existing setups do not
+   * break during migration.
+   * @see https://dev.meta.ai/docs/overview/
    */
   AI: {
     ENABLED: parseBool(process.env.AI_ENHANCEMENT_ENABLED, false),
-    API_KEY: process.env.GEMINI_API_KEY || '',
-    MODEL: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
-    // Typical enhance pass is ~8–10s; keep headroom for slow responses.
-    TIMEOUT_MS: parseInt(process.env.GEMINI_TIMEOUT_MS) || 20000,
+    API_KEY: process.env.META_AI_API_KEY || process.env.MODEL_API_KEY || process.env.GEMINI_API_KEY || '',
+    MODEL:
+      process.env.META_AI_MODEL ||
+      process.env.MODEL_API_MODEL ||
+      process.env.GEMINI_MODEL ||
+      'muse-spark-1.3-contributor',
+    BASE_URL: process.env.META_AI_BASE_URL || 'https://api.meta.ai/v1',
+    // Typical enhance/chat responses are interactive; keep headroom for network latency.
+    TIMEOUT_MS: parseInt(process.env.AI_TIMEOUT_MS || process.env.GEMINI_TIMEOUT_MS) || 20000,
   },
 };

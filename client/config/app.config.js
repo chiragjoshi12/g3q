@@ -13,6 +13,15 @@
  */
 
 import { resolveApiBaseUrl } from "@/config/backend-origin.mjs";
+import { getActivePlatformWeek, PLATFORM_WEEKS } from "@/config/platformWeeks";
+
+function parseBool(value, fallback = false) {
+  if (value == null || String(value).trim() === "") return fallback;
+  const normalized = String(value).trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) return true;
+  if (["0", "false", "no", "off"].includes(normalized)) return false;
+  return fallback;
+}
 
 export const DATA_SOURCE = {
   JSON: "json",
@@ -21,7 +30,7 @@ export const DATA_SOURCE = {
 
 export const appConfig = {
   name: "ગુજરાત ક્વિઝ",
-  dataSource: process.env.NEXT_PUBLIC_DATA_SOURCE || DATA_SOURCE.JSON,
+  dataSource: process.env.NEXT_PUBLIC_DATA_SOURCE || DATA_SOURCE.REST,
 
   api: {
     baseUrl: resolveApiBaseUrl(),
@@ -36,11 +45,15 @@ export const appConfig = {
   },
 
   auth: {
-    // Static OTP for the MVP. The real flow will verify server-side.
+    // Mirrors backend OTP defaults for dev/test flows.
     staticOtp: "1234",
     otpLength: 4,
     resendSeconds: 30,
     phoneLength: 10,
+  },
+
+  beta: {
+    isBetaTime: parseBool(process.env.NEXT_PUBLIC_IS_BETA_TIME, false),
   },
 
   storage: {
@@ -61,6 +74,8 @@ export const appConfig = {
   },
 
   certificate: {
-    week: Number(process.env.NEXT_PUBLIC_G3Q_WEEK || 5),
+    weeks: PLATFORM_WEEKS,
+    currentWeek: getActivePlatformWeek(),
+    week: getActivePlatformWeek().id,
   },
 };

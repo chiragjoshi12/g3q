@@ -3,7 +3,9 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
+import { appConfig, DATA_SOURCE } from "@/config/app.config";
 import { createAttemptId, quizController } from "@/controllers/quiz.controller";
+import { createAnalyticsEventId, trackAnalyticsEvent } from "@/lib/analytics-client";
 import { toMessage } from "@/lib/core/errors";
 import { emptyAnswerFor, isAnswered } from "@/lib/domain/grading";
 import { STORAGE_KEYS, zustandStorage } from "@/lib/storage/storage";
@@ -93,11 +95,68 @@ export const useQuizStore = create()(
        * Loads quiz content and either resumes persisted progress for the same
        * quiz or starts a fresh attempt.
        */
-      loadQuiz: async (quizId, { restart = false } = {}) => {
+      loadQuiz: async (quizId, { restart = false, practice = false } = {}) => {
         set({ loading: true, error: null });
         try {
-          const { quiz, questions, explanations } =
-            await quizController.loadBundle(quizId);
+          if (appConfig.dataSource === DATA_SOURCE.REST && !practice) {
+            const session = await quizController.loadSession(quizId);
+            const state = get();
+            const questions = session?.questions ?? [];
+            const resumable =
+              !restart &&
+              state.quizId === quizId &&
+              Boolean(state.attemptId) &&
+              state.phase !== QUIZ_PHASE.COMPLETED &&
+              state.currentIndex < questions.length;
+
+            if (resumable) {
+              set({
+                quiz: {
+                  id: session.sessionId,
+                  title: "G3Q Quiz",
+                  subtitle: "",
+                  totalQuestions: Number(session.questionCount ?? questions.length),
+                  durationMinutes: 0,
+                  totalPoints: Number(session.questionCount ?? questions.length),
+                  featured: false,
+                  tags: [],
+                  week: null,
+                },
+                questions,
+                explanations: session?.explanations ?? {},
+                loading: false,
+                answers: withSeededAnswer(state.answers, questions[state.currentIndex]),
+                runningSince: state.phase === QUIZ_PHASE.ANSWERING ? Date.now() : null,
+              });
+              return;
+            }
+
+            set({
+              quiz: {
+                id: session.sessionId,
+                title: "G3Q Quiz",
+                subtitle: "",
+                totalQuestions: Number(session.questionCount ?? questions.length),
+                durationMinutes: 0,
+                totalPoints: Number(session.questionCount ?? questions.length),
+                featured: false,
+                tags: [],
+                week: null,
+              },
+              questions,
+              explanations: session?.explanations ?? {},
+              loading: false,
+              quizId: session.sessionId,
+              ...blankSession,
+              answers: withSeededAnswer({}, questions[0]),
+              attemptId: session.sessionId,
+              startedAt: session.startedAt ?? Date.now(),
+              runningSince: Date.now(),
+            });
+            return;
+          }
+
+          const { quiz, questions, explanations } = await quizController.loadBundle(quizId);
           const state = get();
           const resumable =
             !restart &&
@@ -120,6 +179,7 @@ export const useQuizStore = create()(
             return;
           }
 
+          const localAttemptId = createAttemptId(quizId);
           set({
             quiz,
             questions,
@@ -128,10 +188,25 @@ export const useQuizStore = create()(
             quizId,
             ...blankSession,
             answers: withSeededAnswer({}, questions[0]),
-            attemptId: createAttemptId(quizId),
+            attemptId: localAttemptId,
             startedAt: Date.now(),
             runningSince: Date.now(),
           });
+          if (practice) {
+            void trackAnalyticsEvent({
+              eventId: createAnalyticsEventId("practice_start"),
+              eventType: "practice_quiz_start",
+              source: "practice_quiz",
+              quizId,
+              attemptId: localAttemptId,
+              questionCount: Array.isArray(questions) ? questions.length : 0,
+              success: true,
+              metadata: {
+                practice: true,
+                restart,
+              },
+            });
+          }
         } catch (error) {
           set({ loading: false, error: toMessage(error) });
         }
@@ -176,7 +251,7 @@ export const useQuizStore = create()(
       },
 
       /** Grades and persists the attempt. Returns the attempt id for routing. */
-      finishQuiz: async (user, { abandoned = false } = {}) => {
+      finishQuiz: async (user, { abandoned = false, practice = false } = {}) => {
         const state = get();
         if (!abandoned && (state.phase !== QUIZ_PHASE.REVIEWING || !state.isLastQuestion())) {
           return null;
@@ -198,6 +273,23 @@ export const useQuizStore = create()(
             user,
             abandoned,
           });
+          if (practice) {
+            void trackAnalyticsEvent({
+              eventId: createAnalyticsEventId("practice_complete"),
+              eventType: "practice_quiz_complete",
+              source: "practice_quiz",
+              quizId: attempt.quizId,
+              attemptId: attempt.attemptId,
+              questionCount: Number(attempt.totalQuestions ?? state.questions.length ?? 0),
+              success: !abandoned,
+              metadata: {
+                practice: true,
+                abandoned,
+                percentage: attempt.percentage,
+                attemptedCount: attempt.attemptedCount,
+              },
+            });
+          }
           set({
             loading: false,
             phase: QUIZ_PHASE.COMPLETED,

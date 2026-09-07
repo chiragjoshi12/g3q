@@ -2,6 +2,42 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+const districts = [
+  { id: 1, nameEn: 'Ahmedabad', nameGu: 'અમદાવાદ' },
+  { id: 2, nameEn: 'Amreli', nameGu: 'અમરેલી' },
+  { id: 3, nameEn: 'Anand', nameGu: 'આણંદ' },
+  { id: 4, nameEn: 'Aravalli', nameGu: 'અરવલ્લી' },
+  { id: 5, nameEn: 'Banaskantha', nameGu: 'બનાસકાંઠા' },
+  { id: 6, nameEn: 'Bharuch', nameGu: 'ભરૂચ' },
+  { id: 7, nameEn: 'Bhavnagar', nameGu: 'ભાવનગર' },
+  { id: 8, nameEn: 'Botad', nameGu: 'બોટાદ' },
+  { id: 9, nameEn: 'Chhota Udaipur', nameGu: 'છોટાઉદેપુર' },
+  { id: 10, nameEn: 'Dahod', nameGu: 'દાહોદ' },
+  { id: 11, nameEn: 'Dang', nameGu: 'ડાંગ' },
+  { id: 12, nameEn: 'Devbhoomi Dwarka', nameGu: 'દેવભૂમિ દ્વારકા' },
+  { id: 13, nameEn: 'Gandhinagar', nameGu: 'ગાંધીનગર' },
+  { id: 14, nameEn: 'Gir Somnath', nameGu: 'ગીર સોમનાથ' },
+  { id: 15, nameEn: 'Jamnagar', nameGu: 'જામનગર' },
+  { id: 16, nameEn: 'Junagadh', nameGu: 'જૂનાગઢ' },
+  { id: 17, nameEn: 'Kheda', nameGu: 'ખેડા' },
+  { id: 18, nameEn: 'Kutch', nameGu: 'કચ્છ' },
+  { id: 19, nameEn: 'Mahisagar', nameGu: 'મહીસાગર' },
+  { id: 20, nameEn: 'Mehsana', nameGu: 'મહેસાણા' },
+  { id: 21, nameEn: 'Morbi', nameGu: 'મોરબી' },
+  { id: 22, nameEn: 'Narmada', nameGu: 'નર્મદા' },
+  { id: 23, nameEn: 'Navsari', nameGu: 'નવસારી' },
+  { id: 24, nameEn: 'Panchmahal', nameGu: 'પંચમહાલ' },
+  { id: 25, nameEn: 'Patan', nameGu: 'પાટણ' },
+  { id: 26, nameEn: 'Porbandar', nameGu: 'પોરબંદર' },
+  { id: 27, nameEn: 'Rajkot', nameGu: 'રાજકોટ' },
+  { id: 28, nameEn: 'Sabarkantha', nameGu: 'સાબરકાંઠા' },
+  { id: 29, nameEn: 'Surat', nameGu: 'સુરત' },
+  { id: 30, nameEn: 'Surendranagar', nameGu: 'સુરેન્દ્રનગર' },
+  { id: 31, nameEn: 'Tapi', nameGu: 'તાપી' },
+  { id: 32, nameEn: 'Vadodara', nameGu: 'વડોદરા' },
+  { id: 33, nameEn: 'Valsad', nameGu: 'વલસાડ' },
+];
+
 // Mirrors gujarat-gov-quiz/data/*.json exactly, so the seeded backend
 // reproduces the same login codes, quiz and questions the frontend's local
 // JSON data source already ships with.
@@ -297,6 +333,17 @@ const explanations = {
   },
 };
 
+async function seedDistricts() {
+  for (const district of districts) {
+    await prisma.district.upsert({
+      where: { id: district.id },
+      update: district,
+      create: district,
+    });
+  }
+  console.log(`Seeded ${districts.length} districts.`);
+}
+
 async function seedUsers() {
   const allUsers = [...users.students, ...users.colleges, ...users.citizens];
   for (const user of allUsers) {
@@ -451,6 +498,7 @@ async function seedAdminAndBank() {
 }
 
 async function main() {
+  await seedDistricts();
   await seedUsers();
   await seedQuizzes();
   await seedAdminAndBank();

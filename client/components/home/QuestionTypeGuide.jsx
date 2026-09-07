@@ -1,47 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 
 const GUIDE_IMAGE = "/home/guide-question-type.jpg";
-
-export const QUESTION_TYPE_GUIDES = {
-  mcq: {
-    title: "MCQ પ્રશ્નો",
-    body: "દરેક પ્રશ્ન સાથે 4 વિકલ્પો આપેલ હશે. જેમાંથી એક સાચો જવાબ હશે. તમારે એક વિકલ્પ પસંદ કરીને સબમિટનું બટન ક્લિક કરવાનું રહેશે. ત્યાર બાદ AI તમારો જવાબ ચેક કરશે.",
-  },
-  truefalse: {
-    title: "સાચું / ખોટું પ્રશ્નો",
-    body: "વાક્ય સાચું છે કે ખોટું તે પસંદ કરવાનું રહેશે. સાચું અથવા ખોટું કાર્ડ ટેપ કરીને સબમિટ બટન ક્લિક કરો. ત્યાર બાદ AI તમારો જવાબ ચેક કરશે.",
-  },
-  blanks: {
-    title: "ખાલી જગ્યા પૂરો પ્રશ્નો",
-    body: "વાક્યમાં ખાલી જગ્યા આપેલ હશે. નીચે આપેલ વિકલ્પોમાંથી યોગ્ય શબ્દ પસંદ કરીને ખાલી જગ્યામાં મૂકવાનો રહેશે. સબમિટ બટન ક્લિક કર્યા પછી AI તમારો જવાબ ચેક કરશે.",
-  },
-  match: {
-    title: "Match the pair પ્રશ્નો",
-    body: "ડાબી બાજુના વિકલ્પોને જમણી બાજુના યોગ્ય જવાબ સાથે જોડવાના રહેશે. બધા જોડકાં પૂરા કરીને સબમિટ બટન ક્લિક કરો. ત્યાર બાદ AI તમારો જવાબ ચેક કરશે.",
-  },
-  sequence: {
-    title: "Sequence પ્રશ્નો",
-    body: "આપેલ વસ્તુઓને સાચા ક્રમમાં ગોઠવવાની રહેશે. ક્રમ બદલીને સબમિટ બટન ક્લિક કરો. ત્યાર બાદ AI તમારો જવાબ ચેક કરશે.",
-  },
-};
+import { useI18n } from "@/lib/i18n";
 
 /**
  * Bottom-sheet explainer for a question type. Portals into the app frame so
  * the dim stays inside the phone chrome.
  */
 export function QuestionTypeGuide({ typeId, open, onClose }) {
-  const guide = QUESTION_TYPE_GUIDES[typeId] ?? null;
-  const [frame, setFrame] = useState(() =>
-    typeof document === "undefined" ? null : document.querySelector("[data-app-frame]")
-  );
-
-  useEffect(() => {
-    setFrame(document.querySelector("[data-app-frame]"));
-  }, []);
+  const { t } = useI18n();
+  const guides = {
+    mcq: { title: t("mcqGuideTitle"), body: t("mcqGuideBody") },
+    truefalse: { title: t("tfGuideTitle"), body: t("tfGuideBody") },
+    blanks: { title: t("blanksGuideTitle"), body: t("blanksGuideBody") },
+    match: { title: t("matchGuideTitle"), body: t("matchGuideBody") },
+    sequence: { title: t("sequenceGuideTitle"), body: t("sequenceGuideBody") },
+  };
+  const guide = guides[typeId] ?? null;
+  const frame = typeof document === "undefined" ? null : document.querySelector("[data-app-frame]");
 
   useEffect(() => {
     if (!open) return undefined;
@@ -58,7 +38,7 @@ export function QuestionTypeGuide({ typeId, open, onClose }) {
     <div className="absolute inset-0 z-[60] flex items-end justify-center">
       <button
         type="button"
-        aria-label="બંધ કરો"
+        aria-label={t("close")}
         onClick={onClose}
         className="absolute inset-0 bg-black/20 backdrop-blur-[1px]"
       />
@@ -101,7 +81,7 @@ export function QuestionTypeGuide({ typeId, open, onClose }) {
           onClick={onClose}
           className="mt-5 flex h-12 w-full items-center justify-center rounded-full bg-[#2d689d] font-heading text-[1.05rem] font-bold text-white transition-transform active:scale-[0.98]"
         >
-          સમજાઈ ગયું
+          {t("understood")}
         </button>
       </div>
     </div>,

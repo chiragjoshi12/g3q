@@ -21,3 +21,16 @@ export const requireAuth = (req, res, next) => {
     next(new AppError(ERROR_CODE.UNAUTHORIZED));
   }
 };
+
+export const optionalAuth = (req, _res, next) => {
+  try {
+    const header = req.headers.authorization || '';
+    const [scheme, token] = header.split(' ');
+    if (scheme === 'Bearer' && token) {
+      req.user = verifyToken(token);
+    }
+  } catch {
+    req.user = null;
+  }
+  next();
+};

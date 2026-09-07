@@ -1,4 +1,5 @@
 import { appConfig } from "@/config/app.config";
+import { analyticsIdentity, analyticsRequestHeaders } from "@/lib/analytics-client";
 
 /**
  * POST chat messages to Express G3Q AI (Gemini + Abhiyan system prompt).
@@ -10,19 +11,31 @@ function chatBaseUrl() {
   return configured;
 }
 
+const MAX_CONTEXT_MESSAGES = 12;
+
+function trimConversation(messages) {
+  const cleaned = (messages || []).filter(
+    (message) => message && (message.role === "user" || message.role === "assistant") && message.content
+  );
+  return cleaned.slice(-MAX_CONTEXT_MESSAGES);
+}
+
 /**
  * @param {Array<{ role: 'user'|'assistant', content: string }>} messages
  * @param {{ onChunk?: (text: string) => void, signal?: AbortSignal }} [opts]
  * @returns {Promise<{ reply: string, model?: string, latencyMs?: number }>}
  */
 export async function streamG3qAiChat(messages, { onChunk, signal } = {}) {
+  const identity = analyticsIdentity("g3q_ai_page");
+  const trimmedMessages = trimConversation(messages);
   const res = await fetch(`${chatBaseUrl()}/g3q-ai/chat`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Accept: "text/event-stream",
+      ...analyticsRequestHeaders(),
     },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({ messages: trimmedMessages, ...identity }),
     signal,
   });
 

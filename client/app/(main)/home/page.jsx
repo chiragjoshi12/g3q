@@ -1,23 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 
 import { BrandIcon } from "@/components/common/BrandIcon";
+import { ErrorState } from "@/components/common/StateViews";
 import { FeaturedQuizCard } from "@/components/home/FeaturedQuizCard";
 import { QuizPersonalizationOverlay } from "@/components/home/QuizPersonalizationOverlay";
 import { QuestionTypeGuide } from "@/components/home/QuestionTypeGuide";
 import { QuestionTypeGrid } from "@/components/home/QuestionTypeGrid";
 import { LeaderboardPreviewCard } from "@/components/landing/LeaderboardList";
-import { appConfig } from "@/config/app.config";
+import { appConfig, DATA_SOURCE } from "@/config/app.config";
 import { FEATURED_QUIZ_ID, PLAY_QUIZ_ID, ROUTES } from "@/config/routes";
-import quizzesJson from "@/data/quizzes.json";
+import { quizController } from "@/controllers/quiz.controller";
 import { useAsyncData } from "@/hooks/useAsyncData";
 import { useStoreHydrated } from "@/hooks/useStoreHydrated";
-import { BRAND_ICONS } from "@/lib/brand-icons";
 import { attemptRepository } from "@/lib/data/repositories/attempt.repository";
+import { BRAND_ICONS } from "@/lib/brand-icons";
+import { getDataSource } from "@/lib/data/sources";
+import { useI18n } from "@/lib/i18n";
 import { formatTalukaLabel, formatTalukaWeekPill } from "@/lib/format-taluka";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -34,6 +37,14 @@ function pickFeaturedQuiz(list) {
 /** Latest finished attempt for this quiz (skips abandoned early exits). */
 function pickQuizScore(attempts, quizId) {
   if (!quizId || !Array.isArray(attempts)) return null;
+  if (appConfig.dataSource === DATA_SOURCE.REST) {
+    const latest = attempts.find((attempt) => !attempt.abandoned);
+    if (!latest) return null;
+    return {
+      correctCount: Number(latest.correctCount) || 0,
+      totalQuestions: Number(latest.totalQuestions) || 0,
+    };
+  }
   const match = attempts.find(
     (attempt) => attempt.quizId === quizId && !attempt.abandoned
   );
@@ -46,11 +57,34 @@ function pickQuizScore(attempts, quizId) {
 
 export default function HomePage() {
   const router = useRouter();
+  const { language, appName } = useI18n();
   const hydrated = useStoreHydrated(useAuthStore);
   const user = useAuthStore((state) => state.user);
   const [guideType, setGuideType] = useState(null);
   const [preparingQuiz, setPreparingQuiz] = useState(false);
-  const quiz = pickFeaturedQuiz(quizzesJson);
+  const [nextQuizPath, setNextQuizPath] = useState(null);
+  const [overlayDone, setOverlayDone] = useState(false);
+  const usingRest = appConfig.dataSource === DATA_SOURCE.REST;
+
+  const {
+    status: quizzesStatus,
+    data: quizzes = [],
+    error: quizzesError,
+    reload: reloadQuizzes,
+  } = useAsyncData(() => quizController.listQuizzes(), [], !usingRest);
+  const {
+    data: landingSummary,
+    error: landingError,
+    reload: reloadLanding,
+  } = useAsyncData(() => getDataSource().getLandingSummary(), [], usingRest);
+  const quiz = usingRest
+    ? {
+        id: landingSummary?.featuredQuizId || PLAY_QUIZ_ID,
+        title: landingSummary?.playTitle || appName,
+        subtitle: landingSummary?.playSubtitle || "",
+        totalQuestions: Number(landingSummary?.playQuestionCount ?? 15),
+      }
+    : pickFeaturedQuiz(quizzes);
 
   const { data: attempts } = useAsyncData(
     () => attemptRepository.list(user?.id),
@@ -58,12 +92,31 @@ export default function HomePage() {
     hydrated && Boolean(user?.id)
   );
 
-  const week = Number.isFinite(appConfig.certificate.week) ? appConfig.certificate.week : 5;
+  const week = Number(landingSummary?.week) || appConfig.certificate.week || 5;
   const score = pickQuizScore(attempts, quiz?.id);
 
-  const startQuiz = () => {
+  useEffect(() => {
+    if (preparingQuiz && overlayDone && nextQuizPath) {
+      router.push(nextQuizPath);
+    }
+  }, [preparingQuiz, overlayDone, nextQuizPath, router]);
+
+  const startQuiz = async () => {
     if (!quiz || preparingQuiz) return;
     setPreparingQuiz(true);
+    setOverlayDone(false);
+    setNextQuizPath(null);
+    try {
+      if (usingRest) {
+        const session = await quizController.startSession({ language });
+        setNextQuizPath(ROUTES.quiz(session.sessionId));
+        return;
+      }
+      setNextQuizPath(ROUTES.quiz(quiz.id));
+    } catch {
+      setPreparingQuiz(false);
+      setNextQuizPath(null);
+    }
   };
 
   return (
@@ -86,20 +139,27 @@ export default function HomePage() {
             <div className="mt-6 mb-3 grid size-[4.75rem] place-items-center overflow-hidden rounded-full bg-white">
               <BrandIcon
                 src={BRAND_ICONS.logo}
-                alt="G3Q 2.0"
+                alt={appName}
                 priority
                 className="size-[4.4rem]"
               />
             </div>
             <h1 className="mt-1 font-heading text-[1.5rem] leading-none font-bold tracking-tight text-white">
-              {appConfig.name}
+              {appName}
             </h1>
             <p className="mt-[1.5rem] mb-3 w-[60%] rounded-full bg-white/55 px-3.5 py-1.5 text-center font-heading text-[14px] font-medium text-[#111] backdrop-blur-[6px]">
-              {formatTalukaWeekPill(user?.taluka, week)}
+              {formatTalukaWeekPill(user?.taluka, week, language)}
             </p>
           </div>
 
           <div className="mt-5">
+            {((!usingRest && quizzesStatus === "error") || (usingRest && landingError)) ? (
+              <ErrorState
+                message={usingRest ? landingError : quizzesError}
+                onRetry={usingRest ? reloadLanding : reloadQuizzes}
+                className="py-8"
+              />
+            ) : null}
             {quiz ? (
               <FeaturedQuizCard quiz={quiz} onStart={startQuiz} score={score} />
             ) : null}
@@ -116,7 +176,7 @@ export default function HomePage() {
         />
         <div className="mt-7.5">
           <LeaderboardPreviewCard
-            talukaLabel={formatTalukaLabel(user?.taluka)}
+            talukaLabel={formatTalukaLabel(user?.taluka, language)}
             week={week}
             iconColor="#2d689d"
             onClick={() => router.push(ROUTES.leaderboard)}
@@ -129,7 +189,7 @@ export default function HomePage() {
             <QuizPersonalizationOverlay
               name={user?.name}
               taluka={user?.taluka}
-              onComplete={() => router.push(ROUTES.quiz(quiz.id))}
+              onComplete={() => setOverlayDone(true)}
             />,
             document.body
           )

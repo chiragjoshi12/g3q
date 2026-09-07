@@ -1,130 +1,101 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { BrandIcon } from "@/components/common/BrandIcon";
-import { BannerSlider } from "@/components/landing/BannerSlider";
-import { LandingActionNav } from "@/components/landing/LandingActionNav";
-import { LeaderboardPreviewCard } from "@/components/landing/LeaderboardList";
 import { AppShell } from "@/components/layout/AppShell";
-import { BrandHeader } from "@/components/layout/BrandHeader";
-import { appConfig } from "@/config/app.config";
-import { FEATURED_QUIZ_ID, ROUTES, setPostAuthPath } from "@/config/routes";
-import { ABHIYAN } from "@/data/abhiyan";
-import { LANDING_PLAYS_COUNT, LANDING_WEEK_PLAYS_COUNT } from "@/data/leaderboard";
-import { BRAND_ICONS } from "@/lib/brand-icons";
-import { formatTalukaLabel } from "@/lib/format-taluka";
-import { useCountUp } from "@/hooks/useCountUp";
-import { useStoreHydrated } from "@/hooks/useStoreHydrated";
-import { useAuthStore } from "@/store/auth.store";
+import { LANGUAGE_OPTIONS } from "@/config/languages";
+import { ROUTES } from "@/config/routes";
+import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
+import { useLanguageStore } from "@/store/language.store";
 
-const ABOUT_LEAD = [
-  "ગુજરાત જ્ઞાન ગુરુ ક્વિઝ (G3Q 2.0) એ શિક્ષણ, જ્ઞાન અને સ્પર્ધાને જોડતી અનોખી પ્રવૃત્તિ છે. રાજ્યના તમામ વિદ્યાર્થીઓ સ્થાન, બોર્ડ, માધ્યમ કે લિંગ ભેદ વગર આ ક્વિઝમાં ભાગ લઈ શકે છે.",
-  ABHIYAN.lead,
-];
-
-const LANDING_BANNERS = ["/q3quiz.png", "/white-banner.jpeg"];
-
-export default function LandingPage() {
+export default function LanguageSelectionPage() {
   const router = useRouter();
-  const hydrated = useStoreHydrated(useAuthStore);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const user = useAuthStore((state) => state.user);
+  const { t } = useI18n();
+  const setLanguage = useLanguageStore((state) => state.setLanguage);
+  const [selected, setSelected] = useState(null);
 
-  const talukaLabel = formatTalukaLabel(hydrated ? user?.taluka : null);
-  const week = Number.isFinite(appConfig.certificate.week) ? appConfig.certificate.week : 5;
-  const playsCount = useCountUp(LANDING_PLAYS_COUNT, { durationMs: 1600 });
-
-  const go = (path) => {
-    if (hydrated && isAuthenticated) {
-      router.push(path);
-      return;
-    }
-    setPostAuthPath(path);
-    router.push(ROUTES.auth);
+  const handleNext = () => {
+    if (!selected) return;
+    setLanguage(selected);
+    router.push(ROUTES.welcome);
   };
 
   return (
-    <AppShell className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F2F2F2]">
-      <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[26.5rem] flex-col bg-[#F2F2F2] md:max-w-none">
-        <BrandHeader priority />
+    <AppShell className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F7F7F7]">
+      <main className="mx-auto flex h-full w-full max-w-[26.5rem] flex-col bg-white px-4 pt-10 pb-8 md:max-w-none">
+        <h1 className="text-center font-sans text-[24px] font-bold tracking-tight text-black">
+          {t("selectLanguage")}
+        </h1>
 
-        <main className="no-scrollbar relative z-0 min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <div className="flex flex-col gap-2.5 px-2.5 pt-3.5 pb-32">
-            {/* Card 1 — white box contains inset banner + text */}
-            <section className="rounded-[2rem] bg-white px-2 pt-2 pb-3 sm:px-3 sm:pt-3 sm:pb-8">
-              <div>
-                <div className="relative overflow-hidden rounded-t-[1.6rem]">
-                  <BannerSlider
-                    slides={LANDING_BANNERS}
-                    className="aspect-[3/2] w-full bg-[#ddd]"
-                    sizes="(max-width: 768px) 100vw, 26.5rem"
-                  />
-                  <div
-                    aria-hidden
-                    className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-b from-transparent via-white/55 to-white"
-                  />
-                </div>
-                <div aria-hidden className="relative mx-1 h-5">
-                  <div className="absolute inset-x-0 -top-3 h-9 rounded-[100%] bg-white blur-2xl" />
-                  <div className="absolute inset-x-4 top-0 h-px bg-white shadow-[0_14px_28px_12px_rgba(255,255,255,0.95)]" />
-                </div>
-              </div>
-
-              <div className="relative px-2.5 pt-1 sm:px-2">
-                {ABOUT_LEAD.map((para) => (
-                  <p key={para} className="text-[16px] leading-[1.65] text-black not-first:mt-2.5">
-                    {para}
-                  </p>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => router.push(ROUTES.abhiyan)}
-                  className="mx-auto mt-3 block text-[15px] font-medium text-[#2d689d] underline underline-offset-2"
-                >
-                  View More
-                </button>
-              </div>
-            </section>
-
-            {/* Card 2 — plays count */}
-            <section className="rounded-[2rem] bg-white px-9 pt-7 pb-5">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-6">
-                  <BrandIcon
-                    src={BRAND_ICONS.playedQuizCount}
-                    alt=""
-                    priority
-                    className="size-9 shrink-0"
-                  />
-                  <p className="font-[family-name:var(--font-archivo)] text-[2.35rem] leading-none tracking-tight tabular-nums text-[#2d689d]">
-                    {playsCount}
-                  </p>
-                </div>
-                <p className="pl-[3.75rem] text-[1.15rem] font-medium text-black">વખત ક્વિઝ રમાઈ</p>
-                <span className="ml-[3.75rem] inline-flex w-fit items-baseline whitespace-nowrap rounded-full bg-[#e8f8ed] px-4 py-2 text-left text-[13px] font-medium text-black">
-                  {new Intl.NumberFormat("en-IN").format(LANDING_WEEK_PLAYS_COUNT)} in {week}<sup>th</sup>{" week"}
+        <div className="mt-10 flex flex-1 flex-col gap-5">
+          {LANGUAGE_OPTIONS.map((option) => {
+            const active = selected === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setSelected(option.id)}
+                aria-pressed={active}
+                className={cn(
+                  "flex items-center gap-6 rounded-[2rem] bg-gradient-to-r px-4 py-[-5px] text-left transition-transform active:scale-[0.99]",
+                  option.cardClassName
+                )}
+              >
+                {/* move text on left side */}
+                <span className="ml-[-16px] grid size-25 shrink-0 place-items-center rounded-[1.75rem] text-[3.25rem] font-medium text-white shadow-sm">
+                  <span
+                    className={cn(
+                      "grid size-full place-items-center rounded-[1.75rem]",
+                      option.id === "gu" && "bg-[#4cb39a]",
+                      option.id === "en" && "bg-[#c9952f]",
+                      option.id === "hi" && "bg-[#726fbe]"
+                    )}
+                  >
+                    {option.id === "gu" ? "ગા" : option.id === "en" ? "E" : "हिं"}
+                  </span>
                 </span>
-              </div>
-            </section>
+                {/* move text on left side */}
+                <span className="ml-[-10px] min-w-0">
+                  <span className="block text-[20px] font-bold leading-none text-black">
+                    {option.nativeLabel}
+                  </span>
+                  <span className="mt-3 block text-[16px] font-semibold leading-none text-black">
+                    {option.englishLabel}
+                  </span>
+                </span>
+                <span className="ml-auto grid size-14 shrink-0 place-items-center">
+                  {active ? (
+                    <span className="grid size-10 place-items-center rounded-full bg-black text-white">
+                      <svg viewBox="0 0 24 24" className="size-6" fill="none" aria-hidden>
+                        <path
+                          d="M6 12.5 10 16.5 18 8.5"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
+                  ) : null}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
-            {/* Card 3 — leaderboard shortcut */}
-            <LeaderboardPreviewCard
-              talukaLabel={talukaLabel}
-              week={week}
-              className="shadow-none"
-              onClick={() => router.push(ROUTES.leaderboard)}
-            />
-          </div>
-        </main>
-
-        <LandingActionNav
-          floating
-          onPractice={() => router.push(ROUTES.quiz(FEATURED_QUIZ_ID, { practice: true }))}
-          onPlayQuiz={() => go(ROUTES.home)}
-          onG3qAi={() => router.push(ROUTES.g3qAi)}
-        />
-      </div>
+        <div className="flex justify-center pt-8">
+          <button
+            type="button"
+            onClick={handleNext}
+            disabled={!selected}
+            className="ease-emphasized relative inline-flex h-14 w-[70%] select-none items-center justify-center gap-2 rounded-full border-0 bg-[#2d689d] px-5 font-canva text-[1.05rem] font-bold text-white shadow-none outline-none transition-[transform,background-color,color] duration-200 focus-visible:outline-none focus-visible:ring-0 hover:bg-[#255a88] active:scale-[0.97] disabled:pointer-events-none disabled:bg-[#e5ebf8] disabled:text-[#595858] disabled:opacity-100"
+          >
+            {t("next")}
+          </button>
+        </div>
+      </main>
     </AppShell>
   );
 }

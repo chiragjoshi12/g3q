@@ -15,6 +15,7 @@ import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { buildCertificatePayload } from "@/lib/domain/certificate";
 import { formatGujaratiDate, formatWeekLabel } from "@/lib/domain/format";
 import { BRAND_ICONS } from "@/lib/brand-icons";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -24,17 +25,18 @@ const DEFAULT_WEEK = Number.isFinite(appConfig.certificate.week)
 
 export default function QuizAttemptsPage() {
   const router = useRouter();
+  const { language, t } = useI18n();
   const { ready } = useAuthGuard();
   const user = useAuthStore((state) => state.user);
   const [certAttempt, setCertAttempt] = useState(null);
 
   const { status, data } = useAsyncData(
-    () => profileController.loadOverview(user?.id),
+    () => profileController.loadAttempts(user?.id),
     [user?.id],
     ready
   );
 
-  const attempts = data?.attempts ?? [];
+  const attempts = data ?? [];
   const payload = useMemo(
     () => (certAttempt ? buildCertificatePayload(user, certAttempt) : null),
     [user, certAttempt]
@@ -47,24 +49,24 @@ export default function QuizAttemptsPage() {
           <button
             type="button"
             onClick={() => router.push(ROUTES.profile)}
-            aria-label="પાછળ જાઓ"
+            aria-label={t("close")}
             className="absolute left-4 grid size-10 place-items-center rounded-full bg-white transition-transform active:scale-95"
           >
             <BrandIcon src={BRAND_ICONS.back} alt="" className="size-3.5" />
           </button>
-          <h1 className="font-heading text-[1.25rem] font-bold text-[#111]">Quiz attempts</h1>
+          <h1 className="font-heading text-[1.25rem] font-bold text-[#111]">{t("quizAttempts")}</h1>
         </header>
 
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
           <div className="mx-auto w-full max-w-[26.5rem] space-y-3.5 pt-1 md:max-w-[32rem]">
             {!ready || status === "loading" ? (
-              <LoadingState label="આંકડા લોડ થઈ રહ્યા છે…" className="py-16" />
+              <LoadingState label={t("statsLoading")} className="py-16" />
             ) : null}
 
             {status === "ready" && attempts.length === 0 ? (
               <EmptyState
-                title="હજી કોઈ પ્રયાસ નથી"
-                description="ક્વિઝ પૂરી કરો એટલે તમારો ઇતિહાસ અહીં દેખાશે."
+                title={t("noAttemptsTitle")}
+                description={t("noAttemptsDescription")}
               />
             ) : null}
 
@@ -73,6 +75,7 @@ export default function QuizAttemptsPage() {
                   <QuizAttemptCard
                     key={attempt.attemptId}
                     attempt={attempt}
+                    language={language}
                     onRank={() => router.push(ROUTES.leaderboard)}
                     onCertificate={() => setCertAttempt(attempt)}
                   />
@@ -91,9 +94,10 @@ export default function QuizAttemptsPage() {
   );
 }
 
-function QuizAttemptCard({ attempt, onRank, onCertificate }) {
+function QuizAttemptCard({ attempt, language, onRank, onCertificate }) {
+  const { t } = useI18n();
   const week = Number(attempt?.week);
-  const weekLabel = formatWeekLabel(Number.isFinite(week) && week > 0 ? week : DEFAULT_WEEK);
+  const weekLabel = formatWeekLabel(Number.isFinite(week) && week > 0 ? week : DEFAULT_WEEK, language);
 
   return (
     <article className="overflow-hidden rounded-[1.35rem] bg-white shadow-[0_1px_3px_rgb(15_23_42/0.06)]">
@@ -104,14 +108,14 @@ function QuizAttemptCard({ attempt, onRank, onCertificate }) {
             {weekLabel}
           </span>
           <span className="shrink-0 font-heading text-[14px] text-[#111]">
-            સ્કોર: {attempt.correctCount}/{attempt.totalQuestions}
+            {t("scoreLabel")}: {attempt.correctCount}/{attempt.totalQuestions}
           </span>
         </div>
         <h2 className="mt-5 font-heading text-[16px] ml-[3px] leading-snug font-bold text-[#111]">
           {attempt.quizTitle}
         </h2>
         <p className="mt-[5px] ml-[3px] font-heading text-[14px] text-[#111]">
-          {formatGujaratiDate(attempt.completedAt)}
+          {formatGujaratiDate(attempt.completedAt, language)}
         </p>
       </div>
       <div className="grid grid-cols-2 border-t border-[#E8E8E8]">
@@ -120,7 +124,7 @@ function QuizAttemptCard({ attempt, onRank, onCertificate }) {
           onClick={onRank}
           className="border-r border-[#E8E8E8] py-3.5 text-center font-heading text-[16px] text-[#111] transition-colors active:bg-[#f5f5f5]"
         >
-          રેન્ક જુઓ
+          {t("viewRank")}
         </button>
         <button
           type="button"
@@ -130,7 +134,7 @@ function QuizAttemptCard({ attempt, onRank, onCertificate }) {
             "transition-colors active:bg-black/[0.03]"
           )}
         >
-          સર્ટિફિકેટ
+          {t("certificate")}
         </button>
       </div>
     </article>

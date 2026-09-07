@@ -11,6 +11,7 @@ import { useSpeechToText } from "@/hooks/useSpeechToText";
 import { useSmoothStream } from "@/hooks/useSmoothStream";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { streamG3qAiChat } from "@/lib/g3q-ai-api";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const TITLE_G3Q = "linear-gradient(90deg, #8c52ff 0%, #ff914d 100%)";
@@ -19,29 +20,12 @@ const AI_ICON_SIZE = "size-4";
 const AI_ICON_SIZE_MATCH = "size-4";
 const RESPONSE_ICON_SIZE = "size-4";
 
-const SUGGESTIONS = [
-  {
-    id: "semiconductor",
-    text: "સરકારની સેમી કંડક્ટર ક્ષેત્રની સિદ્ધિઓ વિશે જણાવ",
-    Icon: ShieldSuggestionIcon,
-  },
-  {
-    id: "prize",
-    text: "જિલ્લા સ્તરે પહેલો નંબર લાવીશ તો શું ઈનામ મળશે?",
-    Icon: TrophySuggestionIcon,
-  },
-  {
-    id: "join",
-    text: "આ ક્વિઝ સ્પર્ધામાં હું કેવી રીતે ભાગ લઈ શકું?",
-    Icon: AwardSuggestionIcon,
-  },
-];
-
 /**
  * G3Q AI chat — Canva mock layout, markdown replies, smooth streamed text.
  */
 export default function G3qAiPage() {
   const router = useRouter();
+  const { meta, t } = useI18n();
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -70,21 +54,21 @@ export default function G3qAiPage() {
   const smooth = useSmoothStream(setAssistantContent);
 
   const speech = useSpeechToText({
-    lang: "gu-IN",
+    lang: meta.speechLocale,
     onText: (spoken) => {
       const base = draftBaseRef.current;
       setDraft(base ? `${base}${spoken}` : spoken);
     },
     onError: (code) => {
       if (code === "unsupported") {
-        setError("Speech isn't available in this browser. Type your question instead.");
+        setError(t("speechUnavailable"));
         return;
       }
       if (code === "not-allowed" || code === "service-not-allowed") {
-        setError("Microphone permission is needed to talk.");
+        setError(t("microphoneNeeded"));
         return;
       }
-      setError("Couldn't hear that. Try again.");
+      setError(t("couldntHear"));
     },
   });
 
@@ -148,7 +132,7 @@ export default function G3qAiPage() {
       if (copiedTimerRef.current) window.clearTimeout(copiedTimerRef.current);
       copiedTimerRef.current = window.setTimeout(() => setCopiedIndex(null), 1600);
     } catch {
-      setError("Copy failed. Try again.");
+      setError(t("copyFailed"));
     }
   };
 
@@ -197,7 +181,7 @@ export default function G3qAiPage() {
     } catch (err) {
       if (err?.name === "AbortError") return;
       await smooth.drain();
-      setError(err?.message || "Something went wrong. Try again.");
+      setError(err?.message || t("somethingWentWrong"));
       setMessages((prev) => {
         const withoutEmptyAssistant =
           prev.length && prev[prev.length - 1]?.role === "assistant" && !prev[prev.length - 1].content
@@ -251,7 +235,7 @@ export default function G3qAiPage() {
         />
 
         <header className="relative z-10 flex shrink-0 items-center justify-between px-4 pb-3 pt-[max(0.9rem,env(safe-area-inset-top))]">
-          <RoundIconButton label="Close" onClick={() => router.back()}>
+            <RoundIconButton label={t("close")} onClick={() => router.back()}>
             <CloseIcon className={AI_ICON_SIZE} />
           </RoundIconButton>
 
@@ -270,7 +254,7 @@ export default function G3qAiPage() {
 
           <button
             type="button"
-            aria-label="New chat"
+            aria-label={t("newChat")}
             onClick={resetChat}
             className="grid size-10 place-items-center rounded-full bg-[#ffffff] active:opacity-80"
           >
@@ -334,7 +318,7 @@ export default function G3qAiPage() {
                         <div className="mt-2.5 flex items-center gap-3.5">
                           <button
                             type="button"
-                            aria-label={copiedIndex === i ? "Copied" : "Copy response"}
+                            aria-label={copiedIndex === i ? t("copied") : t("copyResponse")}
                             onClick={() => copyResponse(m.content, i)}
                             className="grid size-6 place-items-center active:opacity-60"
                           >
@@ -350,7 +334,7 @@ export default function G3qAiPage() {
                           </button>
                           <button
                             type="button"
-                            aria-label="Like response"
+                            aria-label={t("likeResponse")}
                             aria-pressed={feedback[i] === "like"}
                             onClick={() => toggleFeedback(i, "like")}
                             className="grid size-6 place-items-center active:opacity-60"
@@ -362,7 +346,7 @@ export default function G3qAiPage() {
                           </button>
                           <button
                             type="button"
-                            aria-label="Dislike response"
+                            aria-label={t("dislikeResponse")}
                             aria-pressed={feedback[i] === "dislike"}
                             onClick={() => toggleFeedback(i, "dislike")}
                             className="grid size-6 place-items-center active:opacity-60"
@@ -404,7 +388,7 @@ export default function G3qAiPage() {
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={onKeyDown}
               rows={2}
-              placeholder={speech.listening ? "Listening..." : "Ask here..."}
+              placeholder={speech.listening ? t("listening") : t("askHere")}
               disabled={sending || !inputVisible}
               tabIndex={inputVisible ? 0 : -1}
               className="w-full resize-none bg-transparent font-canva text-[16px] leading-snug text-[#111] outline-none placeholder:text-[#000000] disabled:opacity-60"
@@ -413,7 +397,7 @@ export default function G3qAiPage() {
               <div className="flex items-center gap-2.5">
                 <button
                   type="button"
-                  aria-label="Chat history"
+                  aria-label={t("chatHistory")}
                   onClick={resetChat}
                   // move slide on left side of the screen
                   className="grid size-10 place-items-center rounded-full bg-[#f5f5f5] text-[#4B5563] active:opacity-80 ml-[-10px]"
@@ -422,7 +406,7 @@ export default function G3qAiPage() {
                 </button>
                 <button
                   type="button"
-                  aria-label={speech.listening ? "Stop listening" : "Speak prompt"}
+                  aria-label={speech.listening ? t("stopListening") : t("speakPrompt")}
                   aria-pressed={speech.listening}
                   onClick={onMicClick}
                   disabled={sending || !inputVisible}
@@ -448,7 +432,7 @@ export default function G3qAiPage() {
                 type="button"
                 onClick={() => send()}
                 disabled={sending || !draft.trim()}
-                aria-label="Send"
+                aria-label={t("send")}
                 className="grid size-10 place-items-center rounded-full bg-[#2d689d] text-white disabled:opacity-100 active:scale-[0.97]"
               >
                 <BrandIcon src={BRAND_ICONS.aiSend} alt="" className={AI_ICON_SIZE_MATCH} />
@@ -471,28 +455,35 @@ function EmptyWelcome({ onPick }) {
 }
 
 function WelcomeHero() {
+  const { appName, t } = useI18n();
   return (
     <div className="flex flex-col items-center px-4 pt-2 text-center">
       <BrandIcon
         src={BRAND_ICONS.logo}
-        alt="G3Q 2.0"
+        alt="G3Q 3.0"
         priority
         className="size-[5.25rem]"
       />
       <h2 className="mt-2 font-heading text-[1.5rem] font-bold leading-none tracking-tight text-[#2d689d]">
-        ગુજરાત ક્વિઝ
+        {appName}
       </h2>
       <p className="mt-6 max-w-[20rem] font-heading text-[14px] leading-[1.75] text-[#000000]">
-        G3Q AI ને આ ક્વિઝ સ્પર્ધા, ઇનામો,<br></br>ગુજરાત સરકાર ની યોજનાઓ વગેરે વિશે<br></br> કોઈ પણ પ્રશ્ન પૂછી શકો છો.
+        {t("aiWelcomeBody")}
       </p>
     </div>
   );
 }
 
 function SuggestionList({ onPick, className }) {
+  const { t } = useI18n();
+  const suggestions = [
+    { id: "semiconductor", text: t("aiSuggestion1"), Icon: ShieldSuggestionIcon },
+    { id: "prize", text: t("aiSuggestion2"), Icon: TrophySuggestionIcon },
+    { id: "join", text: t("aiSuggestion3"), Icon: AwardSuggestionIcon },
+  ];
   return (
     <ul className={cn("space-y-[1.15rem] pb-[0px]", className)}>
-      {SUGGESTIONS.map(({ id, text, Icon }) => (
+      {suggestions.map(({ id, text, Icon }) => (
         <li key={id}>
           <button
             type="button"

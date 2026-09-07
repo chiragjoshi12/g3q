@@ -1,12 +1,12 @@
 import { Archivo_Black, Noto_Sans } from "next/font/google";
 
 import { NativeAppBootstrap } from "@/components/native/NativeAppBootstrap";
-import { appConfig } from "@/config/app.config";
+import { LanguageProvider } from "@/components/providers/LanguageProvider";
 import "./globals.css";
 
 const notoSans = Noto_Sans({
   variable: "--font-noto",
-  subsets: ["latin"],
+  subsets: ["latin", "gujarati", "devanagari"],
   weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
@@ -28,20 +28,20 @@ const shareImage = {
   url: "/q3quiz.png",
   width: 1672,
   height: 941,
-  alt: appConfig.name,
+  alt: "G3Q Quiz",
 };
 
 export const metadata = {
-  title: `${appConfig.name} - Q3Q`,
+  title: "G3Q Quiz",
   description,
   openGraph: {
-    title: appConfig.name,
+    title: "G3Q Quiz",
     description,
     images: [shareImage],
   },
   twitter: {
     card: "summary_large_image",
-    title: appConfig.name,
+    title: "G3Q Quiz",
     description,
     images: [shareImage],
   },
@@ -57,13 +57,12 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html
-      lang="gu"
-      className={`${notoSans.variable} ${archivoBlack.variable} h-full antialiased`}
-    >
+    <html lang="gu" className={`${notoSans.variable} ${archivoBlack.variable} h-full antialiased`}>
       <body className="min-h-full font-sans">
-        <NativeAppBootstrap />
-        {children}
+        <LanguageProvider>
+          <NativeAppBootstrap />
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );

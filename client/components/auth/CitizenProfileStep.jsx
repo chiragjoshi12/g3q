@@ -7,6 +7,7 @@ import { AUTH_BUTTON_CLASS, AUTH_FIELD_CLASS } from "@/components/auth/AuthBrand
 import { ChoiceSheet } from "@/components/auth/ChoiceSheet";
 import { AppButton } from "@/components/common/AppButton";
 import { GUJARAT_DISTRICTS, talukasForDistrict } from "@/data/gujarat-geo";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const FIELD_CLASS = cn(AUTH_FIELD_CLASS, "border border-[#d9d9d9]");
@@ -25,6 +26,7 @@ export function CitizenProfileStep({
   onTalukaChange,
   onSubmit,
 }) {
+  const { t } = useI18n();
   const [picker, setPicker] = useState(null);
   const talukas = talukasForDistrict(district);
   const ready = Boolean(name.trim() && district.trim() && taluka.trim());
@@ -40,13 +42,13 @@ export function CitizenProfileStep({
       <div className="space-y-5">
         <div className="space-y-2">
           <label htmlFor="citizen-name" className="block text-[16px] font-bold text-[#000000] translate-y-3">
-            તમારું પૂરું નામ
+            {t("yourFullName")}
           </label>
           <input
             id="citizen-name"
             value={name}
             onChange={(event) => onNameChange(event.target.value)}
-            placeholder="આધાર કાર્ડ પ્રમાણેનું તમારું પૂરું નામ અહીં લખો"
+            placeholder={t("yourFullName")}
             autoComplete="name"
             autoFocus
             className={FIELD_CLASS}
@@ -55,7 +57,7 @@ export function CitizenProfileStep({
 
         <div className="space-y-2">
           <span id="citizen-district-label" className="block text-[16px] font-bold text-[#000000] translate-y-3">
-            જિલ્લો
+            {t("district")}
           </span>
           <button
             type="button"
@@ -71,7 +73,7 @@ export function CitizenProfileStep({
             )}
           >
             <span className="min-w-0 truncate">
-              {district || "તમારો જિલ્લો પસંદ કરો"}
+              {district || t("selectDistrict")}
             </span>
             <ChevronDown className="size-5 shrink-0 text-[#111]" />
           </button>
@@ -79,7 +81,7 @@ export function CitizenProfileStep({
 
         <div className="space-y-2">
           <span id="citizen-taluka-label" className="block text-[16px] font-bold text-[#000000] translate-y-3">
-            તાલુકો
+            {t("taluka")}
           </span>
           <button
             type="button"
@@ -97,7 +99,7 @@ export function CitizenProfileStep({
             )}
           >
             <span className="min-w-0 truncate">
-              {taluka || "તમારો તાલુકો પસંદ કરો"}
+              {taluka || t("selectTaluka")}
             </span>
             <ChevronDown className="size-5 shrink-0 text-[#111]" />
           </button>
@@ -118,13 +120,13 @@ export function CitizenProfileStep({
           disabled={!ready}
           className={AUTH_BUTTON_CLASS}
         >
-          Next
+          {t("next")}
         </AppButton>
       </div>
 
       <ChoiceSheet
         open={picker === "district"}
-        title="જિલ્લો પસંદ કરો"
+        title={t("selectDistrictTitle")}
         options={DISTRICT_OPTIONS}
         value={district}
         onSelect={(next) => {
@@ -139,7 +141,7 @@ export function CitizenProfileStep({
 
       <ChoiceSheet
         open={picker === "taluka"}
-        title="તાલુકો પસંદ કરો"
+        title={t("selectTalukaTitle")}
         options={talukas}
         value={taluka}
         onSelect={(next) => {

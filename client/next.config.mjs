@@ -2,6 +2,8 @@ import { resolveBackendOrigin } from "./config/backend-origin.mjs";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  allowedDevOrigins: ["127.0.0.1"],
+  devIndicators: false,
   transpilePackages: [
     "@capacitor/core",
     "@capacitor/app",

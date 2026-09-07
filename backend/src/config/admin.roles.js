@@ -1,6 +1,12 @@
 export const ADMIN_ROLE = {
   MASTER: 'master',
+  SUB_ADMIN: 'sub_admin',
   ADMIN: 'admin',
+};
+
+export const ADMIN_ACCESS_SCOPE = {
+  ADMIN: 'admin',
+  ANALYTICS: 'analytics',
 };
 
 export const REVIEW_STATUS = {

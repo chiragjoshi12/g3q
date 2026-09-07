@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f5f3eb;
+  --foreground: #183153;
+  --surface: #fffdf7;
+  --surface-strong: #ffffff;
+  --line: #d8d4c5;
+  --muted: #5d6f84;
+  --ink-soft: #335775;
+  --saffron: #d88d2f;
+  --teal: #2f8d8a;
+  --civic-blue: #2d6aa3;
+  --leaf: #69983b;
+  --rose-clay: #c96c5f;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-noto-sans);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--background);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-noto-sans), sans-serif;
+  font-feature-settings: "tnum" 1, "ss01" 1;
+}
+
+a,
+button,
+summary,
+[role="button"] {
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--teal) 70%, white 30%);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--saffron) 25%, white 75%);
+}
+
+.dashboard-shell {
+  background:
+    radial-gradient(circle at top right, rgba(216, 141, 47, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(47, 141, 138, 0.06), transparent 18%),
+    var(--background);
+}
+
+.metric-flash {
+  animation: metric-flash 360ms ease;
+}
+
+@keyframes metric-flash {
+  0% {
+    background-color: rgba(47, 141, 138, 0.18);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.profile-pop {
+  animation: profile-pop 160ms ease;
+}
+
+@keyframes profile-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

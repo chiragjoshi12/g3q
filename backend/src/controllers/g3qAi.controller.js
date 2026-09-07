@@ -1,12 +1,14 @@
 import { AppError, ERROR_CODE } from '../utils/appError.js';
 import { g3qAiChatService } from '../services/g3qAiChat.service.js';
+import { analyticsTrackingService } from '../services/analyticsTracking.service.js';
+import { nanoid } from 'nanoid';
 
 const writeSse = (res, payload) => {
   res.write(`data: ${JSON.stringify(payload)}\n\n`);
 };
 
 /**
- * POST /api/g3q-ai/chat — SSE stream of Gemini chunks.
+ * POST /api/g3q-ai/chat — SSE stream of Meta AI chunks.
  * Events: { type: 'chunk', text } … { type: 'done', model, latencyMs }
  *          or { type: 'error', message }
  */
@@ -19,12 +21,14 @@ export const chat = async (req, res, next) => {
     if (typeof res.flushHeaders === 'function') res.flushHeaders();
 
     let sentChunk = false;
+    let doneMeta = null;
 
     try {
       for await (const event of g3qAiChatService.streamChat({ messages: req.body.messages })) {
         if (res.writableEnded) break;
         writeSse(res, event);
         if (event.type === 'chunk') sentChunk = true;
+        if (event.type === 'done') doneMeta = event;
         if (typeof res.flush === 'function') res.flush();
       }
     } catch (error) {
@@ -45,6 +49,30 @@ export const chat = async (req, res, next) => {
           partial: sentChunk,
         });
       }
+    }
+
+    if (sentChunk && doneMeta) {
+      void analyticsTrackingService.trackEvent(
+        {
+          eventId: `g3qai_${Date.now()}_${nanoid(10)}`,
+          eventType: 'g3q_ai_query',
+          visitorKey: req.body.visitorKey,
+          source: req.body.source || 'g3q_ai_page',
+          questionCount: 1,
+          success: true,
+          latencyMs: doneMeta.latencyMs,
+          metadata: {
+            model: doneMeta.model,
+            messageCount: Array.isArray(req.body.messages) ? req.body.messages.length : 0,
+            userTurnCount: Array.isArray(req.body.messages)
+              ? req.body.messages.filter((message) => message?.role === 'user').length
+              : 0,
+          },
+        },
+        { userId: req.user?.id ?? null }
+      ).catch((error) => {
+        console.error('[analytics g3q_ai_query]', error?.message || error);
+      });
     }
 
     if (!res.writableEnded) res.end();

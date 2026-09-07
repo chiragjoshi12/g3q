@@ -7,4 +7,6 @@ const messageSchema = z.object({
 
 export const g3qAiChatSchema = z.object({
   messages: z.array(messageSchema).min(1).max(24),
+  visitorKey: z.string().trim().max(64).optional(),
+  source: z.string().trim().max(64).optional(),
 });

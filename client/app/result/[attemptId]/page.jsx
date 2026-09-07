@@ -10,6 +10,7 @@ import { ErrorState, LoadingState } from "@/components/common/StateViews";
 import { AppShell } from "@/components/layout/AppShell";
 import { AuroraWash } from "@/components/layout/AuroraWash";
 import { ScoreSummary } from "@/components/result/ScoreSummary";
+import { appConfig, DATA_SOURCE } from "@/config/app.config";
 import { ROUTES } from "@/config/routes";
 import { quizController } from "@/controllers/quiz.controller";
 import { useAsyncData } from "@/hooks/useAsyncData";
@@ -17,6 +18,7 @@ import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { usePracticeMode } from "@/hooks/usePracticeMode";
 import { AppError, ERROR_CODE } from "@/lib/core/errors";
 import { BRAND_ICONS } from "@/lib/brand-icons";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 /**
@@ -39,6 +41,7 @@ export default function ResultPage({ params }) {
 function ResultScreen({ params }) {
   const { attemptId } = use(params);
   const router = useRouter();
+  const { t } = useI18n();
   const practice = usePracticeMode();
   const { ready, isAuthenticated } = useAuthGuard({ optional: practice });
 
@@ -46,18 +49,21 @@ function ResultScreen({ params }) {
     async () => {
       const attempt = await quizController.getAttempt(attemptId);
       if (!attempt) {
-        throw new AppError(ERROR_CODE.NOT_FOUND, "આ પરિણામ મળ્યું નથી.");
+        throw new AppError(ERROR_CODE.NOT_FOUND, t("errorNotFound"));
       }
-      const bundle = await quizController.loadBundle(attempt.quizId);
-      return { attempt, bundle };
+      if (practice || appConfig.dataSource !== DATA_SOURCE.REST) {
+        const bundle = await quizController.loadBundle(attempt.quizId);
+        return { attempt, bundle };
+      }
+      return { attempt, bundle: null };
     },
-    [attemptId],
+    [attemptId, practice],
     ready
   );
 
   const attempt = data?.attempt ?? null;
   const bundle = data?.bundle ?? null;
-  const leaveTo = practice && !isAuthenticated ? ROUTES.root : ROUTES.home;
+  const leaveTo = practice && !isAuthenticated ? ROUTES.welcome : ROUTES.home;
   const subtitle = bundle?.quiz?.title || attempt?.quizTitle;
 
   return (
@@ -76,14 +82,14 @@ function ResultScreen({ params }) {
               <button
                 type="button"
                 onClick={() => router.replace(leaveTo)}
-                aria-label="બંધ કરો"
+                aria-label={t("close")}
                 className="grid size-10 shrink-0 place-items-center rounded-full bg-white shadow-[0_2px_8px_rgb(15_23_42/0.08)] transition-transform active:scale-95"
               >
                 <X className="size-4 text-[#111]" strokeWidth={2.2} />
               </button>
               <div className="min-w-0">
                 <h1 className="font-canva text-[1.25rem] leading-tight font-bold text-[#111]">
-                  Result - Score
+                  {t("resultScore")}
                 </h1>
                 {subtitle ? (
                   <p className="mt-0.5 truncate font-canva text-sm font-normal text-[#111]">
@@ -96,7 +102,7 @@ function ResultScreen({ params }) {
 
           <div className="relative z-10 flex min-h-0 flex-1 flex-col px-5 pb-6 sm:px-6">
             <div className="mx-auto w-full max-w-[26.5rem] md:max-w-none">
-              {status === "loading" ? <LoadingState label="પરિણામ તૈયાર થઈ રહ્યું છે…" /> : null}
+              {status === "loading" ? <LoadingState label={t("resultPreparing")} /> : null}
               {status === "error" ? <ErrorState message={error} onRetry={reload} /> : null}
               {status === "ready" && attempt ? (
                 <ScoreSummary attempt={attempt} quiz={bundle?.quiz} />
@@ -119,7 +125,7 @@ function ResultScreen({ params }) {
               )}
               onClick={() => router.replace(leaveTo)}
             >
-              Home page
+              {t("homePage")}
             </AppButton>
             <button
               type="button"

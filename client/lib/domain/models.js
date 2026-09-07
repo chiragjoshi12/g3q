@@ -1,4 +1,5 @@
-import { CREDENTIAL, ROLE } from "@/lib/domain/roles";
+import { getCredentialRule, ROLE } from "@/lib/domain/roles";
+import { QUESTION_TYPE } from "@/config/question-types";
 
 /**
  * Mappers from raw data-source payloads to the domain shapes the app uses.
@@ -31,7 +32,7 @@ export function toUser(raw) {
     phone: raw.phone ?? "",
     joinedOn: raw.joinedOn ?? null,
     credential,
-    credentialLabel: CREDENTIAL[role]?.label ?? "",
+    credentialLabel: getCredentialRule(role)?.label ?? "",
   };
 }
 
@@ -56,6 +57,15 @@ export function toQuiz(raw) {
 
 export function toQuestion(raw) {
   if (!raw) return null;
+  const choiceAnswerTypes = [
+    QUESTION_TYPE.SINGLE_CHOICE,
+    QUESTION_TYPE.TRUE_FALSE,
+    QUESTION_TYPE.IMAGE_CHOICE,
+  ];
+  const normalizedAnswer =
+    choiceAnswerTypes.includes(raw.type) && !Array.isArray(raw.answer) && raw.answer != null
+      ? [String(raw.answer).toLowerCase()]
+      : raw.answer;
   return {
     id: raw.id,
     order: Number(raw.order ?? 0),
@@ -69,13 +79,22 @@ export function toQuestion(raw) {
     items: raw.items ?? null,
     segments: raw.segments ?? null,
     bank: raw.bank ?? null,
-    answer: raw.answer,
+    answer: normalizedAnswer,
     acceptable: raw.acceptable ?? null,
   };
 }
 
 export function toExplanation(raw) {
   if (!raw) return null;
+  if (typeof raw === "string") {
+    return {
+      questionId: null,
+      model: "AI",
+      summary: "",
+      body: raw,
+      keyPoints: [],
+    };
+  }
   return {
     questionId: raw.questionId,
     model: raw.model ?? "AI",

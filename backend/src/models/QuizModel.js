@@ -52,6 +52,19 @@ export class QuizModel {
     return quizzes.map(toRawQuiz);
   }
 
+  static async findFeatured() {
+    const featured = await prisma.quiz.findFirst({
+      where: { featured: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (featured) return toRawQuiz(featured);
+
+    const first = await prisma.quiz.findFirst({
+      orderBy: { createdAt: 'asc' },
+    });
+    return toRawQuiz(first);
+  }
+
   static async findById(quizId) {
     const quiz = await prisma.quiz.findUnique({ where: { id: quizId } });
     return toRawQuiz(quiz);

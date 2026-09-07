@@ -7,6 +7,7 @@ import { AUTH_BUTTON_CLASS, AUTH_FIELD_CLASS, AuthLink } from "@/components/auth
 import { AppButton } from "@/components/common/AppButton";
 import { appConfig } from "@/config/app.config";
 import { BRAND_ICONS } from "@/lib/brand-icons";
+import { useI18n } from "@/lib/i18n";
 
 /** Step 2: the code resolved to this person — confirm it, then add a phone for the OTP. */
 export function IdentityStep({
@@ -18,6 +19,7 @@ export function IdentityStep({
   onSubmit,
   onBack,
 }) {
+  const { t } = useI18n();
   if (!identity) return null;
 
   return (
@@ -29,7 +31,7 @@ export function IdentityStep({
       }}
     >
       <div className="space-y-3 text-left">
-        <h2 className="text-xl font-bold text-[#111]">તમારી ID મળી</h2>
+        <h2 className="text-xl font-bold text-[#111]">{t("yourIdFound")}</h2>
         <div className="flex items-start gap-3.5 rounded-[1.75rem] bg-white px-4 py-4">
           <div className="relative size-14 shrink-0 overflow-hidden rounded-full bg-[#d8dde3]">
             <Image
@@ -52,20 +54,20 @@ export function IdentityStep({
 
       <div className="space-y-2">
         <label htmlFor="phone" className="block text-[18px] font-bold text-[#000000]">
-          મોબાઈલ નંબર
+          {t("mobileNumber")}
         </label>
         <input
           id="phone"
           value={phone}
           onChange={(event) => onPhoneChange(event.target.value)}
           inputMode="numeric"
-          placeholder="તમારો મોબાઈલ નંબર અહીં લખો"
+          placeholder={t("mobileNumber")}
           autoComplete="tel"
           autoFocus
           className={AUTH_FIELD_CLASS}
         />
         <p className="text-left text-[12px] text-[#000000] mt-[10px]">
-          આ નંબર પર {appConfig.auth.otpLength} અંકોનો OTP મોકલવામાં આવશે.
+          {t("otpSentInfo", { digits: appConfig.auth.otpLength })}
         </p>
       </div>
 
@@ -84,11 +86,11 @@ export function IdentityStep({
             disabled={phone.length !== appConfig.auth.phoneLength}
             className={AUTH_BUTTON_CLASS}
           >
-            OTP મોકલો
+            {t("sendOtp")}
           </AppButton>
         </div>
         <div className="text-center">
-          <AuthLink onClick={onBack}>{identity.credentialLabel} બદલો</AuthLink>
+          <AuthLink onClick={onBack}>{t("changeField", { field: identity.credentialLabel })}</AuthLink>
         </div>
       </div>
     </form>

@@ -14,6 +14,9 @@ export const STORAGE_KEYS = {
   profile: "profile",
   quizProgress: "quiz-progress",
   attempts: "attempts",
+  analyticsVisitor: "analytics-visitor",
+  language: "language",
+  languagePreference: "language-preference",
 };
 
 const prefix = `${namespace}:v${version}:`;

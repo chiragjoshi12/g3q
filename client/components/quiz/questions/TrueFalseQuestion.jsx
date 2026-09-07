@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const OPTIONS = [
@@ -23,10 +24,12 @@ const OPTIONS = [
  * True / false cards — square split 50/50: tinted icon half, white label half.
  */
 export function TrueFalseQuestion({ question, value, onChange, disabled, revealed }) {
+  const { t } = useI18n();
   const selected = value ?? [];
   const options = OPTIONS.map((option) => {
     const custom = (question.options ?? []).find((item) => item.id === option.id);
-    return custom ? { ...option, label: custom.label } : option;
+    const baseLabel = option.id === "true" ? t("correct") : t("incorrect");
+    return custom ? { ...option, label: custom.label } : { ...option, label: baseLabel };
   });
 
   return (

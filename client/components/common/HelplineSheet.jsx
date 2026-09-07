@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 
@@ -9,6 +9,7 @@ import { X } from "@/components/icons";
 import { appConfig } from "@/config/app.config";
 import { ROUTES } from "@/config/routes";
 import { BRAND_ICONS } from "@/lib/brand-icons";
+import { useI18n } from "@/lib/i18n";
 
 /**
  * Profile helpline bottom sheet. Portals into the app frame so the slight
@@ -16,13 +17,8 @@ import { BRAND_ICONS } from "@/lib/brand-icons";
  */
 export function HelplineSheet({ open, onClose }) {
   const { phone } = appConfig.profile.helpline;
-  const [frame, setFrame] = useState(() =>
-    typeof document === "undefined" ? null : document.querySelector("[data-app-frame]")
-  );
-
-  useEffect(() => {
-    setFrame(document.querySelector("[data-app-frame]"));
-  }, []);
+  const { t } = useI18n();
+  const frame = typeof document === "undefined" ? null : document.querySelector("[data-app-frame]");
 
   useEffect(() => {
     if (!open) return undefined;
@@ -39,7 +35,7 @@ export function HelplineSheet({ open, onClose }) {
     <div className="absolute inset-0 z-[60] flex items-end justify-center">
       <button
         type="button"
-        aria-label="બંધ કરો"
+        aria-label={t("close")}
         onClick={onClose}
         className="absolute inset-0 bg-black/[0.06] backdrop-blur-[2px]"
       />
@@ -54,12 +50,12 @@ export function HelplineSheet({ open, onClose }) {
             id="helpline-sheet-title"
             className="font-heading text-[18px] font-bold text-[#111]"
           >
-            Helpline
+            {t("helpline")}
           </h3>
           <button
             type="button"
             onClick={onClose}
-            aria-label="બંધ કરો"
+            aria-label={t("close")}
             className="absolute right-[-10px] top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-[#F1F5F9] text-[#6B7280] transition-transform active:scale-95"
           >
             <X className="size-5" strokeWidth={2.2} />
@@ -86,7 +82,7 @@ export function HelplineSheet({ open, onClose }) {
               <BrandIcon src={BRAND_ICONS.helpline} alt="" className="size-8" />
             </span>
             <span className="font-heading text-[16px] text-[#111]">
-              Call for Help
+              {t("callForHelp")}
             </span>
           </a>
         </div>

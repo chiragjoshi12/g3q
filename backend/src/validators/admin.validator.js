@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ADMIN_ROLE, REVIEW_ACTION } from '../config/admin.roles.js';
+import { QUESTION_TYPE } from '../config/question-types.js';
 
 export const adminLoginSchema = z.object({
   username: z.string().trim().min(1),
@@ -25,11 +26,15 @@ export const adminCreateUserSchema = z.object({
   ),
 });
 
-export const adminWorkQuotaSchema = z.object({
+export const adminWorkAllocateSchema = z.object({
   admin_id: z.coerce.number().int().positive(),
-  daily_quota: z.coerce.number().int().min(1).max(2000),
-  is_active: z.boolean().optional().default(true),
-  notes: z.string().trim().max(500).nullable().optional(),
+  count: z.coerce.number().int().min(1).max(2000),
+});
+
+export const adminWorkUnassignSchema = z.object({
+  admin_id: z.coerce.number().int().positive(),
+  count: z.coerce.number().int().min(1).max(2000),
+  batch_id: z.coerce.number().int().positive().optional(),
 });
 
 export const questionUpdateSchema = z
@@ -56,6 +61,18 @@ export const questionUpdateSchema = z
       },
       z.enum(['A', 'B', 'C', 'D']).nullable().optional()
     ),
+    type: z
+      .enum([
+        QUESTION_TYPE.SINGLE_CHOICE,
+        QUESTION_TYPE.TRUE_FALSE,
+        QUESTION_TYPE.MATCH_FOLLOWING,
+        QUESTION_TYPE.IMAGE_CHOICE,
+        QUESTION_TYPE.DRAG_DROP,
+        QUESTION_TYPE.DRAG_INTO_BLANKS,
+      ])
+      .optional(),
+    content: z.any().nullable().optional(),
+    answer: z.any().nullable().optional(),
     scope: z.string().trim().max(32).nullable().optional(),
     district: z.string().trim().max(128).nullable().optional(),
     caste_category: z.string().trim().max(32).nullable().optional(),
@@ -89,4 +106,5 @@ export const questionListQuerySchema = z.object({
     .trim()
     .optional()
     .transform((v) => (v && v !== '' ? v : undefined)),
+  has_comments: z.enum(['all', 'yes', 'no']).optional().default('all'),
 });

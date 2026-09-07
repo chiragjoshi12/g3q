@@ -10,8 +10,12 @@ import { HelplineSheet } from "@/components/common/HelplineSheet";
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { AuroraWash } from "@/components/layout/AuroraWash";
 import { BrandHeader } from "@/components/layout/BrandHeader";
+import { appConfig, DATA_SOURCE } from "@/config/app.config";
 import { ROUTES } from "@/config/routes";
+import { profileController } from "@/controllers/profile.controller";
+import { useAsyncData } from "@/hooks/useAsyncData";
 import { BRAND_ICONS } from "@/lib/brand-icons";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
 import { useQuizStore } from "@/store/quiz.store";
@@ -20,11 +24,18 @@ const COLUMN = "mx-auto w-full max-w-[26.5rem] md:max-w-[32rem]";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const user = useAuthStore((state) => state.user);
+  const { t } = useI18n();
+  const sessionUser = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const resetSession = useQuizStore((state) => state.resetSession);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [helplineOpen, setHelplineOpen] = useState(false);
+  const { data: liveUser } = useAsyncData(
+    () => profileController.loadMe(),
+    [],
+    appConfig.dataSource === DATA_SOURCE.REST
+  );
+  const user = liveUser || sessionUser;
 
   const handleLogout = () => {
     resetSession();
@@ -48,7 +59,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={() => setConfirmLogout(true)}
-                aria-label="લોગ આઉટ"
+                aria-label={t("logout")}
                 className="grid size-10 place-items-center rounded-full border border-[#E8ECF0] bg-white transition-transform active:scale-95"
               >
                 <LogOut className="size-4.5 text-[#111]" strokeWidth={2} />
@@ -91,25 +102,25 @@ export default function ProfilePage() {
             <MenuRow
               iconSrc={BRAND_ICONS.quizAttempts}
               iconBg="bg-[#f4e5f8]"
-              label="Quiz attempts"
+              label={t("quizAttempts")}
               onClick={() => router.push(ROUTES.quizAttempts)}
             />
             <MenuRow
               iconSrc={BRAND_ICONS.certificates}
               iconBg="bg-[#e8f8ed]"
-              label="Certificates"
+              label={t("certificates")}
               onClick={() => router.push(ROUTES.certificates)}
             />
             <MenuRow
               iconSrc={BRAND_ICONS.aboutAbhinyan}
               iconBg="bg-[#f6f8e5]"
-              label="About Abhinyan"
+              label={t("aboutAbhiyan")}
               onClick={() => router.push(ROUTES.abhiyan)}
             />
             <MenuRow
               iconSrc={BRAND_ICONS.helpline}
               iconBg="bg-[#e5ebf8]"
-              label="Helpline"
+              label={t("helpline")}
               onClick={() => setHelplineOpen(true)}
               last
             />
@@ -120,8 +131,8 @@ export default function ProfilePage() {
       <ConfirmSheet
         open={confirmLogout}
         icon={LogOut}
-        title="લોગઆઉટ કરો"
-        description="શું તમે ખરેખર તમારા એકાઉન્ટમાંથી લોગ આઉટ કરવા માંગો છો?"
+        title={t("logout")}
+        description={t("logoutDescription")}
         onCancel={() => setConfirmLogout(false)}
         onConfirm={handleLogout}
       />

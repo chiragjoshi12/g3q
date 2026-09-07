@@ -1,3 +1,5 @@
+import { LANGUAGE } from "@/config/languages";
+
 export function pad2(value) {
   return String(value).padStart(2, "0");
 }
@@ -11,10 +13,20 @@ export function formatClock(ms = 0) {
 }
 
 /** Verbose duration — for summaries and per-question review rows. */
-export function formatDuration(ms = 0) {
+export function formatDuration(ms = 0, language = LANGUAGE.GUJARATI) {
   const totalSeconds = Math.max(0, Math.round(ms / 1000));
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
+  if (language === LANGUAGE.ENGLISH) {
+    if (minutes === 0) return `${seconds} sec`;
+    if (seconds === 0) return `${minutes} min`;
+    return `${minutes} min ${seconds} sec`;
+  }
+  if (language === LANGUAGE.HINDI) {
+    if (minutes === 0) return `${seconds} सेकंड`;
+    if (seconds === 0) return `${minutes} मिनट`;
+    return `${minutes} मि ${seconds} से`;
+  }
   if (minutes === 0) return `${seconds} સેકન્ડ`;
   if (seconds === 0) return `${minutes} મિનિટ`;
   return `${minutes} મિ ${seconds} સે`;
@@ -47,10 +59,24 @@ const MONTHS_FULL = [
 ];
 
 /** "12 ઓગસ્ટ, 2026" — used on quiz-attempt cards. */
-export function formatGujaratiDate(value) {
+export function formatGujaratiDate(value, language = LANGUAGE.GUJARATI) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
+  if (language === LANGUAGE.ENGLISH) {
+    return new Intl.DateTimeFormat("en-IN", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(date);
+  }
+  if (language === LANGUAGE.HINDI) {
+    return new Intl.DateTimeFormat("hi-IN", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(date);
+  }
   return `${date.getDate()} ${MONTHS_FULL[date.getMonth()]}, ${date.getFullYear()}`;
 }
 
@@ -66,8 +92,10 @@ const WEEK_ORDINALS = {
 };
 
 /** "પહેલું અઠવાડિયું" */
-export function formatWeekLabel(week) {
+export function formatWeekLabel(week, language = LANGUAGE.GUJARATI) {
   const n = Number(week);
+  if (language === LANGUAGE.ENGLISH) return `Week ${Number.isFinite(n) && n > 0 ? n : 1}`;
+  if (language === LANGUAGE.HINDI) return `सप्ताह ${Number.isFinite(n) && n > 0 ? n : 1}`;
   const ordinal = WEEK_ORDINALS[n] ?? `${Number.isFinite(n) && n > 0 ? n : 1} મું`;
   return `${ordinal} અઠવાડિયું`;
 }

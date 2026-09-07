@@ -5,7 +5,8 @@ import { AlertCircle } from "@/components/icons";
 import { AUTH_BUTTON_CLASS, AUTH_FIELD_CLASS } from "@/components/auth/AuthBrandHeader";
 import { AppButton } from "@/components/common/AppButton";
 import { BrandIcon } from "@/components/common/BrandIcon";
-import { CREDENTIAL, ROLE_TABS } from "@/lib/domain/roles";
+import { getCredentialRule, getRoleTabs } from "@/lib/domain/roles";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 /** Step 1: pick a role first; the matching field appears only after that. */
@@ -18,7 +19,9 @@ export function CredentialStep({
   onCredentialChange,
   onSubmit,
 }) {
-  const rule = role ? CREDENTIAL[role] : null;
+  const { t } = useI18n();
+  const rule = role ? getCredentialRule(role) : null;
+  const roleTabs = getRoleTabs();
 
   return (
     <form
@@ -30,14 +33,14 @@ export function CredentialStep({
       }}
     >
       <div className="space-y-2 text-center">
-        <h2 className="text-xl font-bold text-[#111]">લોગિન કરો</h2>
+        <h2 className="text-xl font-bold text-[#111]">{t("login")}</h2>
         <p className="text-sm leading-relaxed text-[#111]">
-          તમે શેમાં અભ્યાસ કરો છો તેના આધારે પ્રકાર પસંદ કરો
+          {t("chooseStudyType")}
         </p>
       </div>
 
-      <div role="radiogroup" aria-label="પ્રકાર" className="grid grid-cols-3 gap-2.5">
-        {ROLE_TABS.map((item) => {
+      <div role="radiogroup" aria-label={t("login")} className="grid grid-cols-3 gap-2.5">
+        {roleTabs.map((item) => {
           const active = item.id === role;
 
           return (
@@ -99,7 +102,7 @@ export function CredentialStep({
               disabled={!credential}
               className={AUTH_BUTTON_CLASS}
             >
-              Next
+              {t("next")}
             </AppButton>
           </div>
         </>

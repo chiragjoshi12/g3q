@@ -22,13 +22,24 @@ const deriveAnswer = (row, map) => {
 
 const hasText = (value) => Boolean(value && String(value).trim());
 
+const reviewerLabel = (row) => {
+  if (row.reviewedBy) return row.reviewedBy.fullName || row.reviewedBy.username;
+  const act = (row.activities || []).find(
+    (a) => a.action === 'ACCEPTED' || a.action === 'REJECTED'
+  );
+  if (!act) return null;
+  return act.admin?.fullName || act.username || null;
+};
+
 const toListItem = (row) => {
   if (!row) return null;
   return {
     id: row.id,
     que_id: row.queId,
-    department_en: row.departmentEn ?? null,
-    department_gu: row.departmentGu ?? null,
+    department_id: row.departmentId ?? null,
+    type: row.type ?? 'single_choice',
+    department_en: row.departmentRef?.nameEn ?? row.departmentEn ?? null,
+    department_gu: row.departmentRef?.nameGu ?? row.departmentGu ?? null,
     question_en: row.questionEn ?? null,
     question_gu: row.questionGu ?? null,
     correct_option: row.correctOption ?? null,
@@ -40,12 +51,16 @@ const toListItem = (row) => {
     district: row.district ?? null,
     caste_category: row.casteCategory ?? null,
     review_status: row.reviewStatus,
-    reviewed_by_username: row.reviewedBy?.username ?? null,
+    reviewed_by_username: reviewerLabel(row),
     reviewed_at: row.reviewedAt ? row.reviewedAt.toISOString() : null,
-    last_edited_by_username: row.lastEditedBy?.username ?? null,
+    last_edited_by_username: row.lastEditedBy
+      ? row.lastEditedBy.fullName || row.lastEditedBy.username
+      : null,
     last_edited_at: row.lastEditedAt ? row.lastEditedAt.toISOString() : null,
     assigned_to_id: row.assignment?.adminId ?? row.assignment?.admin?.id ?? null,
-    assigned_to_username: row.assignment?.admin?.username ?? null,
+    assigned_to_username: row.assignment?.admin
+      ? row.assignment.admin.fullName || row.assignment.admin.username
+      : null,
     assignment_date: row.assignment?.assignmentDate
       ? ymdFromDate(row.assignment.assignmentDate)
       : null,
@@ -83,6 +98,8 @@ const toDetail = (row) => {
     option_b_en: row.optionBEn ?? null,
     option_c_en: row.optionCEn ?? null,
     option_d_en: row.optionDEn ?? null,
+    content: row.content ?? null,
+    answer: row.answer ?? null,
     correct_answer_gu: deriveAnswer(row, OPTION_GU),
     correct_answer_en: deriveAnswer(row, OPTION_EN),
     comments: (row.comments || []).map(toComment),
@@ -91,10 +108,17 @@ const toDetail = (row) => {
 };
 
 const auditInclude = {
-  reviewedBy: { select: { username: true } },
-  lastEditedBy: { select: { username: true } },
+  departmentRef: { select: { id: true, nameEn: true, nameGu: true } },
+  reviewedBy: { select: { username: true, fullName: true } },
+  lastEditedBy: { select: { username: true, fullName: true } },
   assignment: {
-    include: { admin: { select: { id: true, username: true } } },
+    include: { admin: { select: { id: true, username: true, fullName: true } } },
+  },
+  activities: {
+    where: { action: { in: ['ACCEPTED', 'REJECTED'] } },
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+    include: { admin: { select: { username: true, fullName: true } } },
   },
 };
 
@@ -106,6 +130,7 @@ const detailInclude = {
 
 /** Maps snake_case API fields → Prisma column names for PATCH. */
 const UPDATE_FIELD_MAP = {
+  type: 'type',
   department_gu: 'departmentGu',
   department_en: 'departmentEn',
   question_gu: 'questionGu',
@@ -119,6 +144,8 @@ const UPDATE_FIELD_MAP = {
   option_c_en: 'optionCEn',
   option_d_en: 'optionDEn',
   correct_option: 'correctOption',
+  content: 'content',
+  answer: 'answer',
   scope: 'scope',
   district: 'district',
   caste_category: 'casteCategory',
@@ -273,6 +300,19 @@ export class BankQuestionModel {
       }),
     ]);
 
+    return this.findByQueId(queId);
+  }
+
+  static async findComment(queId, commentId) {
+    return prisma.bankQuestionComment.findFirst({
+      where: { id: commentId, queId },
+    });
+  }
+
+  static async deleteComment(queId, commentId) {
+    const comment = await this.findComment(queId, commentId);
+    if (!comment) return this.findByQueId(queId);
+    await prisma.bankQuestionComment.delete({ where: { id: comment.id } });
     return this.findByQueId(queId);
   }
 
