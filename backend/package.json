@@ -33,6 +33,7 @@
     "nodemon": "^3.1.9"
   },
   "dependencies": {
+    "@google/genai": "^2.19.0",
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
