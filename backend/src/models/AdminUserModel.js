@@ -6,6 +6,7 @@ const toRaw = (user) => {
     id: user.id,
     username: user.username,
     role: user.role,
+    access_scope: user.accessScope ?? null,
     full_name: user.fullName ?? null,
     university: user.university ?? null,
     mobile_number: user.mobileNumber ?? null,
@@ -19,6 +20,7 @@ const toProfile = (user) => {
   return {
     username: user.username,
     role: user.role,
+    access_scope: user.accessScope ?? null,
     full_name: user.fullName ?? null,
     university: user.university ?? null,
     mobile_number: user.mobileNumber ?? null,
@@ -44,12 +46,13 @@ export class AdminUserModel {
     return rows.map(toRaw);
   }
 
-  static async create({ username, passwordHash, role, fullName, university, mobileNumber }) {
+  static async create({ username, passwordHash, role, accessScope, fullName, university, mobileNumber }) {
     const row = await prisma.adminUser.create({
       data: {
         username,
         passwordHash,
         role,
+        accessScope: accessScope ?? null,
         fullName: fullName ?? null,
         university: university ?? null,
         mobileNumber: mobileNumber ?? null,

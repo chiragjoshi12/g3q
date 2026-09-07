@@ -22,6 +22,8 @@ export const landingService = {
       totalPlays,
       weeklyPlays,
       week: CONFIG.QUIZ.CURRENT_WEEK,
+      weekMeta: CONFIG.QUIZ.CURRENT_WEEK_META,
+      weeks: CONFIG.QUIZ.WEEKS,
       featuredQuizId: featuredQuiz?.id ?? null,
       playTitle: 'G3Q Quiz',
       playSubtitle: `વિદ્યાર્થી પ્રોફાઇલ મુજબ ${CONFIG.QUIZ.QUESTION_COUNT} પ્રશ્નો`,

@@ -1,11 +1,18 @@
 import bcrypt from 'bcryptjs';
 import { generateAccessToken } from '../utils/jwt.js';
 import { AppError, ERROR_CODE } from '../utils/appError.js';
-import { ADMIN_TOKEN_KIND, ADMIN_ROLE } from '../config/admin.roles.js';
+import { ADMIN_ACCESS_SCOPE, ADMIN_TOKEN_KIND, ADMIN_ROLE } from '../config/admin.roles.js';
 import { AdminUserModel } from '../models/AdminUserModel.js';
 import { CONFIG } from '../config/index.js';
 
 const SALT_ROUNDS = 10;
+
+function canAccessAnalytics(user) {
+  return (
+    user?.role === ADMIN_ROLE.MASTER ||
+    (user?.role === ADMIN_ROLE.SUB_ADMIN && user?.accessScope === ADMIN_ACCESS_SCOPE.ANALYTICS)
+  );
+}
 
 export const adminAuthService = {
   async login({ username, password }) {
@@ -23,6 +30,7 @@ export const adminAuthService = {
       id: user.id,
       username: user.username,
       role: user.role,
+      access_scope: user.accessScope ?? null,
       kind: ADMIN_TOKEN_KIND,
     });
 
@@ -31,6 +39,7 @@ export const adminAuthService = {
       token_type: 'bearer',
       username: user.username,
       role: user.role,
+      access_scope: user.accessScope ?? null,
       full_name: user.fullName ?? null,
       university: user.university ?? null,
       mobile_number: user.mobileNumber ?? null,
@@ -66,6 +75,7 @@ export const adminAuthService = {
       username: body.username,
       passwordHash,
       role: body.role || ADMIN_ROLE.ADMIN,
+      accessScope: body.access_scope,
       fullName: body.full_name,
       university: body.university,
       mobileNumber: body.mobile_number,
@@ -106,9 +116,28 @@ export const adminAuthService = {
       username,
       passwordHash,
       role: ADMIN_ROLE.MASTER,
+      accessScope: null,
       fullName: CONFIG.ADMIN.FULL_NAME,
       university: CONFIG.ADMIN.UNIVERSITY,
       mobileNumber: CONFIG.ADMIN.MOBILE_NUMBER,
     });
+  },
+
+  async analyticsLogin({ username, password }) {
+    const result = await this.login({ username, password });
+    const user = await AdminUserModel.findByUsername(username);
+    if (!canAccessAnalytics(user)) {
+      throw new AppError(ERROR_CODE.FORBIDDEN, 'Analytics access required.');
+    }
+    return result;
+  },
+
+  async analyticsMe(adminId) {
+    const user = await AdminUserModel.findById(adminId);
+    if (!user || !user.isActive) throw new AppError(ERROR_CODE.UNAUTHORIZED);
+    if (!canAccessAnalytics(user)) {
+      throw new AppError(ERROR_CODE.FORBIDDEN, 'Analytics access required.');
+    }
+    return AdminUserModel.toProfile(user);
   },
 };

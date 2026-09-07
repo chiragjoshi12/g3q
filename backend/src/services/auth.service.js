@@ -1,4 +1,5 @@
 import { CONFIG } from '../config/index.js';
+import { nanoid } from 'nanoid';
 import {
   isCitizen,
   usesRosterIdentity,
@@ -9,12 +10,15 @@ import {
   ROLE,
 } from '../config/roles.js';
 import { UserModel } from '../models/UserModel.js';
+import { BetaUserModel } from '../models/BetaUserModel.js';
 import { OtpModel } from '../models/OtpModel.js';
 import { generateAccessToken } from '../utils/jwt.js';
 import { AppError, ERROR_CODE } from '../utils/appError.js';
 
 const generateOtp = () =>
   String(Math.floor(Math.random() * 10 ** CONFIG.OTP.LENGTH)).padStart(CONFIG.OTP.LENGTH, '0');
+
+const createRequestId = (prefix) => `${prefix}_${Date.now()}_${nanoid(10)}`;
 
 const maskPhone = (phone) => String(phone).replace(/\d(?=\d{4})/g, '•');
 
@@ -62,7 +66,7 @@ export const authService = {
 
     if (isCitizen(role)) {
       const user = await UserModel.findByPhone(ROLE.CITIZEN, trimmedPhone);
-      const requestId = `otp_${user?.id ?? 'citizen'}_${Date.now()}`;
+      const requestId = createRequestId(`otp_${user?.id ?? 'citizen'}`);
 
       await OtpModel.create({
         requestId,
@@ -84,7 +88,7 @@ export const authService = {
     }
 
     const user = await resolveUser(role, credential);
-    const requestId = `otp_${user.id}_${Date.now()}`;
+    const requestId = createRequestId(`otp_${user.id}`);
 
     await OtpModel.create({
       requestId,
@@ -199,5 +203,36 @@ export const authService = {
     await OtpModel.consume(pending.id);
     const token = generateAccessToken({ id: user.id, role: user.role });
     return { user, token };
+  },
+
+  async betaLogin({ firstName, lastName, district, taluka, phone }) {
+    if (!CONFIG.BETA.ENABLED) {
+      throw new AppError(ERROR_CODE.INVALID_REQUEST, 'Beta login is not enabled.');
+    }
+
+    const fullName = [String(firstName ?? '').trim(), String(lastName ?? '').trim()]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    const profileError = validateCitizenProfile({ name: fullName, district, taluka });
+    if (profileError) throw new AppError(ERROR_CODE.INVALID_REQUEST, profileError);
+
+    const phoneError = validatePhone(phone);
+    if (phoneError) throw new AppError(ERROR_CODE.INVALID_PHONE, phoneError);
+
+    const user = await BetaUserModel.upsertLoginProfile({
+      firstName,
+      lastName,
+      district,
+      taluka,
+      phone,
+    });
+
+    const token = generateAccessToken({ id: user.id, role: user.role, beta: true });
+    return {
+      user: await UserModel.findById(user.id),
+      token,
+      beta: true,
+    };
   },
 };

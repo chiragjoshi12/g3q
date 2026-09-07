@@ -36,8 +36,10 @@ const toListItem = (row) => {
   return {
     id: row.id,
     que_id: row.queId,
-    department_en: row.departmentEn ?? null,
-    department_gu: row.departmentGu ?? null,
+    department_id: row.departmentId ?? null,
+    type: row.type ?? 'single_choice',
+    department_en: row.departmentRef?.nameEn ?? row.departmentEn ?? null,
+    department_gu: row.departmentRef?.nameGu ?? row.departmentGu ?? null,
     question_en: row.questionEn ?? null,
     question_gu: row.questionGu ?? null,
     correct_option: row.correctOption ?? null,
@@ -96,6 +98,8 @@ const toDetail = (row) => {
     option_b_en: row.optionBEn ?? null,
     option_c_en: row.optionCEn ?? null,
     option_d_en: row.optionDEn ?? null,
+    content: row.content ?? null,
+    answer: row.answer ?? null,
     correct_answer_gu: deriveAnswer(row, OPTION_GU),
     correct_answer_en: deriveAnswer(row, OPTION_EN),
     comments: (row.comments || []).map(toComment),
@@ -104,6 +108,7 @@ const toDetail = (row) => {
 };
 
 const auditInclude = {
+  departmentRef: { select: { id: true, nameEn: true, nameGu: true } },
   reviewedBy: { select: { username: true, fullName: true } },
   lastEditedBy: { select: { username: true, fullName: true } },
   assignment: {
@@ -125,6 +130,7 @@ const detailInclude = {
 
 /** Maps snake_case API fields → Prisma column names for PATCH. */
 const UPDATE_FIELD_MAP = {
+  type: 'type',
   department_gu: 'departmentGu',
   department_en: 'departmentEn',
   question_gu: 'questionGu',
@@ -138,6 +144,8 @@ const UPDATE_FIELD_MAP = {
   option_c_en: 'optionCEn',
   option_d_en: 'optionDEn',
   correct_option: 'correctOption',
+  content: 'content',
+  answer: 'answer',
   scope: 'scope',
   district: 'district',
   caste_category: 'casteCategory',

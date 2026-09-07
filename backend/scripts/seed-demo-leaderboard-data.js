@@ -148,7 +148,7 @@ function buildColleges(count = 16) {
   });
 }
 
-function buildCitizens(count = 10) {
+function buildCitizens(count = 65) {
   return Array.from({ length: count }, (_, index) => {
     const area = pick(CITIZEN_AREAS, index);
     return {
@@ -328,7 +328,7 @@ async function seedSessions(users, bankQuestions) {
 }
 
 async function main() {
-  const bankQuestions = await prisma.bankQuestion.findMany({
+  let bankQuestions = await prisma.bankQuestion.findMany({
     where: {
       reviewStatus: 'ACCEPTED',
       correctOption: { not: null },
@@ -336,7 +336,15 @@ async function main() {
   });
 
   if (bankQuestions.length < QUESTION_COUNT) {
-    throw new Error(`Need at least ${QUESTION_COUNT} accepted bank questions, found ${bankQuestions.length}.`);
+    bankQuestions = await prisma.bankQuestion.findMany({
+      where: {
+        correctOption: { not: null },
+      },
+    });
+  }
+
+  if (bankQuestions.length < QUESTION_COUNT) {
+    throw new Error(`Need at least ${QUESTION_COUNT} bank questions with answers, found ${bankQuestions.length}.`);
   }
 
   const users = [...buildStudents(), ...buildColleges(), ...buildCitizens()];

@@ -52,6 +52,7 @@ model User {
   district        String?
   taluka          String?   @db.VarChar(128)
   village         String?   @db.VarChar(128)
+  profilePhoto    String?   @map("profile_photo") @db.VarChar(512)
   socialCategory  String?   @map("social_category") @db.VarChar(32)
   dateOfBirth     String?   @map("date_of_birth") @db.VarChar(32)
   phone           String?
@@ -65,12 +66,112 @@ model User {
   attempts    Attempt[]
   quizSessions QuizSession[]
   questionExposures UserQuestionExposure[]
+  betaProfile BetaUser?
+  analyticsVisitors AnalyticsVisitor[]
+  analyticsEvents AnalyticsEvent[]
+  leaderboardAggregates LeaderboardAggregate[]
 
   @@index([schoolId])
   @@index([taluka])
   @@index([institute])
+  @@index([phone])
   @@index([role, phone])
   @@map("users")
+}
+
+enum AnalyticsEventType {
+  certificate_download
+  g3q_ai_query
+  practice_quiz_start
+  practice_quiz_complete
+}
+
+model AnalyticsVisitor {
+  id         String   @id @default(cuid())
+  visitorKey String   @unique @map("visitor_key") @db.VarChar(64)
+  userId     String?  @map("user_id")
+  firstSeenAt DateTime @default(now()) @map("first_seen_at")
+  lastSeenAt  DateTime @default(now()) @map("last_seen_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user   User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  events AnalyticsEvent[]
+
+  @@index([userId])
+  @@index([lastSeenAt])
+  @@map("analytics_visitors")
+}
+
+model AnalyticsEvent {
+  id            BigInt             @id @default(autoincrement())
+  eventId       String             @unique @map("event_id") @db.VarChar(64)
+  eventType     AnalyticsEventType @map("event_type")
+  occurredAt    DateTime           @default(now()) @map("occurred_at")
+  week          Int
+  userId        String?            @map("user_id")
+  visitorId     String?            @map("visitor_id")
+  role          UserRole?
+  district      String?            @db.VarChar(128)
+  taluka        String?            @db.VarChar(128)
+  quizId        String?            @map("quiz_id") @db.VarChar(64)
+  sessionId     String?            @map("session_id") @db.VarChar(64)
+  attemptId     String?            @map("attempt_id") @db.VarChar(64)
+  questionCount Int?               @map("question_count")
+  success       Boolean?
+  latencyMs     Int?               @map("latency_ms")
+  source        String?            @db.VarChar(64)
+  metadata      Json?
+  createdAt     DateTime           @default(now()) @map("created_at")
+
+  user    User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  visitor AnalyticsVisitor? @relation(fields: [visitorId], references: [id], onDelete: SetNull)
+
+  @@index([occurredAt])
+  @@index([eventType, occurredAt])
+  @@index([week, role])
+  @@index([district, taluka])
+  @@index([userId])
+  @@index([visitorId])
+  @@map("analytics_events")
+}
+
+model LeaderboardAggregate {
+  id                BigInt   @id @default(autoincrement())
+  week              Int
+  role              UserRole
+  taluka            String   @db.VarChar(128)
+  district          String?  @db.VarChar(128)
+  userId            String   @map("user_id")
+  bestPercentage    Int      @default(0) @map("best_percentage")
+  totalCorrect      Int      @default(0) @map("total_correct")
+  totalWrong        Int      @default(0) @map("total_wrong")
+  totalTimeMs       Int      @default(0) @map("total_time_ms")
+  sessionsCompleted Int      @default(0) @map("sessions_completed")
+  lastCompletedAt   DateTime? @map("last_completed_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([week, role, taluka, userId])
+  @@index([week, taluka, role])
+  @@index([userId, week])
+  @@map("leaderboard_aggregates")
+}
+
+model LeaderboardTalukaStat {
+  id                BigInt   @id @default(autoincrement())
+  week              Int
+  taluka            String   @db.VarChar(128)
+  district          String?  @db.VarChar(128)
+  submittedSessions Int      @default(0) @map("submitted_sessions")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@unique([week, taluka])
+  @@index([week, submittedSessions])
+  @@map("leaderboard_taluka_stats")
 }
 
 model District {
@@ -81,6 +182,54 @@ model District {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("districts")
+}
+
+model Department {
+  id        Int      @id
+  key       String   @unique @db.VarChar(64)
+  nameEn    String   @unique @map("name_en") @db.VarChar(128)
+  nameGu    String   @unique @map("name_gu") @db.VarChar(128)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  questions  BankQuestion[]
+  quizImages DepartmentQuizImage[]
+
+  @@map("departments")
+}
+
+model DepartmentQuizImage {
+  id           BigInt     @id @default(autoincrement())
+  departmentId Int        @map("department_id")
+  style        String     @db.VarChar(32)
+  imageUrl     String     @map("image_url") @db.VarChar(512)
+  isActive     Boolean    @default(true) @map("is_active")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@unique([departmentId, style, imageUrl])
+  @@index([departmentId, style, isActive])
+  @@map("department_quiz_images")
+}
+
+model BetaUser {
+  id           String   @id @default(cuid())
+  firstName    String   @map("first_name") @db.VarChar(128)
+  lastName     String?  @map("last_name") @db.VarChar(128)
+  fullName     String   @map("full_name") @db.VarChar(255)
+  district     String   @db.VarChar(128)
+  taluka       String   @db.VarChar(128)
+  phone        String   @db.VarChar(20)
+  linkedUserId String   @unique @map("linked_user_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  linkedUser User @relation(fields: [linkedUserId], references: [id], onDelete: Cascade)
+
+  @@index([phone])
+  @@map("beta_users")
 }
 
 /// Bank-backed play session: N questions allocated once at start, then graded on submit.
@@ -112,6 +261,8 @@ model QuizSession {
 
   @@index([userId, status])
   @@index([userId, createdAt])
+  @@index([userId, status, completedAt])
+  @@index([status, completedAt, userId])
   @@map("quiz_sessions")
 }
 
@@ -120,6 +271,7 @@ model QuizSessionQuestion {
   id            String  @id @default(cuid())
   sessionId     String  @map("session_id")
   order         Int
+  type          QuestionType @default(single_choice)
   bankQueId     String  @map("bank_que_id") @db.VarChar(32)
   points        Int     @default(1)
   departmentGu  String? @map("department_gu") @db.VarChar(255)
@@ -135,7 +287,10 @@ model QuizSessionQuestion {
   optionCEn     String? @map("option_c_en") @db.Text
   optionDEn     String? @map("option_d_en") @db.Text
   correctOption String  @map("correct_option") @db.Char(1)
+  content       Json?
+  answer        Json?
   selectedOption String? @map("selected_option") @db.Char(1)
+  selectedAnswer Json?   @map("selected_answer")
   isCorrect     Boolean? @map("is_correct")
   timeSpentMs   Int?     @map("time_spent_ms")
 
@@ -164,6 +319,7 @@ model UserQuestionExposure {
 
   @@id([userId, bankQueId])
   @@index([userId, lastSeenAt])
+  @@index([userId, bankQueId])
   @@map("user_question_exposures")
 }
 
@@ -313,6 +469,7 @@ model AttemptAnswer {
 
 enum AdminRole {
   master
+  sub_admin
   admin
 }
 
@@ -328,6 +485,7 @@ model AdminUser {
   username     String   @unique @db.VarChar(64)
   passwordHash String   @map("password_hash") @db.VarChar(255)
   role         AdminRole @default(admin)
+  accessScope  String?  @map("access_scope") @db.VarChar(32)
   fullName     String?  @map("full_name") @db.VarChar(128)
   university   String?  @db.VarChar(255)
   mobileNumber String?  @map("mobile_number") @db.VarChar(20)
@@ -354,10 +512,12 @@ model BankQuestion {
   id            Int           @id @default(autoincrement())
   queId         String        @unique @map("que_id") @db.VarChar(32)
 
+  departmentId  Int?          @map("department_id")
   departmentGu  String?       @map("department_gu") @db.VarChar(255)
   departmentEn  String?       @map("department_en") @db.VarChar(255)
   questionGu    String?       @map("question_gu") @db.Text
   questionEn    String?       @map("question_en") @db.Text
+  type          QuestionType  @default(single_choice)
 
   optionAGu     String?       @map("option_a_gu") @db.Text
   optionBGu     String?       @map("option_b_gu") @db.Text
@@ -368,6 +528,8 @@ model BankQuestion {
   optionCEn     String?       @map("option_c_en") @db.Text
   optionDEn     String?       @map("option_d_en") @db.Text
   correctOption String?       @map("correct_option") @db.Char(1)
+  content       Json?
+  answer        Json?
 
   scope         String        @default("GENERAL") @db.VarChar(32)
   district      String?       @db.VarChar(128)
@@ -384,17 +546,21 @@ model BankQuestion {
 
   reviewedBy AdminUser? @relation("QuestionReviewedBy", fields: [reviewedById], references: [id])
   lastEditedBy AdminUser? @relation("QuestionEditedBy", fields: [lastEditedById], references: [id])
+  departmentRef Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   comments   BankQuestionComment[]
   activities BankQuestionActivity[]
   sessionQuestions QuizSessionQuestion[]
   exposures  UserQuestionExposure[]
   assignment AdminQuestionAssignment?
 
+  @@index([departmentId])
   @@index([correctOption])
   @@index([scope])
   @@index([district])
   @@index([casteCategory])
   @@index([reviewStatus])
+  @@index([reviewStatus, correctOption, district])
+  @@index([reviewStatus, correctOption, casteCategory])
   @@map("bank_questions")
 }
 

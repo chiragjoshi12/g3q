@@ -26,35 +26,59 @@ const toEntry = (row, rank, meId) => ({
 
 const schoolLabel = (scopeName, week) =>
   `${scopeName || 'રાજ્ય'} - ${week} મું અઠવાડિયું`;
-const categoryLabel = (title, week) => `${title} - ${week} મું અઠવાડિયું`;
 
-/**
- * Aggregates submitted quiz_sessions per user, ranked by:
- *   1) best percentage DESC
- *   2) total correct DESC
- *   3) total time ASC (faster is better)
- */
-async function rankedUsers({ whereSql, params, limit, meId }) {
+function baseFilters({ taluka, role, schoolId, institute }) {
+  const where = ['la.week = ?'];
+  const params = [CONFIG.QUIZ.CURRENT_WEEK];
+
+  if (taluka) {
+    where.push('LOWER(la.taluka) = LOWER(?)');
+    params.push(taluka);
+  }
+
+  if (role === ROLE.STUDENT) {
+    where.push("la.role = 'student'");
+  } else if (role) {
+    where.push('la.role = ?');
+    params.push(role);
+  }
+
+  if (schoolId) {
+    where.push('u.school_id = ?');
+    params.push(schoolId);
+  } else if (institute) {
+    where.push('u.institute = ?');
+    params.push(institute);
+  }
+
+  return { whereSql: where.join(' AND '), params };
+}
+
+async function rankedUsers({ taluka, role, schoolId, institute, limit, meId }) {
+  const { whereSql, params } = baseFilters({ taluka, role, schoolId, institute });
   const sql = `
     SELECT
-      u.id AS user_id,
+      la.user_id AS user_id,
       u.name,
       u.institute,
       u.school_id,
       u.grade,
       u.taluka,
       u.district,
-      MAX(s.percentage) AS best_percentage,
-      COALESCE(SUM(s.correct_count), 0) AS total_correct,
-      COALESCE(SUM(s.wrong_count), 0) AS total_wrong,
-      COALESCE(SUM(s.total_time_ms), 0) AS total_time_ms,
-      COUNT(s.id) AS sessions_completed
-    FROM users u
-    INNER JOIN quiz_sessions s
-      ON s.user_id = u.id AND s.status = 'submitted'
+      la.best_percentage,
+      la.total_correct,
+      la.total_wrong,
+      la.total_time_ms,
+      la.sessions_completed
+    FROM leaderboard_aggregates la
+    INNER JOIN users u
+      ON u.id = la.user_id
     WHERE ${whereSql}
-    GROUP BY u.id, u.name, u.institute, u.school_id, u.grade, u.taluka, u.district
-    ORDER BY best_percentage DESC, total_correct DESC, total_time_ms ASC
+    ORDER BY
+      la.best_percentage DESC,
+      la.total_correct DESC,
+      la.total_time_ms ASC,
+      la.user_id ASC
     LIMIT ?
   `;
 
@@ -62,44 +86,67 @@ async function rankedUsers({ whereSql, params, limit, meId }) {
   return rows.map((row, i) => toEntry(row, i + 1, meId));
 }
 
-async function findMyRank({ whereSql, params, meId }) {
+async function findMyRank({ taluka, role, schoolId, institute, meId }) {
   if (!meId) return null;
+  const { whereSql, params } = baseFilters({ taluka, role, schoolId, institute });
 
-  const sql = `
-    SELECT ranked.rank_num AS rank_num, ranked.*
-    FROM (
-      SELECT
-        u.id AS user_id,
-        u.name,
-        u.institute,
-        u.school_id,
-        u.grade,
-        u.taluka,
-        u.district,
-        MAX(s.percentage) AS best_percentage,
-        COALESCE(SUM(s.correct_count), 0) AS total_correct,
-        COALESCE(SUM(s.wrong_count), 0) AS total_wrong,
-        COALESCE(SUM(s.total_time_ms), 0) AS total_time_ms,
-        COUNT(s.id) AS sessions_completed,
-        RANK() OVER (
-          ORDER BY MAX(s.percentage) DESC,
-                   COALESCE(SUM(s.correct_count), 0) DESC,
-                   COALESCE(SUM(s.total_time_ms), 0) ASC
-        ) AS rank_num
-      FROM users u
-      INNER JOIN quiz_sessions s
-        ON s.user_id = u.id AND s.status = 'submitted'
-      WHERE ${whereSql}
-      GROUP BY u.id, u.name, u.institute, u.school_id, u.grade, u.taluka, u.district
-    ) ranked
-    WHERE ranked.user_id = ?
+  const meSql = `
+    SELECT
+      la.user_id AS user_id,
+      u.name,
+      u.institute,
+      u.school_id,
+      u.grade,
+      u.taluka,
+      u.district,
+      la.best_percentage,
+      la.total_correct,
+      la.total_wrong,
+      la.total_time_ms,
+      la.sessions_completed
+    FROM leaderboard_aggregates la
+    INNER JOIN users u
+      ON u.id = la.user_id
+    WHERE ${whereSql} AND la.user_id = ?
     LIMIT 1
   `;
+  const mineRows = await prisma.$queryRawUnsafe(meSql, ...params, meId);
+  if (!mineRows.length) return null;
 
-  const rows = await prisma.$queryRawUnsafe(sql, ...params, meId);
-  if (!rows.length) return null;
-  const row = rows[0];
-  return toEntry(row, Number(row.rank_num), meId);
+  const mine = mineRows[0];
+  const betterSql = `
+    SELECT COUNT(*) AS better_count
+    FROM leaderboard_aggregates la
+    INNER JOIN users u
+      ON u.id = la.user_id
+    WHERE ${whereSql}
+      AND (
+        la.best_percentage > ?
+        OR (la.best_percentage = ? AND la.total_correct > ?)
+        OR (la.best_percentage = ? AND la.total_correct = ? AND la.total_time_ms < ?)
+        OR (
+          la.best_percentage = ?
+          AND la.total_correct = ?
+          AND la.total_time_ms = ?
+          AND la.user_id < ?
+        )
+      )
+  `;
+  const countRows = await prisma.$queryRawUnsafe(
+    betterSql,
+    ...params,
+    mine.best_percentage,
+    mine.best_percentage,
+    mine.total_correct,
+    mine.best_percentage,
+    mine.total_correct,
+    mine.total_time_ms,
+    mine.best_percentage,
+    mine.total_correct,
+    mine.total_time_ms,
+    mine.user_id
+  );
+  return toEntry(mine, Number(countRows[0]?.better_count || 0) + 1, meId);
 }
 
 function clampLimit(limit) {
@@ -107,8 +154,73 @@ function clampLimit(limit) {
   return Math.min(MAX_LIMIT, Math.max(1, Math.floor(n)));
 }
 
+async function resolveScopedUser(userId) {
+  if (!userId) return null;
+  return UserModel.findById(userId);
+}
+
+async function topRunningTaluka() {
+  return prisma.leaderboardTalukaStat.findFirst({
+    where: { week: CONFIG.QUIZ.CURRENT_WEEK },
+    orderBy: [{ submittedSessions: 'desc' }, { taluka: 'asc' }],
+  });
+}
+
+async function resolveTaluka({ userId, taluka }) {
+  const provided = String(taluka || '').trim();
+  if (provided) return provided;
+  const me = await resolveScopedUser(userId);
+  const mine = String(me?.taluka || '').trim();
+  if (mine) return mine;
+  const top = await topRunningTaluka();
+  return String(top?.taluka || '').trim() || null;
+}
+
+async function talukaLeaderboardByRole({ role, userId, taluka, limit, schoolId = null, institute = null }) {
+  const scopeTaluka = await resolveTaluka({ userId, taluka });
+  if (!scopeTaluka) {
+    throw new AppError(ERROR_CODE.NOT_FOUND, 'No taluka leaderboard data found.');
+  }
+
+  const cap = clampLimit(limit);
+  const [items, meEntry] = await Promise.all([
+    rankedUsers({ taluka: scopeTaluka, role, schoolId, institute, limit: cap, meId: userId }),
+    findMyRank({ taluka: scopeTaluka, role, schoolId, institute, meId: userId }),
+  ]);
+
+  return {
+    taluka: scopeTaluka,
+    week: CONFIG.QUIZ.CURRENT_WEEK,
+    weekMeta: CONFIG.QUIZ.CURRENT_WEEK_META,
+    label: schoolLabel(scopeTaluka, CONFIG.QUIZ.CURRENT_WEEK),
+    total: items.length,
+    items,
+    me: meEntry,
+  };
+}
+
+async function scopedTalukaCategory({ scope, role, userId, taluka, limit }) {
+  return {
+    scope,
+    ...(await talukaLeaderboardByRole({ role, userId, taluka, limit })),
+  };
+}
+
 export const leaderboardService = {
-  async school({ userId, schoolId, institute, limit }) {
+  async school({ userId, schoolId, institute, taluka, limit }) {
+    const scopeTaluka = String(taluka || '').trim();
+    if (scopeTaluka || (!schoolId && !institute)) {
+      return {
+        scope: 'school',
+        ...(await talukaLeaderboardByRole({
+          role: ROLE.STUDENT,
+          userId,
+          taluka,
+          limit,
+        })),
+      };
+    }
+
     const me = await UserModel.findById(userId);
     if (!me) throw new AppError(ERROR_CODE.UNAUTHORIZED);
 
@@ -134,8 +246,21 @@ export const leaderboardService = {
 
     const cap = clampLimit(limit);
     const [items, meEntry] = await Promise.all([
-      rankedUsers({ whereSql, params, limit: cap, meId: userId }),
-      findMyRank({ whereSql, params, meId: userId }),
+      rankedUsers({
+        taluka: me.taluka || null,
+        role: ROLE.STUDENT,
+        schoolId: scopeSchoolId,
+        institute: scopeInstitute,
+        limit: cap,
+        meId: userId,
+      }),
+      findMyRank({
+        taluka: me.taluka || null,
+        role: ROLE.STUDENT,
+        schoolId: scopeSchoolId,
+        institute: scopeInstitute,
+        meId: userId,
+      }),
     ]);
 
     return {
@@ -152,68 +277,61 @@ export const leaderboardService = {
   },
 
   async taluka({ userId, taluka, limit }) {
-    const me = await UserModel.findById(userId);
-    if (!me) throw new AppError(ERROR_CODE.UNAUTHORIZED);
-
-    const scopeTaluka = (taluka || me.taluka || '').trim() || null;
-    if (!scopeTaluka) {
-      throw new AppError(
-        ERROR_CODE.INVALID_REQUEST,
-        'Taluka is not set on this account. Provide taluka.'
-      );
-    }
-
-    const whereSql = 'LOWER(u.taluka) = LOWER(?)';
-    const params = [scopeTaluka];
-    const cap = clampLimit(limit);
-
-    const [items, meEntry] = await Promise.all([
-      rankedUsers({ whereSql, params, limit: cap, meId: userId }),
-      findMyRank({ whereSql, params, meId: userId }),
-    ]);
-
     return {
       scope: 'taluka',
-      taluka: scopeTaluka,
-      week: CONFIG.QUIZ.CURRENT_WEEK,
-      label: schoolLabel(scopeTaluka, CONFIG.QUIZ.CURRENT_WEEK),
-      total: items.length,
-      items,
-      me: meEntry,
+      ...(await talukaLeaderboardByRole({ role: null, userId, taluka, limit })),
     };
   },
 
-  async globalByRole({ userId, role, limit }) {
-    const me = await UserModel.findById(userId);
-    if (!me) throw new AppError(ERROR_CODE.UNAUTHORIZED);
+  async globalByRole({ userId, role, taluka, limit }) {
+    return scopedTalukaCategory({ scope: role, role, userId, taluka, limit });
+  },
 
-    const whereSql = 'u.role = ?';
-    const params = [role];
-    const cap = clampLimit(limit);
+  async overview({ userId, taluka, limit }) {
+    const scopeTaluka = await resolveTaluka({ userId, taluka });
+    if (!scopeTaluka) {
+      throw new AppError(ERROR_CODE.NOT_FOUND, 'No taluka leaderboard data found.');
+    }
 
-    const [items, meEntry] = await Promise.all([
-      rankedUsers({ whereSql, params, limit: cap, meId: userId }),
-      findMyRank({ whereSql, params, meId: userId }),
+    const [school, college, citizen] = await Promise.all([
+      scopedTalukaCategory({
+        scope: 'school',
+        role: ROLE.STUDENT,
+        userId,
+        taluka: scopeTaluka,
+        limit,
+      }),
+      scopedTalukaCategory({
+        scope: ROLE.COLLEGE,
+        role: ROLE.COLLEGE,
+        userId,
+        taluka: scopeTaluka,
+        limit,
+      }),
+      scopedTalukaCategory({
+        scope: ROLE.CITIZEN,
+        role: ROLE.CITIZEN,
+        userId,
+        taluka: scopeTaluka,
+        limit,
+      }),
     ]);
 
     return {
-      scope: role,
+      taluka: scopeTaluka,
       week: CONFIG.QUIZ.CURRENT_WEEK,
-      label:
-        role === ROLE.COLLEGE
-          ? categoryLabel('કોલેજ કેટેગરી', CONFIG.QUIZ.CURRENT_WEEK)
-          : categoryLabel('નાગરિક કેટેગરી', CONFIG.QUIZ.CURRENT_WEEK),
-      total: items.length,
-      items,
-      me: meEntry,
+      weekMeta: CONFIG.QUIZ.CURRENT_WEEK_META,
+      school,
+      college,
+      citizen,
     };
   },
 
-  async college({ userId, limit }) {
-    return this.globalByRole({ userId, role: ROLE.COLLEGE, limit });
+  async college({ userId, taluka, limit }) {
+    return this.globalByRole({ userId, role: ROLE.COLLEGE, taluka, limit });
   },
 
-  async citizen({ userId, limit }) {
-    return this.globalByRole({ userId, role: ROLE.CITIZEN, limit });
+  async citizen({ userId, taluka, limit }) {
+    return this.globalByRole({ userId, role: ROLE.CITIZEN, taluka, limit });
   },
 };

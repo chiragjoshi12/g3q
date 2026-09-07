@@ -1,4 +1,7 @@
 import { prisma } from '../config/prisma.client.js';
+import { CONFIG } from '../config/index.js';
+import { getActivePlatformWeek } from '../config/platformWeeks.js';
+import { QUESTION_TYPE } from '../config/question-types.js';
 
 const OPTION_KEYS = ['A', 'B', 'C', 'D'];
 
@@ -10,48 +13,126 @@ const optionText = (row, letter, lang) => {
   return map[letter] ?? null;
 };
 
+const parseJson = (value) => {
+  if (value == null) return null;
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+  return value;
+};
+
+const questionTypeOf = (row) => row.type || QUESTION_TYPE.SINGLE_CHOICE;
+
+const questionContent = (row, language = 'gu') => {
+  const lang = language === 'en' ? 'en' : 'gu';
+  const content = parseJson(row.content) || {};
+
+  if (Array.isArray(content.options) && content.options.length) {
+    return {
+      options: content.options,
+      left: content.left ?? null,
+      right: content.right ?? null,
+      items: content.items ?? null,
+      segments: content.segments ?? null,
+      bank: content.bank ?? null,
+    };
+  }
+
+  return {
+    options: OPTION_KEYS.map((letter) => ({
+      id: letter.toLowerCase(),
+      label:
+        optionText(row, letter, lang) || optionText(row, letter, lang === 'en' ? 'gu' : 'en') || letter,
+    })),
+    left: content.left ?? null,
+    right: content.right ?? null,
+    items: content.items ?? null,
+    segments: content.segments ?? null,
+    bank: content.bank ?? null,
+  };
+};
+
+const questionAnswer = (row) => {
+  const type = questionTypeOf(row);
+  const stored = parseJson(row.answer);
+  if (stored != null) return stored;
+
+  if (
+    type === QUESTION_TYPE.SINGLE_CHOICE ||
+    type === QUESTION_TYPE.TRUE_FALSE ||
+    type === QUESTION_TYPE.IMAGE_CHOICE
+  ) {
+    return row.correctOption ? [String(row.correctOption).toLowerCase()] : [];
+  }
+  return null;
+};
+
+const choiceAnswerText = (row, language = 'gu') => {
+  const answer = questionAnswer(row);
+  const choiceId = Array.isArray(answer) ? answer[0] : null;
+  if (!choiceId) return null;
+  const content = questionContent(row, language);
+  return (content.options || []).find((option) => option.id === choiceId)?.label || choiceId;
+};
+
 const explanationBody = (row, language = 'gu') => {
   const lang = language === 'en' ? 'en' : 'gu';
+  const type = questionTypeOf(row);
   const department =
     lang === 'en' ? row.departmentEn || row.departmentGu : row.departmentGu || row.departmentEn;
   const correctText =
-    optionText(row, row.correctOption, lang) ||
-    optionText(row, row.correctOption, lang === 'en' ? 'gu' : 'en') ||
-    row.correctOption;
+    type === QUESTION_TYPE.MATCH_FOLLOWING
+      ? lang === 'en'
+        ? 'Match the correct pairs.'
+        : 'યોગ્ય જોડકાં જોડો.'
+      : type === QUESTION_TYPE.DRAG_DROP
+        ? lang === 'en'
+          ? 'Arrange the items in the right order.'
+          : 'વસ્તુઓને સાચા ક્રમમાં ગોઠવો.'
+        : type === QUESTION_TYPE.DRAG_INTO_BLANKS
+          ? lang === 'en'
+            ? 'Fill the blanks with the correct words.'
+            : 'ખાલી જગ્યા માટે યોગ્ય શબ્દો ગોઠવો.'
+          : choiceAnswerText(row, lang);
 
   if (lang === 'en') {
     return [
       department ? `This question belongs to ${department}.` : 'This question is from the current quiz set.',
-      `The correct answer is ${correctText}.`,
+      correctText ? `The correct answer is ${correctText}.` : 'Review the correct response carefully.',
       'Read the options carefully and connect the answer to the key fact in the question.',
     ].join(' ');
   }
 
   return [
     department ? `આ પ્રશ્ન ${department} વિષય સાથે સંબંધિત છે.` : 'આ પ્રશ્ન વર્તમાન ક્વિઝ સેટમાંથી લેવામાં આવ્યો છે.',
-    `સાચો જવાબ ${correctText} છે.`,
+    correctText ? `સાચો જવાબ ${correctText} છે.` : 'યોગ્ય જવાબ ફરી ધ્યાનથી જુઓ.',
     'પ્રશ્નના મુખ્ય તથ્ય સાથે વિકલ્પોને જોડીને જવાબ યાદ રાખો.',
   ].join(' ');
 };
 
 const toPlayExplanation = (row, language = 'gu') => {
   const lang = language === 'en' ? 'en' : 'gu';
-  const correctText =
-    optionText(row, row.correctOption, lang) ||
-    optionText(row, row.correctOption, lang === 'en' ? 'gu' : 'en') ||
-    row.correctOption;
+  const correctText = choiceAnswerText(row, lang);
   return {
     questionId: row.bankQueId,
     model: 'G3Q',
     summary:
       lang === 'en'
-        ? `Correct answer: ${correctText}`
-        : `સાચો જવાબ: ${correctText}`,
+        ? correctText
+          ? `Correct answer: ${correctText}`
+          : 'Review the correct response'
+        : correctText
+          ? `સાચો જવાબ: ${correctText}`
+          : 'યોગ્ય જવાબ ફરી જુઓ',
     body: explanationBody(row, lang),
     keyPoints:
       lang === 'en'
-        ? ['Review the core fact in the prompt.', `Remember: ${correctText}`]
-        : ['પ્રશ્નનો મુખ્ય તથ્ય ફરી વાંચો.', `યાદ રાખો: ${correctText}`],
+        ? ['Review the core fact in the prompt.', correctText ? `Remember: ${correctText}` : 'Focus on the correct response pattern.']
+        : ['પ્રશ્નનો મુખ્ય તથ્ય ફરી વાંચો.', correctText ? `યાદ રાખો: ${correctText}` : 'યોગ્ય જવાબના પેટર્ન પર ધ્યાન આપો.'],
   };
 };
 
@@ -59,19 +140,27 @@ const toPlayExplanation = (row, language = 'gu') => {
 export const toPlayQuestion = (row, language = 'gu') => {
   const lang = language === 'en' ? 'en' : 'gu';
   const prompt = lang === 'en' ? row.questionEn || row.questionGu : row.questionGu || row.questionEn;
+  const content = questionContent(row, lang);
   return {
     id: row.bankQueId,
     order: row.order,
-    type: 'single_choice',
+    type: questionTypeOf(row),
     points: row.points,
     prompt: prompt || '',
     department: lang === 'en' ? row.departmentEn || row.departmentGu : row.departmentGu || row.departmentEn,
-    options: OPTION_KEYS.map((letter) => ({
-      id: letter.toLowerCase(),
-      label: optionText(row, letter, lang) || optionText(row, letter, lang === 'en' ? 'gu' : 'en') || letter,
-    })),
+    options: content.options ?? null,
+    left: content.left ?? null,
+    right: content.right ?? null,
+    items: content.items ?? null,
+    segments: content.segments ?? null,
+    bank: content.bank ?? null,
   };
 };
+
+export const toGradingQuestion = (row, language = 'gu') => ({
+  ...toPlayQuestion(row, language),
+  answer: questionAnswer(row),
+});
 
 export const toSessionSummary = (session) => {
   if (!session) return null;
@@ -89,6 +178,8 @@ export const toSessionSummary = (session) => {
     wallClockMs: session.wallClockMs ?? null,
     averageTimeMs: session.averageTimeMs ?? null,
     percentage: session.percentage ?? null,
+    week: CONFIG.QUIZ.CURRENT_WEEK,
+    week_meta: CONFIG.QUIZ.CURRENT_WEEK_META,
   };
 };
 
@@ -113,17 +204,114 @@ export const toSessionResult = (session) => {
     breakdown: questions.map((q) => ({
       questionId: q.bankQueId,
       order: q.order,
-      type: 'single_choice',
+      type: questionTypeOf(q),
       correct: Boolean(q.isCorrect),
       earnedPoints: q.isCorrect ? q.points : 0,
       maxPoints: q.points,
-      answer: q.selectedOption ? [q.selectedOption.toLowerCase()] : null,
-      correctAnswer: [q.correctOption.toLowerCase()],
+      answer:
+        parseJson(q.selectedAnswer) ??
+        (q.selectedOption ? [q.selectedOption.toLowerCase()] : null),
+      correctAnswer: questionAnswer(q),
       timeSpentMs: q.timeSpentMs ?? 0,
       prompt: session.language === 'en' ? q.questionEn || q.questionGu : q.questionGu || q.questionEn,
     })),
   };
 };
+
+const buildExposureUpsert = (rows, completedAt) => {
+  if (!rows.length) return null;
+
+  const valuesSql = rows
+    .map(() => '(?, ?, ?, ?, 1, ?, ?, ?)')
+    .join(', ');
+  const params = [];
+  for (const row of rows) {
+    params.push(
+      row.userId,
+      row.bankQueId,
+      completedAt,
+      completedAt,
+      row.isCorrect ? 1 : 0,
+      row.isCorrect ? 0 : 1,
+      row.timeSpentMs
+    );
+  }
+
+  return {
+    sql: `
+      INSERT INTO user_question_exposures (
+        user_id,
+        bank_que_id,
+        first_seen_at,
+        last_seen_at,
+        times_seen,
+        times_correct,
+        times_wrong,
+        total_time_ms
+      )
+      VALUES ${valuesSql}
+      ON DUPLICATE KEY UPDATE
+        last_seen_at = VALUES(last_seen_at),
+        times_seen = times_seen + 1,
+        times_correct = times_correct + VALUES(times_correct),
+        times_wrong = times_wrong + VALUES(times_wrong),
+        total_time_ms = total_time_ms + VALUES(total_time_ms)
+    `,
+    params,
+  };
+};
+
+const buildLeaderboardAggregateUpsert = ({
+  week,
+  role,
+  taluka,
+  district,
+  userId,
+  totals,
+  completedAt,
+}) => ({
+  sql: `
+    INSERT INTO leaderboard_aggregates (
+      week,
+      role,
+      taluka,
+      district,
+      user_id,
+      best_percentage,
+      total_correct,
+      total_wrong,
+      total_time_ms,
+      sessions_completed,
+      last_completed_at,
+      created_at,
+      updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+      district = COALESCE(VALUES(district), district),
+      best_percentage = GREATEST(best_percentage, VALUES(best_percentage)),
+      total_correct = total_correct + VALUES(total_correct),
+      total_wrong = total_wrong + VALUES(total_wrong),
+      total_time_ms = total_time_ms + VALUES(total_time_ms),
+      sessions_completed = sessions_completed + 1,
+      last_completed_at = VALUES(last_completed_at),
+      updated_at = VALUES(updated_at)
+  `,
+  params: [
+    week,
+    role,
+    taluka,
+    district,
+    userId,
+    totals.percentage,
+    totals.correctCount,
+    totals.wrongCount,
+    totals.totalTimeMs,
+    completedAt,
+    completedAt,
+    completedAt,
+  ],
+});
 
 export class QuizSessionModel {
   static async findById(id) {
@@ -137,6 +325,14 @@ export class QuizSessionModel {
     return prisma.quizSession.findFirst({
       where: { userId, status: 'in_progress' },
       include: { questions: { orderBy: { order: 'asc' } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  static async findInProgressMetaForUser(userId, tx = prisma) {
+    return tx.quizSession.findFirst({
+      where: { userId, status: 'in_progress' },
+      select: { id: true, expiresAt: true },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -160,9 +356,9 @@ export class QuizSessionModel {
     };
   }
 
-  static async createWithQuestions({ userId, language, expiresAt, bankRows }) {
+  static async createWithQuestions({ userId, language, expiresAt, bankRows, tx = prisma }) {
     const startedAt = new Date();
-    return prisma.quizSession.create({
+    return tx.quizSession.create({
       data: {
         userId,
         language,
@@ -173,6 +369,7 @@ export class QuizSessionModel {
         questions: {
           create: bankRows.map((q, index) => ({
             order: index + 1,
+            type: q.type || QUESTION_TYPE.SINGLE_CHOICE,
             bankQueId: q.queId,
             points: 1,
             departmentGu: q.departmentGu,
@@ -187,7 +384,9 @@ export class QuizSessionModel {
             optionBEn: q.optionBEn,
             optionCEn: q.optionCEn,
             optionDEn: q.optionDEn,
-            correctOption: String(q.correctOption).toUpperCase(),
+            correctOption: q.correctOption ? String(q.correctOption).toUpperCase() : 'A',
+            content: parseJson(q.content) ?? null,
+            answer: parseJson(q.answer) ?? null,
           })),
         },
       },
@@ -195,60 +394,14 @@ export class QuizSessionModel {
     });
   }
 
-  static async submit(sessionId, gradedRows, totals) {
+  static async submit(sessionId, gradedRows, totals, leaderboardContext = null) {
     return prisma.$transaction(async (tx) => {
-      for (const row of gradedRows) {
-        await tx.quizSessionQuestion.update({
-          where: { id: row.id },
-          data: {
-            selectedOption: row.selectedOption,
-            isCorrect: row.isCorrect,
-            timeSpentMs: row.timeSpentMs,
-          },
-        });
-
-        if (!row.attempted) continue;
-
-        const existing = await tx.userQuestionExposure.findUnique({
-          where: {
-            userId_bankQueId: { userId: row.userId, bankQueId: row.bankQueId },
-          },
-        });
-
-        if (existing) {
-          await tx.userQuestionExposure.update({
-            where: {
-              userId_bankQueId: { userId: row.userId, bankQueId: row.bankQueId },
-            },
-            data: {
-              lastSeenAt: new Date(),
-              timesSeen: existing.timesSeen + 1,
-              timesCorrect: existing.timesCorrect + (row.isCorrect ? 1 : 0),
-              timesWrong: existing.timesWrong + (row.isCorrect ? 0 : 1),
-              totalTimeMs: existing.totalTimeMs + row.timeSpentMs,
-            },
-          });
-        } else {
-          await tx.userQuestionExposure.create({
-            data: {
-              userId: row.userId,
-              bankQueId: row.bankQueId,
-              firstSeenAt: new Date(),
-              lastSeenAt: new Date(),
-              timesSeen: 1,
-              timesCorrect: row.isCorrect ? 1 : 0,
-              timesWrong: row.isCorrect ? 0 : 1,
-              totalTimeMs: row.timeSpentMs,
-            },
-          });
-        }
-      }
-
-      return tx.quizSession.update({
-        where: { id: sessionId },
+      const completedAt = new Date();
+      const claimed = await tx.quizSession.updateMany({
+        where: { id: sessionId, status: 'in_progress' },
         data: {
           status: 'submitted',
-          completedAt: new Date(),
+          completedAt,
           correctCount: totals.correctCount,
           wrongCount: totals.wrongCount,
           totalTimeMs: totals.totalTimeMs,
@@ -256,6 +409,70 @@ export class QuizSessionModel {
           averageTimeMs: totals.averageTimeMs,
           percentage: totals.percentage,
         },
+      });
+
+      if (!claimed.count) {
+        return tx.quizSession.findUnique({
+          where: { id: sessionId },
+          include: { questions: { orderBy: { order: 'asc' } } },
+        });
+      }
+
+      await Promise.all(
+        gradedRows.map((row) =>
+          tx.quizSessionQuestion.update({
+            where: { id: row.id },
+            data: {
+              selectedOption: row.selectedOption ?? null,
+              selectedAnswer: row.selectedAnswer ?? null,
+              isCorrect: row.isCorrect,
+              timeSpentMs: row.timeSpentMs,
+            },
+          })
+        )
+      );
+
+      const attemptedRows = gradedRows.filter((row) => row.attempted);
+      const exposureUpsert = buildExposureUpsert(attemptedRows, completedAt);
+      if (exposureUpsert) {
+        await tx.$executeRawUnsafe(exposureUpsert.sql, ...exposureUpsert.params);
+      }
+
+      if (leaderboardContext?.userId && leaderboardContext?.taluka && leaderboardContext?.role) {
+        const week = getActivePlatformWeek(completedAt).id;
+        const aggregateUpsert = buildLeaderboardAggregateUpsert({
+          week,
+          role: leaderboardContext.role,
+          taluka: leaderboardContext.taluka,
+          district: leaderboardContext.district || null,
+          userId: leaderboardContext.userId,
+          totals,
+          completedAt,
+        });
+        await tx.$executeRawUnsafe(aggregateUpsert.sql, ...aggregateUpsert.params);
+
+        await tx.leaderboardTalukaStat.upsert({
+          where: {
+            week_taluka: {
+              week,
+              taluka: leaderboardContext.taluka,
+            },
+          },
+          update: {
+            district: leaderboardContext.district || undefined,
+            submittedSessions: { increment: 1 },
+          },
+          create: {
+            week,
+            taluka: leaderboardContext.taluka,
+            district: leaderboardContext.district || null,
+            submittedSessions: 1,
+          },
+        });
+      }
+
+      return tx.quizSession.findUnique({
+        where: { id: sessionId },
         include: { questions: { orderBy: { order: 'asc' } } },
       });
     });

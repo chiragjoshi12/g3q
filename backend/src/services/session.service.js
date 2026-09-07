@@ -1,21 +1,68 @@
 import { prisma } from '../config/prisma.client.js';
 import { CONFIG } from '../config/index.js';
+import { QUESTION_TYPE } from '../config/question-types.js';
 import { AppError, ERROR_CODE } from '../utils/appError.js';
 import {
   QuizSessionModel,
+  toGradingQuestion,
   toSessionPlayPayload,
   toSessionResult,
   toSessionSummary,
 } from '../models/QuizSessionModel.js';
 import { UserModel } from '../models/UserModel.js';
+import { gradeQuestion } from './grading.service.js';
 import { aiEnhancementService } from './aiEnhancement.service.js';
 
-const normalizeOption = (value) => {
+const normalizeChoiceAnswer = (value) => {
   if (value == null) return null;
   if (Array.isArray(value) && value.length) {
-    return String(value[0]).trim().toUpperCase().slice(0, 1);
+    return [String(value[0]).trim().toLowerCase()];
   }
-  return String(value).trim().toUpperCase().slice(0, 1);
+  return [String(value).trim().toLowerCase()];
+};
+
+const normalizeMapAnswer = (value) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key, mapped]) => key && mapped != null && String(mapped).trim() !== '')
+      .map(([key, mapped]) => [String(key), String(mapped).trim()])
+  );
+};
+
+const normalizeOrderedAnswer = (value) => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => String(item ?? '').trim())
+    .filter(Boolean);
+};
+
+const normalizeSubmittedAnswer = (question, rawAnswer) => {
+  switch (question?.type) {
+    case QUESTION_TYPE.SINGLE_CHOICE:
+    case QUESTION_TYPE.TRUE_FALSE:
+    case QUESTION_TYPE.IMAGE_CHOICE:
+      return normalizeChoiceAnswer(rawAnswer);
+    case QUESTION_TYPE.MATCH_FOLLOWING:
+    case QUESTION_TYPE.DRAG_INTO_BLANKS:
+      return normalizeMapAnswer(rawAnswer);
+    case QUESTION_TYPE.DRAG_DROP:
+      return normalizeOrderedAnswer(rawAnswer);
+    default:
+      return rawAnswer ?? null;
+  }
+};
+
+const selectedOptionForStorage = (questionType, answer) => {
+  if (
+    questionType !== QUESTION_TYPE.SINGLE_CHOICE &&
+    questionType !== QUESTION_TYPE.IMAGE_CHOICE
+  ) {
+    return null;
+  }
+  const selected = Array.isArray(answer) ? answer[0] : null;
+  if (!selected) return null;
+  return String(selected).trim().toUpperCase().slice(0, 1);
 };
 
 const shuffle = (items) => {
@@ -44,6 +91,77 @@ const personalizedTargetCount = () => {
   return min + Math.floor(Math.random() * (max - min + 1));
 };
 
+async function fetchCandidateQuestions({ userId, limit, districtRaw, casteRaw, personalized }) {
+  const params = [userId];
+  const filters = [
+    "bq.review_status = 'ACCEPTED'",
+    `(
+      (bq.correct_option IS NOT NULL AND bq.type IN ('single_choice', 'true_false', 'image_choice'))
+      OR bq.answer IS NOT NULL
+    )`,
+    `NOT EXISTS (
+      SELECT 1
+      FROM user_question_exposures uqe
+      WHERE uqe.user_id = ? AND uqe.bank_que_id = bq.que_id
+    )`,
+  ];
+
+  if (personalized) {
+    const personal = [];
+    if (districtRaw) {
+      personal.push('bq.district = ?');
+      params.push(districtRaw);
+    }
+    if (casteRaw && casteRaw !== 'GENERAL') {
+      personal.push('bq.caste_category = ?');
+      params.push(casteRaw);
+    }
+    if (!personal.length) return [];
+    filters.push(`(${personal.join(' OR ')})`);
+  } else {
+    const exclusions = [];
+    if (districtRaw) {
+      exclusions.push('(bq.district IS NULL OR bq.district <> ?)');
+      params.push(districtRaw);
+    }
+    if (casteRaw && casteRaw !== 'GENERAL') {
+      exclusions.push('(bq.caste_category IS NULL OR bq.caste_category <> ?)');
+      params.push(casteRaw);
+    }
+    if (exclusions.length) {
+      filters.push(exclusions.join(' AND '));
+    }
+  }
+
+  params.push(limit);
+  const sql = `
+    SELECT
+      bq.que_id AS queId,
+      bq.department_gu AS departmentGu,
+      bq.department_en AS departmentEn,
+      bq.question_gu AS questionGu,
+      bq.question_en AS questionEn,
+      bq.type AS type,
+      bq.option_a_gu AS optionAGu,
+      bq.option_b_gu AS optionBGu,
+      bq.option_c_gu AS optionCGu,
+      bq.option_d_gu AS optionDGu,
+      bq.option_a_en AS optionAEn,
+      bq.option_b_en AS optionBEn,
+      bq.option_c_en AS optionCEn,
+      bq.option_d_en AS optionDEn,
+      bq.correct_option AS correctOption,
+      bq.content AS content,
+      bq.answer AS answer,
+      bq.district AS district,
+      bq.caste_category AS casteCategory
+    FROM bank_questions bq
+    WHERE ${filters.join(' AND ')}
+    LIMIT ?
+  `;
+  return prisma.$queryRawUnsafe(sql, ...params);
+}
+
 /**
  * Pick `count` ACCEPTED bank questions the user has never seen.
  * Tries to include PERSONALIZED_MIN..MAX profile-tagged rows (district / caste);
@@ -51,49 +169,32 @@ const personalizedTargetCount = () => {
  * still has unseen questions so the session can still start.
  */
 async function allocateBankQuestions(user, count) {
-  const seen = await prisma.userQuestionExposure.findMany({
-    where: { userId: user.id },
-    select: { bankQueId: true },
-  });
-  const seenIds = seen.map((r) => r.bankQueId);
-
-  const baseWhere = {
-    reviewStatus: 'ACCEPTED',
-    correctOption: { not: null },
-    ...(seenIds.length ? { queId: { notIn: seenIds } } : {}),
-  };
-
   const district = (user.district || '').trim().toLowerCase();
   const caste = (user.socialCategory || '').trim().toUpperCase();
   const districtRaw = (user.district || '').trim();
   const casteRaw = (user.socialCategory || '').trim();
 
-  const personalOr = [];
-  if (districtRaw) personalOr.push({ district: districtRaw });
-  if (casteRaw && caste !== 'GENERAL') personalOr.push({ casteCategory: casteRaw });
-
   let preferred = [];
-  if (personalOr.length) {
-    const tagged = await prisma.bankQuestion.findMany({
-      where: { ...baseWhere, OR: personalOr },
-      take: Math.max(CONFIG.QUIZ.PERSONALIZED_MAX * 30, 80),
+  if (districtRaw || (casteRaw && caste !== 'GENERAL')) {
+    const tagged = await fetchCandidateQuestions({
+      userId: user.id,
+      limit: Math.max(CONFIG.QUIZ.PERSONALIZED_MAX * 20, 60),
+      districtRaw,
+      casteRaw,
+      personalized: true,
     });
     preferred = tagged.filter((q) => isProfileMatch(q, district, caste));
   }
 
   const preferredById = new Map(preferred.map((q) => [q.queId, q]));
-  const excludeFromGeneral = [...new Set([...seenIds, ...preferredById.keys()])];
-
-  const generalPool = await prisma.bankQuestion.findMany({
-    where: {
-      reviewStatus: 'ACCEPTED',
-      correctOption: { not: null },
-      ...(excludeFromGeneral.length ? { queId: { notIn: excludeFromGeneral } } : {}),
-    },
-    take: Math.max(count * 8, 120),
+  const generalPool = await fetchCandidateQuestions({
+    userId: user.id,
+    limit: Math.max(count * 8, 120),
+    districtRaw,
+    casteRaw,
+    personalized: false,
   });
 
-  // Catch profile matches the OR query missed (e.g. district casing) and keep them personalised.
   const general = [];
   for (const q of generalPool) {
     if (isProfileMatch(q, district, caste)) preferredById.set(q.queId, q);
@@ -143,11 +244,12 @@ export const sessionService = {
     const user = await UserModel.findById(userId);
     if (!user) throw new AppError(ERROR_CODE.UNAUTHORIZED);
 
-    const existing = await QuizSessionModel.findInProgressForUser(userId);
-    if (existing) {
-      if (existing.expiresAt && existing.expiresAt.getTime() < Date.now()) {
-        await QuizSessionModel.markExpired(existing.id);
+    const existingMeta = await QuizSessionModel.findInProgressMetaForUser(userId);
+    if (existingMeta) {
+      if (existingMeta.expiresAt && existingMeta.expiresAt.getTime() < Date.now()) {
+        await QuizSessionModel.markExpired(existingMeta.id);
       } else {
+        const existing = await QuizSessionModel.findById(existingMeta.id);
         return toSessionPlayPayload(existing);
       }
     }
@@ -156,7 +258,7 @@ export const sessionService = {
     const lang = language || CONFIG.QUIZ.DEFAULT_LANGUAGE;
     const bankRows = await allocateBankQuestions(user, questionCount);
 
-    // Optional Gemini pass: reframe the session questions with student profile before persist/serve.
+    // Optional Meta AI pass: reframe the session questions with student profile before persist/serve.
     let rowsForSession = bankRows;
     let aiMeta = { aiEnhanced: false, aiEnhancementMs: 0 };
     if (aiEnhancementService.isEnabled()) {
@@ -176,11 +278,29 @@ export const sessionService = {
       Date.now() + CONFIG.QUIZ.EXPIRY_MINUTES * 60 * 1000
     );
 
-    const session = await QuizSessionModel.createWithQuestions({
-      userId,
-      language: lang,
-      expiresAt,
-      bankRows: rowsForSession,
+    const session = await prisma.$transaction(async (tx) => {
+      await tx.$queryRawUnsafe('SELECT id FROM users WHERE id = ? FOR UPDATE', userId);
+      const latestMeta = await QuizSessionModel.findInProgressMetaForUser(userId, tx);
+      if (latestMeta) {
+        if (latestMeta.expiresAt && latestMeta.expiresAt.getTime() < Date.now()) {
+          await tx.quizSession.update({
+            where: { id: latestMeta.id },
+            data: { status: 'expired' },
+          });
+        } else {
+          return tx.quizSession.findUnique({
+            where: { id: latestMeta.id },
+            include: { questions: { orderBy: { order: 'asc' } } },
+          });
+        }
+      }
+      return QuizSessionModel.createWithQuestions({
+        userId,
+        language: lang,
+        expiresAt,
+        bankRows: rowsForSession,
+        tx,
+      });
     });
 
     return {
@@ -216,6 +336,8 @@ export const sessionService = {
     if (!session || session.userId !== userId) {
       throw new AppError(ERROR_CODE.NOT_FOUND, 'Session not found.');
     }
+    const user = await UserModel.findById(userId);
+    if (!user) throw new AppError(ERROR_CODE.UNAUTHORIZED);
 
     if (session.status === 'submitted') {
       return toSessionResult(session);
@@ -240,18 +362,22 @@ export const sessionService = {
     const timingMap = timings || {};
 
     const gradedRows = session.questions.map((q) => {
-      const selected = normalizeOption(answerMap[q.bankQueId]);
+      const gradingQuestion = toGradingQuestion(q, session.language);
+      const selectedAnswer = normalizeSubmittedAnswer(gradingQuestion, answerMap[q.bankQueId]);
       const attempted = Object.prototype.hasOwnProperty.call(timingMap, q.bankQueId);
-      const isCorrect = Boolean(attempted && selected && selected === q.correctOption);
       const timeSpentMs = attempted
         ? Math.max(0, Math.round(Number(timingMap[q.bankQueId]) || 0))
         : 0;
+      const grade = attempted
+        ? gradeQuestion(gradingQuestion, selectedAnswer, timeSpentMs)
+        : gradeQuestion(gradingQuestion, selectedAnswer, 0);
       return {
         id: q.id,
         userId,
         bankQueId: q.bankQueId,
-        selectedOption: selected,
-        isCorrect,
+        selectedOption: selectedOptionForStorage(gradingQuestion.type, selectedAnswer),
+        selectedAnswer: selectedAnswer ?? null,
+        isCorrect: Boolean(attempted && grade.correct),
         attempted,
         timeSpentMs,
         points: q.points,
@@ -263,16 +389,26 @@ export const sessionService = {
     const totalTimeMs = attemptedRows.reduce((sum, r) => sum + r.timeSpentMs, 0);
     const totalQuestions = gradedRows.length;
 
-    const updated = await QuizSessionModel.submit(sessionId, gradedRows, {
-      correctCount,
-      wrongCount: attemptedRows.length - correctCount,
-      totalTimeMs,
-      wallClockMs: completedMs - startedMs,
-      averageTimeMs:
-        attemptedRows.length > 0 ? Math.round(totalTimeMs / attemptedRows.length) : 0,
-      percentage:
-        totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0,
-    });
+    const updated = await QuizSessionModel.submit(
+      sessionId,
+      gradedRows,
+      {
+        correctCount,
+        wrongCount: attemptedRows.length - correctCount,
+        totalTimeMs,
+        wallClockMs: completedMs - startedMs,
+        averageTimeMs:
+          attemptedRows.length > 0 ? Math.round(totalTimeMs / attemptedRows.length) : 0,
+        percentage:
+          totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0,
+      },
+      {
+        userId,
+        role: user.role,
+        district: user.district || null,
+        taluka: user.taluka || null,
+      }
+    );
 
     return toSessionResult(updated);
   },

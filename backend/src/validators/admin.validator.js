@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ADMIN_ROLE, REVIEW_ACTION } from '../config/admin.roles.js';
+import { QUESTION_TYPE } from '../config/question-types.js';
 
 export const adminLoginSchema = z.object({
   username: z.string().trim().min(1),
@@ -60,6 +61,18 @@ export const questionUpdateSchema = z
       },
       z.enum(['A', 'B', 'C', 'D']).nullable().optional()
     ),
+    type: z
+      .enum([
+        QUESTION_TYPE.SINGLE_CHOICE,
+        QUESTION_TYPE.TRUE_FALSE,
+        QUESTION_TYPE.MATCH_FOLLOWING,
+        QUESTION_TYPE.IMAGE_CHOICE,
+        QUESTION_TYPE.DRAG_DROP,
+        QUESTION_TYPE.DRAG_INTO_BLANKS,
+      ])
+      .optional(),
+    content: z.any().nullable().optional(),
+    answer: z.any().nullable().optional(),
     scope: z.string().trim().max(32).nullable().optional(),
     district: z.string().trim().max(128).nullable().optional(),
     caste_category: z.string().trim().max(32).nullable().optional(),

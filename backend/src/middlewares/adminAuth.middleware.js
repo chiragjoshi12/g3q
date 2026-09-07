@@ -1,6 +1,6 @@
 import { verifyToken } from '../utils/jwt.js';
 import { AppError, ERROR_CODE } from '../utils/appError.js';
-import { ADMIN_TOKEN_KIND, ADMIN_ROLE } from '../config/admin.roles.js';
+import { ADMIN_ACCESS_SCOPE, ADMIN_TOKEN_KIND, ADMIN_ROLE } from '../config/admin.roles.js';
 import { AdminUserModel } from '../models/AdminUserModel.js';
 
 /**
@@ -30,6 +30,7 @@ export const requireAdminAuth = async (req, res, next) => {
       id: user.id,
       username: user.username,
       role: user.role,
+      access_scope: user.accessScope ?? null,
     };
     next();
   } catch (error) {
@@ -43,4 +44,29 @@ export const requireMaster = (req, res, next) => {
     return next(new AppError(ERROR_CODE.FORBIDDEN, 'Master admin access required.'));
   }
   next();
+};
+
+export const requireAnalyticsAuth = async (req, res, next) => {
+  try {
+    await new Promise((resolve, reject) => {
+      requireAdminAuth(req, res, (error) => {
+        if (error) reject(error);
+        else resolve();
+      });
+    });
+
+    if (
+      req.admin?.role !== ADMIN_ROLE.MASTER &&
+      !(
+        req.admin?.role === ADMIN_ROLE.SUB_ADMIN &&
+        req.admin?.access_scope === ADMIN_ACCESS_SCOPE.ANALYTICS
+      )
+    ) {
+      throw new AppError(ERROR_CODE.FORBIDDEN, 'Analytics access required.');
+    }
+
+    next();
+  } catch (error) {
+    next(error instanceof AppError ? error : new AppError(ERROR_CODE.UNAUTHORIZED));
+  }
 };
