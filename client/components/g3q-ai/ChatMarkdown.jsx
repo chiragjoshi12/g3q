@@ -44,7 +44,7 @@ export function ChatMarkdown({ children, className, style }) {
       )}
       style={{
         fontFamily: 'var(--font-noto), "Noto Sans", sans-serif',
-        fontSize: 16,
+        fontSize: 18,
         ...style,
       }}
     >

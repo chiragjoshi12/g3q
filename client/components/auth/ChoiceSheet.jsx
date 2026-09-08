@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 
+import { DESKTOP_OVERLAY, DESKTOP_OVERLAY_CARD } from "@/components/layout/desktop-overlay";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +27,7 @@ export function ChoiceSheet({ open, title, options, value, onSelect, onClose }) 
   if (!open || !frame) return null;
 
   return createPortal(
-    <div className="absolute inset-0 z-[60] flex items-end justify-center">
+    <div className={DESKTOP_OVERLAY}>
       <button
         type="button"
         aria-label={t("close")}
@@ -37,7 +38,11 @@ export function ChoiceSheet({ open, title, options, value, onSelect, onClose }) 
         role="dialog"
         aria-modal="true"
         aria-labelledby="choice-sheet-title"
-        className="animate-slide-up relative flex max-h-[78dvh] w-full flex-col overflow-hidden rounded-t-[2.25rem] bg-white pt-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-m3"
+        className={cn(
+          "animate-slide-up relative flex max-h-[78dvh] w-full flex-col overflow-hidden rounded-t-[2.25rem] bg-white pt-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-m3",
+          DESKTOP_OVERLAY_CARD,
+          "lg:w-[min(28rem,90vw)] lg:max-h-[min(32rem,78dvh)]"
+        )}
       >
         <h3
           id="choice-sheet-title"

@@ -25,21 +25,21 @@ export function CredentialStep({
 
   return (
     <form
-      className="animate-screen-in space-y-6"
+      className="animate-screen-in space-y-6 lg:space-y-8"
       onSubmit={(event) => {
         event.preventDefault();
         if (!rule) return;
         onSubmit();
       }}
     >
-      <div className="space-y-2 text-center">
-        <h2 className="text-xl font-bold text-[#111]">{t("login")}</h2>
-        <p className="text-sm leading-relaxed text-[#111]">
+      <div className="space-y-2 text-center lg:space-y-3">
+        <h2 className="text-xl font-bold text-[#111] lg:text-[1.65rem]">{t("login")}</h2>
+        <p className="text-sm leading-relaxed text-[#111] lg:text-[1.02rem]">
           {t("chooseStudyType")}
         </p>
       </div>
 
-      <div role="radiogroup" aria-label={t("login")} className="grid grid-cols-3 gap-2.5">
+      <div role="radiogroup" aria-label={t("login")} className="grid grid-cols-3 gap-2.5 lg:gap-4">
         {roleTabs.map((item) => {
           const active = item.id === role;
 
@@ -51,7 +51,7 @@ export function CredentialStep({
               aria-checked={active}
               onClick={() => onRoleChange(item.id)}
               className={cn(
-                "flex min-h-[9.25rem] flex-col items-center justify-center gap-5 rounded-[1.35rem] bg-white px-1.5 py-3 shadow-[0_0_0_1px_#EFEFEF] transition-[box-shadow,transform] duration-200 ease-emphasized active:scale-[0.98]",
+                "flex min-h-[9.25rem] flex-col items-center justify-center gap-5 rounded-[1.35rem] bg-white px-1.5 py-3 shadow-[0_0_0_1px_#EFEFEF] transition-[box-shadow,transform] duration-200 ease-emphasized active:scale-[0.98] lg:min-h-[11.5rem] lg:rounded-[1.5rem] lg:py-5",
                 active && "shadow-[0_0_0_2px_#2d689d]"
               )}
             >

@@ -13,7 +13,7 @@ const SWIPE_THRESHOLD = 48;
  * Pauses while dragging, on hover, while the tab is hidden, and when
  * the user prefers reduced motion.
  */
-export function BannerSlider({ slides, className, sizes, children }) {
+export function BannerSlider({ slides, className, sizes, children, showDots = true }) {
   const count = slides.length;
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -146,7 +146,7 @@ export function BannerSlider({ slides, className, sizes, children }) {
 
       {children}
 
-      {count > 1 ? (
+      {showDots && count > 1 ? (
         <div className="absolute bottom-3.5 left-0 right-0 z-10 flex justify-center gap-1.5">
           {slides.map((_, i) => (
             <button

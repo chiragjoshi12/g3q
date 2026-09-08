@@ -186,6 +186,14 @@ export const httpSource = {
     return request(`/leaderboard${qs ? `?${qs}` : ""}`);
   },
 
+  getBetaLeaderboardOverview: ({ limit, taluka } = {}) => {
+    const params = new URLSearchParams();
+    if (limit) params.set("limit", String(limit));
+    if (taluka) params.set("taluka", taluka);
+    const qs = params.toString();
+    return request(`/leaderboard/beta${qs ? `?${qs}` : ""}`);
+  },
+
   getSchoolLeaderboard: ({ limit, schoolId, institute, taluka } = {}) => {
     const params = new URLSearchParams();
     if (limit) params.set("limit", String(limit));

@@ -22,6 +22,7 @@ const clone = (value) => (value == null ? value : JSON.parse(JSON.stringify(valu
 
 const otpRequests = new Map();
 const extraCitizens = [];
+const extraStudents = [];
 
 function digits(value) {
   return String(value || "").replace(/\D/g, "").slice(-10);
@@ -34,7 +35,7 @@ function credentialFieldFor(role) {
 function poolFor(role) {
   if (role === ROLE.COLLEGE) return usersJson.colleges;
   if (role === ROLE.CITIZEN) return [...(usersJson.citizens || []), ...extraCitizens];
-  return usersJson.students;
+  return [...(usersJson.students || []), ...extraStudents];
 }
 
 function findUser(role, credential) {
@@ -208,7 +209,7 @@ export const jsonSource = {
     await delay();
     const user = {
       id: `beta_${Date.now()}`,
-      role: ROLE.CITIZEN,
+      role: ROLE.STUDENT,
       name: [String(firstName || "").trim(), String(lastName || "").trim()].filter(Boolean).join(" "),
       district: String(district || "").trim(),
       taluka: String(taluka || "").trim(),
@@ -217,7 +218,7 @@ export const jsonSource = {
       grade: "",
       joinedOn: today(),
     };
-    extraCitizens.push(user);
+    extraStudents.push(user);
     return { user: clone(user), token: `static.${user.id}.token`, beta: true };
   },
 

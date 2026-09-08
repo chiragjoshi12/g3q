@@ -47,7 +47,8 @@ export function CertificateViewer({ open, payload, onClose }) {
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[80] flex flex-col bg-[#F5F7F9]">
+    <div className="fixed inset-0 z-[80] flex flex-col bg-[#F5F7F9] lg:items-center lg:justify-center lg:bg-black/40 lg:p-8">
+      <div className="flex min-h-0 flex-1 flex-col lg:h-auto lg:max-h-[90dvh] lg:w-full lg:max-w-[56rem] lg:overflow-hidden lg:rounded-[1.5rem] lg:bg-[#F5F7F9] lg:shadow-[0_24px_80px_rgb(15_23_42/0.25)]">
       <header className="flex shrink-0 items-center gap-3 px-4 py-3 md:px-6">
         <button
           type="button"
@@ -81,6 +82,7 @@ export function CertificateViewer({ open, payload, onClose }) {
           </ActionButtonRow>
         </div>
       </footer>
+      </div>
     </div>,
     document.body
   );

@@ -1,6 +1,6 @@
 export const ROUTES = {
   root: "/",
-  welcome: "/welcome",
+  welcome: "/",
   auth: "/auth",
   abhiyan: "/abhiyan",
   leaderboard: "/leaderboard",

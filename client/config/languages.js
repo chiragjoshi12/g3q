@@ -6,44 +6,58 @@ export const LANGUAGE = {
 
 export const DEFAULT_LANGUAGE = LANGUAGE.GUJARATI;
 
-export const LANGUAGE_OPTIONS = [
-  {
+/** Single language catalog for mobile and desktop. */
+export const LANGUAGE_INFO = {
+  [LANGUAGE.GUJARATI]: {
     id: LANGUAGE.GUJARATI,
     nativeLabel: "ગુજરાતી",
     englishLabel: "Gujarati",
+    glyph: "ગા",
     iconSrc: "/language/gujarati.png",
-    cardClassName: "from-[#e4f6f1] via-[#edf9f6] to-[#f8fbfa]",
-  },
-  {
-    id: LANGUAGE.ENGLISH,
-    nativeLabel: "English",
-    englishLabel: "English",
-    iconSrc: "/language/english.png",
-    cardClassName: "from-[#f7f0db] via-[#fbf7ea] to-[#fffdf8]",
-  },
-  {
-    id: LANGUAGE.HINDI,
-    nativeLabel: "हिंदी",
-    englishLabel: "Hindi",
-    iconSrc: "/language/hindi.png",
-    cardClassName: "from-[#ece9fb] via-[#f3f0fe] to-[#fbfaff]",
-  },
-];
-
-export const LANGUAGE_META = {
-  [LANGUAGE.GUJARATI]: {
+    iconBg: "bg-[#e06b1f]",
+    panelBg: "bg-[#fde8d4]",
+    cardGradient: "from-[#fce0c4] via-[#fdecdc] to-[#fff6ee]",
     htmlLang: "gu",
     locale: "gu-IN",
     speechLocale: "gu-IN",
   },
   [LANGUAGE.ENGLISH]: {
+    id: LANGUAGE.ENGLISH,
+    nativeLabel: "English",
+    englishLabel: "English",
+    glyph: "E",
+    iconSrc: "/language/english.png",
+    iconBg: "bg-[#1e4f7a]",
+    panelBg: "bg-[#dce6f0]",
+    cardGradient: "from-[#d0deec] via-[#e2ebf4] to-[#f3f7fb]",
     htmlLang: "en",
     locale: "en-IN",
     speechLocale: "en-IN",
   },
   [LANGUAGE.HINDI]: {
+    id: LANGUAGE.HINDI,
+    nativeLabel: "हिंदी",
+    englishLabel: "Hindi",
+    glyph: "हिं",
+    iconSrc: "/language/hindi.png",
+    iconBg: "bg-[#0f6b45]",
+    panelBg: "bg-[#d5eee2]",
+    cardGradient: "from-[#c8e8d8] via-[#dcefe4] to-[#eef8f2]",
     htmlLang: "hi",
     locale: "hi-IN",
     speechLocale: "hi-IN",
   },
 };
+
+export const LANGUAGE_OPTIONS = [
+  LANGUAGE_INFO[LANGUAGE.GUJARATI],
+  LANGUAGE_INFO[LANGUAGE.ENGLISH],
+  LANGUAGE_INFO[LANGUAGE.HINDI],
+];
+
+export const LANGUAGE_META = Object.fromEntries(
+  LANGUAGE_OPTIONS.map(({ id, htmlLang, locale, speechLocale }) => [
+    id,
+    { htmlLang, locale, speechLocale },
+  ])
+);

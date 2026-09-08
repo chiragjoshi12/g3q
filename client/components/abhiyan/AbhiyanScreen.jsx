@@ -9,7 +9,7 @@ import {
 } from "@/components/common/AppButton";
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { SegmentedToggle } from "@/components/common/SegmentedToggle";
-import { AppShell } from "@/components/layout/AppShell";
+import { DesktopAppShell } from "@/components/layout/DesktopAppShell";
 import {
   BackArrow,
   Award,
@@ -56,10 +56,10 @@ export function AbhiyanScreen() {
   const prize = PRIZES[prizeLevel];
 
   return (
-    <AppShell className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F3F3F3]">
-      <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[26.5rem] flex-col bg-[#F3F3F3] md:max-w-none">
-        <header className="relative z-20 shrink-0 bg-white px-3 py-3 shadow-[0_1px_0_rgb(15_23_42/0.08)]">
-          <div className="flex items-center gap-1">
+    <DesktopAppShell className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F3F3F3]">
+      <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[26.5rem] flex-col bg-[#F3F3F3] md:max-w-none lg:max-w-none lg:bg-transparent">
+        <header className="relative z-20 shrink-0 bg-white px-3 py-3 shadow-[0_1px_0_rgb(15_23_42/0.08)] lg:bg-transparent lg:px-10 lg:pt-8 lg:pb-2 lg:shadow-none">
+          <div className="flex items-center gap-1 lg:justify-center">
             <button
               type="button"
               onClick={() => {
@@ -77,7 +77,7 @@ export function AbhiyanScreen() {
                 router.push(ROUTES.root);
               }}
               aria-label="પાછળ જાઓ"
-              className="grid size-10 shrink-0 place-items-center rounded-full hover:bg-[#F3F3F3] active:scale-95"
+              className="grid size-10 shrink-0 place-items-center rounded-full hover:bg-[#F3F3F3] active:scale-95 lg:hidden"
             >
               <BrandIcon src={BRAND_ICONS.back} alt="" className="size-3.5" />
             </button>
@@ -85,19 +85,19 @@ export function AbhiyanScreen() {
               src={BRAND_ICONS.logo}
               alt="G3Q 3.0"
               priority
-              className="size-10 shrink-0"
+              className="size-10 shrink-0 lg:hidden"
             />
-            <div className="min-w-0 flex-1 pl-1">
-              <p className="truncate font-heading text-[1.05rem] leading-tight font-bold text-primary-600">
+            <div className="min-w-0 flex-1 pl-1 lg:flex-none lg:pl-0 lg:text-center">
+              <p className="truncate font-heading text-[1.05rem] leading-tight font-bold text-primary-600 lg:text-[2rem] lg:text-[#2d689d]">
                 G3Q અભિયાન
               </p>
-              <p className="truncate text-[11px] text-[#6B7280]">{ABHIYAN.english}</p>
+              <p className="truncate text-[11px] text-[#6B7280] lg:mt-1 lg:text-[14px]">{ABHIYAN.english}</p>
             </div>
           </div>
         </header>
 
         <main className="no-scrollbar relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <div className="space-y-4 px-4 pt-4 pb-10">
+          <div className="space-y-4 px-4 pt-4 pb-10 lg:mx-auto lg:max-w-[56rem] lg:px-10 lg:pt-4 lg:pb-16 xl:max-w-[64rem] xl:px-14">
             <div className="overflow-hidden rounded-[1.6rem] bg-primary-600 px-5 py-6 text-white">
               <p className="text-[12px] font-semibold tracking-[0.18em] text-white/70 uppercase">
                 {ABHIYAN.kicker}
@@ -354,7 +354,7 @@ export function AbhiyanScreen() {
           </div>
         </main>
       </div>
-    </AppShell>
+    </DesktopAppShell>
   );
 }
 
