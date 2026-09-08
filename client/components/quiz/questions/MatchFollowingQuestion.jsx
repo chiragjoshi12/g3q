@@ -82,7 +82,7 @@ export function MatchFollowingQuestion({ question, value, onChange, disabled, re
                 onClick={() => handleLeftClick(left.id)}
                 {...dropHandlers(left.id)}
                 className={cn(
-                  "flex min-h-[3.6rem] items-center justify-center rounded-[1.15rem] border border-[#E2E8F0] bg-white px-3.5 py-2.5 text-sm font-medium",
+                  "flex min-h-[4rem] items-center justify-start rounded-[1.15rem] border border-[#E2E8F0] bg-white px-3.5 py-3 text-left text-sm font-medium",
                   !disabled && "cursor-pointer"
                 )}
               >
@@ -95,7 +95,7 @@ export function MatchFollowingQuestion({ question, value, onChange, disabled, re
                 onClick={() => handleSlotClick(left.id)}
                 {...dropHandlers(left.id)}
                 className={cn(
-                  "flex min-h-11 items-center justify-center rounded-[1.15rem] border px-3.5 py-2.5 text-center text-sm transition-all bg-[#f5f5f5]",
+                  "flex min-h-[4rem] items-center justify-start rounded-[1.15rem] border bg-[#f5f5f5] px-3.5 py-3 text-left text-sm transition-all",
                   !pairedTo && !isOverTarget && "border-dashed border-[#d9d9d9] text-muted-foreground/60",
                   isOverTarget && "border-primary-500 bg-primary-50 text-primary-700",
                   pairedTo && !isOverTarget && "border-primary-700 bg-primary-700 text-white"
@@ -114,7 +114,7 @@ export function MatchFollowingQuestion({ question, value, onChange, disabled, re
             <BrandIcon src={BRAND_ICONS.drag} alt="" className="size-4 shrink-0" />
             વિકલ્પ પસંદ કરીને ડાબી બાજુ પર ટૅપ કરો, અથવા ખેંચીને મૂકો
           </p>
-          <div className="flex flex-wrap gap-2 pb-1">
+          <div className="grid gap-2 pb-1">
             {question.right.map((right) => {
               const used = usedRightIds.has(right.id);
 
@@ -131,7 +131,7 @@ export function MatchFollowingQuestion({ question, value, onChange, disabled, re
                   }}
                   onClick={() => setSelected((current) => (current === right.id ? null : right.id))}
                   className={cn(
-                    "h-[2.85rem] rounded-full px-7 py-2 font-heading text-[14px] font-medium transition-all",
+                    "flex h-auto min-h-[2.85rem] w-full items-center justify-start rounded-full px-7 py-2 text-left font-heading text-[14px] leading-snug font-medium whitespace-normal transition-all",
                     "shadow-[0_2.5px_0_#d9d9d9]",
                     !disabled && "cursor-grab active:scale-95 active:cursor-grabbing",
                     used && "border-dashed border-[#C5D0DA] bg-[#EEF1F4] text-muted-foreground/50",

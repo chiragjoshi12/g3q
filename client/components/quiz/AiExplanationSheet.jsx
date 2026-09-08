@@ -5,7 +5,7 @@ import { X } from "@/components/icons";
 
 import { ACTION_BUTTON_CLASS, ActionButtonRow, AppButton } from "@/components/common/AppButton";
 import { BrandIcon } from "@/components/common/BrandIcon";
-import { ChatMarkdown } from "@/components/g3q-ai/ChatMarkdown";
+import { ChatMarkdown, decodeAiLineBreaks } from "@/components/g3q-ai/ChatMarkdown";
 import { useTypewriter } from "@/hooks/useTypewriter";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { useI18n } from "@/lib/i18n";
@@ -17,7 +17,7 @@ const TYPEWRITER_INTERVAL_MS = 26;
 const MIN_STREAM_DURATION_MS = 2600;
 const MAX_STREAM_DURATION_MS = 4200;
 const PROGRESS_COMPLETE_DELAY_MS = 320;
-const RESULT_REVEAL_DELAY_MS = 700;
+const RESULT_REVEAL_DELAY_MS = 1400;
 
 /**
  * Fun-fact sheet that opens the moment an answer is submitted.
@@ -35,7 +35,7 @@ export function AiExplanationSheet({
   onContinue,
 }) {
   const { t } = useI18n();
-  const source = explanation?.body ?? "";
+  const source = decodeAiLineBreaks(explanation?.body ?? "").replace(/\n+/g, "\n\n");
   const streamDurationMs = Math.min(
     MAX_STREAM_DURATION_MS,
     Math.max(MIN_STREAM_DURATION_MS, source.length * 4.2)
@@ -123,7 +123,12 @@ export function AiExplanationSheet({
         style={desktopBox ? { width: `${desktopBox.width}px` } : undefined}
       >
         <div
-          className="relative flex max-h-[78dvh] min-h-[48%] w-full flex-col overflow-hidden rounded-t-[2rem] bg-white px-6 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-m3 lg:min-h-0 lg:max-h-[min(28rem,72dvh)] lg:rounded-[1.75rem] lg:px-10 lg:py-5 lg:shadow-[0_24px_64px_rgb(15_23_42/0.18)]"
+          className={cn(
+            "relative flex w-full flex-col overflow-hidden rounded-t-[2rem] bg-white px-6 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-m3 lg:rounded-[1.75rem] lg:px-10 lg:py-5 lg:shadow-[0_24px_64px_rgb(15_23_42/0.18)]",
+            bodyDone
+              ? "h-auto max-h-[86dvh] min-h-[30rem] lg:max-h-[min(36rem,84dvh)] lg:min-h-0"
+              : "h-[68dvh] min-h-[30rem] lg:h-[min(28rem,72dvh)] lg:min-h-0"
+          )}
         >
           {!bodyDone ? (
             <>
@@ -159,15 +164,24 @@ export function AiExplanationSheet({
             </div>
           </div>
 
-          <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain lg:flex-none lg:max-h-[7.5rem]">
+          <div
+            className={cn(
+              "min-h-0 text-[#1F2937]",
+              bodyDone
+                ? "overflow-visible"
+                : "no-scrollbar flex-1 overflow-y-auto overscroll-contain lg:flex-none lg:max-h-[7.5rem]"
+            )}
+          >
             <div className="relative text-[#1F2937]">
-              <ChatMarkdown className="text-[#1F2937]" style={{ fontSize: 15 }}>
+              <ChatMarkdown className="text-[#1F2937] [&_p]:my-3.5" style={{ fontSize: 15 }}>
                 {body}
               </ChatMarkdown>
             </div>
           </div>
 
-          {bodyDone ? <VerdictMark correct={correct} /> : null}
+          <div className="mt-1 min-h-[5.75rem] lg:min-h-[4.75rem]">
+            {bodyDone ? <VerdictMark correct={correct} /> : null}
+          </div>
 
           <ActionButtonRow className="mt-5 lg:mt-3">
             {!bodyDone ? (
