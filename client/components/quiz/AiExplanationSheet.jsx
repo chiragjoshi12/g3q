@@ -202,7 +202,9 @@ function CheckingAnswerButton({ progress }) {
             className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#b99cff] to-[#a9f5f7] opacity-85 transition-[width] duration-200 ease-out"
             style={{ width: `${progress}%` }}
           />
-          <span className="relative z-10">{t("checkingAnswer")}...</span>
+          <span className="relative z-10 whitespace-nowrap text-[0.92rem] leading-none sm:text-[0.96rem]">
+            {t("checkingAnswer")}...
+          </span>
         </AppButton>
       </div>
     </div>

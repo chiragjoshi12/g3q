@@ -147,7 +147,7 @@ function QuizScreen({ params }) {
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-[#EEF2F6]" />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
+        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-45"
         style={{ backgroundImage: `url('${playBg}')` }}
       />
       {/* Soft top wash for prompt readability only. */}
