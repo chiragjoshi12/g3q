@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { BETA_DEPARTMENTS } from '../config/beta-departments.js';
 
 const prisma = new PrismaClient();
 
@@ -344,6 +345,26 @@ async function seedDistricts() {
   console.log(`Seeded ${districts.length} districts.`);
 }
 
+async function seedBetaDepartments() {
+  for (const department of BETA_DEPARTMENTS) {
+    await prisma.betaDepartment.upsert({
+      where: { id: department.id },
+      update: {
+        key: department.key,
+        nameEn: department.nameEn,
+        nameGu: department.nameGu,
+      },
+      create: {
+        id: department.id,
+        key: department.key,
+        nameEn: department.nameEn,
+        nameGu: department.nameGu,
+      },
+    });
+  }
+  console.log(`Seeded ${BETA_DEPARTMENTS.length} beta departments.`);
+}
+
 async function seedUsers() {
   const allUsers = [...users.students, ...users.colleges, ...users.citizens];
   for (const user of allUsers) {
@@ -499,6 +520,7 @@ async function seedAdminAndBank() {
 
 async function main() {
   await seedDistricts();
+  await seedBetaDepartments();
   await seedUsers();
   await seedQuizzes();
   await seedAdminAndBank();

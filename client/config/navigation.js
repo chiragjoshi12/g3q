@@ -21,3 +21,32 @@ export function getBottomNavItems(t) {
     },
   ];
 }
+
+/** Left rail on the desktop Home / Profile shell. */
+export function getDesktopNavItems(t) {
+  return [
+    { id: "home", label: t("home"), href: ROUTES.home, iconSrc: BRAND_ICONS.navHome, tint: true },
+    {
+      id: "g3q-ai",
+      label: "G3Q AI",
+      href: ROUTES.g3qAi,
+      iconSrc: BRAND_ICONS.navG3qAi,
+      tint: false,
+    },
+    {
+      id: "leaderboard",
+      label: t("leaderboard"),
+      href: ROUTES.leaderboard,
+      iconSrc: BRAND_ICONS.leaderboard,
+      tint: true,
+    },
+    {
+      id: "profile",
+      label: t("profile"),
+      href: ROUTES.profile,
+      iconSrc: BRAND_ICONS.navProfile,
+      tint: true,
+      aliases: [ROUTES.quizAttempts, ROUTES.certificates, ROUTES.abhiyan],
+    },
+  ];
+}

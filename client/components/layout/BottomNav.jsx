@@ -15,7 +15,7 @@ const INACTIVE = "#000000";
  * Floating Home / Profile / G3Q AI pill — used only under `(main)` layout.
  * Landing page keeps `LandingActionNav` separately.
  */
-export function BottomNav() {
+export function BottomNav({ className }) {
   const pathname = usePathname();
   const { t } = useI18n();
   const items = getBottomNavItems(t);
@@ -23,7 +23,10 @@ export function BottomNav() {
   return (
     <nav
       aria-label={t("mainNav")}
-      className="pointer-events-none absolute inset-x-0 bottom-0 z-30 bg-transparent px-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3"
+      className={cn(
+        "pointer-events-none absolute inset-x-0 bottom-0 z-30 bg-transparent px-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 lg:hidden",
+        className
+      )}
     >
       <ul
         className="pointer-events-auto mx-auto flex w-full max-w-[26.5rem] items-stretch rounded-[2rem] bg-white px-3 py-2.5"

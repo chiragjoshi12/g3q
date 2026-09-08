@@ -39,15 +39,15 @@ export function BetaLoginStep({
 
   return (
     <form
-      className="animate-screen-in space-y-6"
+      className="animate-screen-in space-y-6 lg:space-y-8"
       onSubmit={(event) => {
         event.preventDefault();
         onSubmit();
       }}
     >
-      <div className="space-y-2 text-center">
-        <h2 className="text-xl font-bold text-[#111]">લોગિન કરો</h2>
-        <p className="text-sm leading-relaxed text-[#111]">બીટા યુઝર માટે નીચેની વિગતો ભરો</p>
+      <div className="space-y-2 text-center lg:space-y-3">
+        <h2 className="text-xl font-bold text-[#111] lg:text-[1.65rem]">લોગિન કરો</h2>
+        <p className="text-sm leading-relaxed text-[#111] lg:text-[1.02rem]">બીટા યુઝર માટે નીચેની વિગતો ભરો</p>
       </div>
 
       <div className="space-y-5">

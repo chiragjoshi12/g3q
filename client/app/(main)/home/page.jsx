@@ -120,39 +120,90 @@ export default function HomePage() {
   };
 
   return (
-    <main
-      className="no-scrollbar animate-screen-in flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F2F2F2] pb-32"
-      aria-busy={preparingQuiz}
-    >
-      <section className="relative mx-1 mt-1.5 overflow-hidden rounded-[1.75rem]">
-        <Image
-          src="/new-gradient-bg.png"
-          alt=""
-          width={414}
-          height={658}
-          priority
-          sizes="100vw"
-          className="pointer-events-none absolute inset-x-0 top-0 h-auto w-full select-none"
-        />
-        <div className="relative z-10 flex flex-col px-3 pt-6 pb-1.5">
+    <>
+      <main
+        className="no-scrollbar animate-screen-in flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F2F2F2] pb-32 lg:hidden"
+        aria-busy={preparingQuiz}
+      >
+        <section className="relative mx-1 mt-1.5 overflow-hidden rounded-[1.75rem]">
+          <Image
+            src="/new-gradient-bg.png"
+            alt=""
+            width={414}
+            height={658}
+            priority
+            sizes="100vw"
+            className="pointer-events-none absolute inset-x-0 top-0 h-auto w-full select-none"
+          />
+          <div className="relative z-10 flex flex-col px-3 pt-6 pb-1.5">
+            <div className="flex flex-col items-center">
+              <div className="mt-6 mb-3 grid size-[4.75rem] place-items-center overflow-hidden rounded-full bg-white">
+                <BrandIcon
+                  src={BRAND_ICONS.logo}
+                  alt={appName}
+                  priority
+                  className="size-[4.4rem]"
+                />
+              </div>
+              <h1 className="mt-1 font-heading text-[1.5rem] leading-none font-bold tracking-tight text-white">
+                {appName}
+              </h1>
+              <p className="mt-[1.5rem] mb-3 w-[60%] rounded-full bg-white/55 px-3.5 py-1.5 text-center font-heading text-[14px] font-medium text-[#111] backdrop-blur-[6px]">
+                {formatTalukaWeekPill(user?.taluka, week, language)}
+              </p>
+            </div>
+
+            <div className="mt-5">
+              {((!usingRest && quizzesStatus === "error") || (usingRest && landingError)) ? (
+                <ErrorState
+                  message={usingRest ? landingError : quizzesError}
+                  onRetry={usingRest ? reloadLanding : reloadQuizzes}
+                  className="py-8"
+                />
+              ) : null}
+              {quiz ? (
+                <FeaturedQuizCard quiz={quiz} onStart={startQuiz} score={score} />
+              ) : null}
+            </div>
+          </div>
+        </section>
+
+        <div className="px-3.5">
+          <QuestionTypeGrid onSelect={setGuideType} />
+          <div className="mt-7.5">
+            <LeaderboardPreviewCard
+              talukaLabel={formatTalukaLabel(user?.taluka, language)}
+              week={week}
+              iconColor="#2d689d"
+              onClick={() => router.push(ROUTES.leaderboard)}
+            />
+          </div>
+        </div>
+      </main>
+
+      <main
+        className="no-scrollbar relative z-10 hidden min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain lg:block"
+        aria-busy={preparingQuiz}
+      >
+        <div className="mx-auto w-full max-w-[56rem] px-10 pt-8 pb-16 xl:max-w-[64rem] xl:px-14">
           <div className="flex flex-col items-center">
-            <div className="mt-6 mb-3 grid size-[4.75rem] place-items-center overflow-hidden rounded-full bg-white">
+            <div className="grid size-[5.25rem] place-items-center overflow-hidden rounded-full bg-white shadow-[0_8px_24px_rgb(15_23_42/0.08)]">
               <BrandIcon
                 src={BRAND_ICONS.logo}
                 alt={appName}
                 priority
-                className="size-[4.4rem]"
+                className="size-[4.9rem]"
               />
             </div>
-            <h1 className="mt-1 font-heading text-[1.5rem] leading-none font-bold tracking-tight text-white">
+            <h1 className="mt-4 font-heading text-[2.35rem] leading-none font-bold tracking-tight text-[#2d689d]">
               {appName}
             </h1>
-            <p className="mt-[1.5rem] mb-3 w-[60%] rounded-full bg-white/55 px-3.5 py-1.5 text-center font-heading text-[14px] font-medium text-[#111] backdrop-blur-[6px]">
+            <p className="mt-4 rounded-full border border-[#E4E6EA] bg-white px-5 py-2 text-center font-heading text-[15px] font-medium text-[#111]">
               {formatTalukaWeekPill(user?.taluka, week, language)}
             </p>
           </div>
 
-          <div className="mt-5">
+          <div className="mt-8">
             {((!usingRest && quizzesStatus === "error") || (usingRest && landingError)) ? (
               <ErrorState
                 message={usingRest ? landingError : quizzesError}
@@ -161,28 +212,19 @@ export default function HomePage() {
               />
             ) : null}
             {quiz ? (
-              <FeaturedQuizCard quiz={quiz} onStart={startQuiz} score={score} />
+              <FeaturedQuizCard wide quiz={quiz} onStart={startQuiz} score={score} />
             ) : null}
           </div>
-        </div>
-      </section>
 
-      <div className="px-3.5">
-        <QuestionTypeGrid onSelect={setGuideType} />
-        <QuestionTypeGuide
-          typeId={guideType}
-          open={Boolean(guideType)}
-          onClose={() => setGuideType(null)}
-        />
-        <div className="mt-7.5">
-          <LeaderboardPreviewCard
-            talukaLabel={formatTalukaLabel(user?.taluka, language)}
-            week={week}
-            iconColor="#2d689d"
-            onClick={() => router.push(ROUTES.leaderboard)}
-          />
+          <QuestionTypeGrid wide onSelect={setGuideType} />
         </div>
-      </div>
+      </main>
+
+      <QuestionTypeGuide
+        typeId={guideType}
+        open={Boolean(guideType)}
+        onClose={() => setGuideType(null)}
+      />
 
       {preparingQuiz && quiz
         ? createPortal(
@@ -194,6 +236,6 @@ export default function HomePage() {
             document.body
           )
         : null}
-    </main>
+    </>
   );
 }

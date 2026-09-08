@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { optionalAuth } from '../middlewares/auth.middleware.js';
 import {
+  betaLeaderboardOverview,
   citizenLeaderboard,
   collegeLeaderboard,
   leaderboardOverview,
@@ -12,6 +13,7 @@ const router = Router();
 
 router.use(optionalAuth);
 
+router.get('/beta', betaLeaderboardOverview);
 router.get('/', leaderboardOverview);
 router.get('/school', schoolLeaderboard);
 router.get('/college', collegeLeaderboard);

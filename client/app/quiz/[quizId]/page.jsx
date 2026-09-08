@@ -11,6 +11,7 @@ import { ContentWidth } from "@/components/layout/ContentWidth";
 import { AiExplanationSheet } from "@/components/quiz/AiExplanationSheet";
 import { QuestionRenderer } from "@/components/quiz/QuestionRenderer";
 import { QuizHeader } from "@/components/quiz/QuizHeader";
+import { QUESTION_TYPE } from "@/config/question-types";
 import { ROUTES } from "@/config/routes";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { usePracticeMode } from "@/hooks/usePracticeMode";
@@ -41,7 +42,7 @@ export default function QuizPage({ params }) {
   return (
     <Suspense
       fallback={
-        <AppShell>
+        <AppShell fullOnDesktop>
           <LoadingState className="flex-1" />
         </AppShell>
       }
@@ -81,6 +82,8 @@ function QuizScreen({ params }) {
   }, [ready, quizId, practice, loadQuiz]);
 
   const question = questions[currentIndex] ?? null;
+  const inlinePromptQuestion =
+    question?.type === QUESTION_TYPE.DRAG_INTO_BLANKS;
   const answering = phase === QUIZ_PHASE.ANSWERING;
   const reviewing = phase === QUIZ_PHASE.REVIEWING;
   const isLast = questions.length > 0 && currentIndex === questions.length - 1;
@@ -130,16 +133,16 @@ function QuizScreen({ params }) {
 
   if (!ready) {
     return (
-      <AppShell>
+      <AppShell fullOnDesktop>
         <LoadingState className="flex-1" />
       </AppShell>
     );
   }
 
-  const playBg = quizPlayBackground(currentIndex);
+  const playBg = question?.backgroundImageUrl || quizPlayBackground(currentIndex);
 
   return (
-    <AppShell className="font-canva">
+    <AppShell fullOnDesktop className="font-canva">
       {/* Full-bleed play backdrop — 30% opacity on every question. */}
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-[#EEF2F6]" />
       <div
@@ -168,7 +171,7 @@ function QuizScreen({ params }) {
         */}
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain">
-            <ContentWidth size="phone" className="px-5 py-5 sm:px-6 sm:py-6 md:max-w-none md:px-6">
+            <ContentWidth size="phone" className="px-5 py-5 sm:px-6 sm:py-6 md:max-w-none md:px-6 lg:max-w-[56rem] lg:px-10 lg:py-8">
               {loading && !question ? <LoadingState label={t("quizPreparing")} /> : null}
               {error ? (
                 <ErrorState
@@ -178,12 +181,18 @@ function QuizScreen({ params }) {
               ) : null}
 
               {question ? (
-                <div key={question.id} className="animate-screen-in mx-auto max-w-[26.5rem] md:max-w-none">
-                  <h2 className="font-canva text-[1.08rem] leading-[1.55] font-bold text-[#111] drop-shadow-[0_1px_0_rgb(255_255_255/0.65)] sm:text-[1.18rem]">
-                    {question.prompt}
-                  </h2>
+                <div
+                  key={question.id}
+                  data-quiz-question-card
+                  className="animate-screen-in mx-auto max-w-[28.5rem] md:max-w-none lg:flex lg:min-h-[min(36rem,calc(100dvh-11rem))] lg:w-full lg:flex-col lg:rounded-[1.85rem] lg:bg-white/88 lg:px-14 lg:py-12 lg:shadow-[0_18px_50px_rgb(15_23_42/0.08)]"
+                >
+                  {!inlinePromptQuestion ? (
+                    <h2 className="font-canva text-[1.08rem] leading-[1.55] font-bold text-[#111] drop-shadow-[0_1px_0_rgb(255_255_255/0.65)] sm:text-[1.18rem] lg:text-[1.35rem] lg:leading-[1.5] lg:drop-shadow-none">
+                      {question.prompt}
+                    </h2>
+                  ) : null}
 
-                  <div className="mt-7 sm:mt-8">
+                  <div className={inlinePromptQuestion ? "mt-1 sm:mt-2" : "mt-7 sm:mt-8"}>
                     <QuestionRenderer
                       question={question}
                       value={value}
@@ -193,7 +202,7 @@ function QuizScreen({ params }) {
                     />
                   </div>
 
-                  <div className="mt-6 hidden pt-1 md:block">
+                  <div className="mt-6 hidden pt-1 md:block lg:mt-auto lg:pt-10">
                     {!explanationOpen ? (
                       <QuizAction
                         answering={answering}

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 
+import { DESKTOP_OVERLAY, DESKTOP_OVERLAY_CARD } from "@/components/layout/desktop-overlay";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -34,7 +35,7 @@ export function ConfirmSheet({
   if (!open || !frame) return null;
 
   return createPortal(
-    <div className="absolute inset-0 z-[60] flex items-end justify-center">
+    <div className={DESKTOP_OVERLAY}>
       <button
         type="button"
         aria-label={t("cancel")}
@@ -46,7 +47,11 @@ export function ConfirmSheet({
         aria-modal="true"
         aria-labelledby="confirm-sheet-title"
         aria-describedby="confirm-sheet-desc"
-        className="animate-slide-up relative mx-3 mb-[max(0.75rem,env(safe-area-inset-bottom))] w-[calc(100%-1.5rem)] overflow-hidden rounded-[1.75rem] bg-[#F3F3F3] shadow-m3"
+        className={cn(
+          "animate-slide-up relative mx-3 mb-[max(0.75rem,env(safe-area-inset-bottom))] w-[calc(100%-1.5rem)] overflow-hidden rounded-[1.75rem] bg-[#F3F3F3] shadow-m3",
+          DESKTOP_OVERLAY_CARD,
+          "lg:w-[min(24rem,90vw)]"
+        )}
       >
         <div className="flex flex-col items-center px-7 pt-7 pb-5 text-center">
           {Icon ? (

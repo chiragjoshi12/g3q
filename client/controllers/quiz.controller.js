@@ -57,6 +57,10 @@ export const quizController = {
     return quizRepository.getQuizBundle(quizId);
   },
 
+  async loadPracticeBundle({ quizId, language } = {}) {
+    return quizRepository.getPracticeBundle({ quizId, language });
+  },
+
   async startSession({ count, language } = {}) {
     if (appConfig.dataSource !== DATA_SOURCE.REST) return null;
     return normalizeLiveSession(await getDataSource().startSession({ count, language }));
@@ -77,8 +81,9 @@ export const quizController = {
     startedAt,
     user,
     abandoned = false,
+    practice = false,
   }) {
-    if (appConfig.dataSource === DATA_SOURCE.REST) {
+    if (appConfig.dataSource === DATA_SOURCE.REST && !practice) {
       const result = await getDataSource().submitSession({
         sessionId: attemptId,
         answers,
@@ -144,7 +149,7 @@ export const quizController = {
     return attempt;
   },
 
-  async getAttempt(attemptId) {
-    return attemptRepository.getById(attemptId);
+  async getAttempt(attemptId, options) {
+    return attemptRepository.getById(attemptId, options);
   },
 };

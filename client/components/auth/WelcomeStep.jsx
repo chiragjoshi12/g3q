@@ -25,9 +25,9 @@ export function WelcomeStep({ name, onContinue }) {
     <div
       role="status"
       aria-live="polite"
-      className="absolute inset-0 z-20 flex items-end bg-black/10 backdrop-blur-[1.7px]"
+      className="absolute inset-0 z-20 flex items-end bg-black/10 backdrop-blur-[1.7px] lg:items-center lg:justify-center lg:p-6"
     >
-      <section className="animate-screen-in flex w-full min-h-[22rem] flex-col rounded-t-[3rem] bg-white px-6 pt-10 pb-6 text-center shadow-[0_-18px_48px_rgba(15,23,42,0.08)]">
+      <section className="animate-screen-in flex w-full min-h-[22rem] flex-col rounded-t-[3rem] bg-white px-6 pt-10 pb-6 text-center shadow-[0_-18px_48px_rgba(15,23,42,0.08)] lg:min-h-0 lg:w-[min(28rem,100%)] lg:max-w-[28rem] lg:rounded-[1.75rem] lg:px-8 lg:pt-12 lg:pb-8 lg:shadow-[0_24px_64px_rgb(15_23_42/0.16)]">
         <div className="mt-auto">
           <div className="relative mx-auto grid size-28 place-items-center">
             {ICON_CONFETTI.map((piece) => (

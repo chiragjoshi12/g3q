@@ -11,8 +11,8 @@ import {
 } from "@/components/certificate/draw-certificate";
 import { EmptyState, LoadingState } from "@/components/common/StateViews";
 import { BrandIcon } from "@/components/common/BrandIcon";
-import { AppShell } from "@/components/layout/AppShell";
-import { Loader2 } from "@/components/icons";
+import { DesktopAppShell } from "@/components/layout/DesktopAppShell";
+import { Loader2, X } from "@/components/icons";
 import { ROUTES } from "@/config/routes";
 import { profileController } from "@/controllers/profile.controller";
 import { useAsyncData } from "@/hooks/useAsyncData";
@@ -61,30 +61,33 @@ export default function CertificatesPage() {
   };
 
   return (
-    <AppShell className="bg-[#F2F2F2]">
-      <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[#F2F2F2]">
-      <header className="relative z-10 flex shrink-0 items-center justify-center px-4 pt-7 pb-7">
+    <DesktopAppShell className="bg-[#F2F2F2]">
+      <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[#F2F2F2] lg:bg-transparent">
+      <header className="relative z-10 flex shrink-0 items-center justify-center px-4 pt-7 pb-7 lg:px-10 lg:pt-8 lg:pb-4">
           <button
             type="button"
             onClick={() => router.push(ROUTES.profile)}
             aria-label={t("close")}
-            className="absolute left-4 grid size-10 place-items-center rounded-full bg-white transition-transform active:scale-95"
+            className="absolute left-4 grid size-10 place-items-center rounded-full bg-white transition-transform active:scale-95 lg:left-10"
           >
-            <BrandIcon src={BRAND_ICONS.back} alt="" className="size-3.5" />
+            <X className="size-4 text-[#111]" strokeWidth={2.2} />
           </button>
-          <h1 className="font-heading text-[1.25rem] font-bold text-[#111]">{t("certificates")}</h1>
+          <h1 className="font-heading text-[1.25rem] font-bold text-[#111] lg:text-[2rem] lg:text-[#2d689d]">
+            {t("certificates")}
+          </h1>
         </header>
 
-        <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-          <div className="mx-auto w-full max-w-[26.5rem] space-y-4 pt-1 md:max-w-[32rem]">
+        <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] lg:px-10 lg:pb-16">
+          <div className="mx-auto w-full max-w-[26.5rem] space-y-4 pt-1 md:max-w-[32rem] lg:grid lg:max-w-[56rem] lg:grid-cols-2 lg:gap-5 lg:space-y-0 xl:max-w-[64rem]">
             {!ready || status === "loading" ? (
-              <LoadingState label={t("certificatesLoading")} className="py-16" />
+              <LoadingState label={t("certificatesLoading")} className="py-16 lg:col-span-2" />
             ) : null}
 
             {status === "ready" && certificates.length === 0 ? (
               <EmptyState
                 title={t("noCertificatesTitle")}
                 description={t("noCertificatesDescription")}
+                className="lg:col-span-2"
               />
             ) : null}
 
@@ -143,7 +146,7 @@ export default function CertificatesPage() {
         payload={payload}
         onClose={() => setPreviewAttempt(null)}
       />
-    </AppShell>
+    </DesktopAppShell>
   );
 }
 

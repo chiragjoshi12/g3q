@@ -122,7 +122,7 @@ export function QuizPersonalizationOverlay({ name, taluka, onComplete }) {
       role="dialog"
       aria-modal="true"
       aria-label={t("quizPreparing")}
-      className="fixed inset-0 z-[100] flex flex-col items-center overflow-hidden px-6"
+      className="fixed inset-0 z-[100] flex flex-col items-center overflow-hidden px-6 lg:justify-center"
     >
       <div
         aria-hidden

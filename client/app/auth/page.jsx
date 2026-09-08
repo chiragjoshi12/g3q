@@ -10,7 +10,7 @@ import { CredentialStep } from "@/components/auth/CredentialStep";
 import { IdentityStep } from "@/components/auth/IdentityStep";
 import { OtpStep } from "@/components/auth/OtpStep";
 import { WelcomeStep } from "@/components/auth/WelcomeStep";
-import { AppShell } from "@/components/layout/AppShell";
+import { DesktopAppShell } from "@/components/layout/DesktopAppShell";
 import { appConfig } from "@/config/app.config";
 import { consumePostAuthPath, markLoginToast, ROUTES } from "@/config/routes";
 import { useStoreHydrated } from "@/hooks/useStoreHydrated";
@@ -82,11 +82,15 @@ export default function AuthPage() {
   }, [hydrated, isAuthenticated, router]);
 
   return (
-    <AppShell className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F3F3F3]">
-      <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[26.5rem] flex-col bg-[#F3F3F3] md:max-w-none">
+    <DesktopAppShell
+      showSidebar={false}
+      className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F3F3F3]"
+    >
+      <div className="flex h-full min-h-0 w-full flex-1 lg:items-center lg:justify-center lg:px-10 lg:py-8">
+      <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[26.5rem] flex-col bg-[#F3F3F3] md:max-w-none lg:h-[min(58rem,92dvh)] lg:w-[min(42rem,90vw)] lg:max-w-[42rem] lg:overflow-hidden lg:rounded-[1.85rem] lg:bg-white lg:shadow-[0_24px_80px_rgb(15_23_42/0.12)]">
         <AuthBrandHeader />
         <main
-          className={`no-scrollbar relative min-h-0 flex-1 overscroll-contain px-5 py-8 ${
+          className={`no-scrollbar relative min-h-0 flex-1 overscroll-contain px-5 py-8 lg:px-12 lg:py-10 ${
             step === AUTH_STEP.WELCOME ? "overflow-hidden" : "overflow-y-auto"
           }`}
         >
@@ -161,6 +165,7 @@ export default function AuthPage() {
           <WelcomeStep name={pendingUser?.name} onContinue={goHomeFromWelcome} />
         ) : null}
       </div>
-    </AppShell>
+      </div>
+    </DesktopAppShell>
   );
 }

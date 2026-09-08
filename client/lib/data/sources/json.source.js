@@ -22,6 +22,7 @@ const clone = (value) => (value == null ? value : JSON.parse(JSON.stringify(valu
 
 const otpRequests = new Map();
 const extraCitizens = [];
+const extraStudents = [];
 
 function digits(value) {
   return String(value || "").replace(/\D/g, "").slice(-10);
@@ -34,7 +35,7 @@ function credentialFieldFor(role) {
 function poolFor(role) {
   if (role === ROLE.COLLEGE) return usersJson.colleges;
   if (role === ROLE.CITIZEN) return [...(usersJson.citizens || []), ...extraCitizens];
-  return usersJson.students;
+  return [...(usersJson.students || []), ...extraStudents];
 }
 
 function findUser(role, credential) {
@@ -208,7 +209,7 @@ export const jsonSource = {
     await delay();
     const user = {
       id: `beta_${Date.now()}`,
-      role: ROLE.CITIZEN,
+      role: ROLE.STUDENT,
       name: [String(firstName || "").trim(), String(lastName || "").trim()].filter(Boolean).join(" "),
       district: String(district || "").trim(),
       taluka: String(taluka || "").trim(),
@@ -217,7 +218,7 @@ export const jsonSource = {
       grade: "",
       joinedOn: today(),
     };
-    extraCitizens.push(user);
+    extraStudents.push(user);
     return { user: clone(user), token: `static.${user.id}.token`, beta: true };
   },
 
@@ -231,6 +232,31 @@ export const jsonSource = {
       throw new AppError(ERROR_CODE.NOT_FOUND, "ક્વિઝ મળી નથી.");
     }
     return clone(quiz);
+  },
+
+  async getPracticeBundle({ quizId } = {}) {
+    await delay();
+    const practiceQuizId = quizId || quizzesJson[0]?.id;
+    const quiz = clone(quizzesJson.find((item) => item.id === practiceQuizId) || quizzesJson[0] || null);
+    const questions = clone((questionsJson[practiceQuizId] || []).slice(0, 5));
+    const explanations = {};
+    questions.forEach((question) => {
+      if (explanationsJson[question.id]) {
+        explanations[question.id] = clone(explanationsJson[question.id]);
+      }
+    });
+    return {
+      quiz: quiz
+        ? {
+            ...quiz,
+            id: quizId || quiz.id,
+            totalQuestions: questions.length,
+            totalPoints: questions.length,
+          }
+        : null,
+      questions,
+      explanations,
+    };
   },
 
   async getQuestionsByQuizId(quizId) {

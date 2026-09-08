@@ -37,4 +37,15 @@ export const quizRepository = {
     ]);
     return { quiz, questions, explanations };
   },
+
+  async getPracticeBundle({ quizId, language } = {}) {
+    const raw = await getDataSource().getPracticeBundle({ quizId, language });
+    return {
+      quiz: toQuiz(raw?.quiz),
+      questions: (raw?.questions ?? []).map(toQuestion).sort((a, b) => a.order - b.order),
+      explanations: Object.fromEntries(
+        Object.entries(raw?.explanations ?? {}).map(([id, value]) => [id, toExplanation(value)])
+      ),
+    };
+  },
 };

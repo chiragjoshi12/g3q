@@ -5,11 +5,13 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 
 import { BrandIcon } from "@/components/common/BrandIcon";
+import { DESKTOP_OVERLAY, DESKTOP_OVERLAY_CARD } from "@/components/layout/desktop-overlay";
 import { X } from "@/components/icons";
 import { appConfig } from "@/config/app.config";
 import { ROUTES } from "@/config/routes";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
 /**
  * Profile helpline bottom sheet. Portals into the app frame so the slight
@@ -32,18 +34,22 @@ export function HelplineSheet({ open, onClose }) {
   if (!open || !frame) return null;
 
   return createPortal(
-    <div className="absolute inset-0 z-[60] flex items-end justify-center">
+    <div className={DESKTOP_OVERLAY}>
       <button
         type="button"
         aria-label={t("close")}
         onClick={onClose}
-        className="absolute inset-0 bg-black/[0.06] backdrop-blur-[2px]"
+        className="absolute inset-0 bg-black/[0.06] backdrop-blur-[2px] lg:bg-black/20"
       />
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="helpline-sheet-title"
-        className="animate-slide-up relative w-full overflow-hidden rounded-t-[2.25rem] bg-white px-6 pt-5 pb-[max(2.25rem,env(safe-area-inset-bottom))] shadow-m3"
+        className={cn(
+          "animate-slide-up relative w-full overflow-hidden rounded-t-[2.25rem] bg-white px-6 pt-5 pb-[max(2.25rem,env(safe-area-inset-bottom))] shadow-m3",
+          DESKTOP_OVERLAY_CARD,
+          "lg:w-[min(22rem,90vw)] lg:px-7 lg:pt-6 lg:pb-8"
+        )}
       >
         <div className="relative flex items-center justify-center">
           <h3

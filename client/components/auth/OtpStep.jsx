@@ -30,7 +30,7 @@ export function OtpStep({
   return (
     <div className="animate-screen-in space-y-7">
       <div className="space-y-4">
-        <h2 className="text-left text-xl font-bold text-[#111]">{t("enterOtp")}</h2>
+        <h2 className="text-left text-xl font-bold text-[#111] lg:text-[1.65rem]">{t("enterOtp")}</h2>
         <OtpInput
           length={appConfig.auth.otpLength}
           value={otp}

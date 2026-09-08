@@ -12,7 +12,7 @@ const FEATURED_IMAGE = "/home/quiz-banner.jpeg";
  * Home featured quiz: photo, title row with share, question count +
  * Play Quiz — or "Your Score - X/Y" once the user has already played.
  */
-export function FeaturedQuizCard({ quiz, onStart, score = null }) {
+export function FeaturedQuizCard({ quiz, onStart, score = null, wide = false }) {
   const { t } = useI18n();
   if (!quiz) return null;
 
@@ -33,6 +33,83 @@ export function FeaturedQuizCard({ quiz, onStart, score = null }) {
     score &&
     Number.isFinite(score.correctCount) &&
     Number.isFinite(score.totalQuestions);
+
+  if (wide) {
+    return (
+      <article className="relative overflow-hidden rounded-[1.85rem] bg-white shadow-[0_12px_36px_rgb(15_23_42/0.08)]">
+        <div className="grid grid-cols-[1.08fr_1fr] items-stretch gap-6 p-5">
+          <div className="relative aspect-[16/10] overflow-hidden rounded-[1.35rem] bg-[#d9d9d9]">
+            <Image
+              src={FEATURED_IMAGE}
+              alt=""
+              fill
+              priority
+              sizes="(min-width: 1280px) 28rem, 40vw"
+              className="object-cover grayscale"
+            />
+          </div>
+
+          <div className="relative flex min-h-0 flex-col py-1 pr-1">
+            <button
+              type="button"
+              onClick={share}
+              aria-label={t("share")}
+              className="absolute top-0 right-0 grid size-10 place-items-center rounded-full bg-[#F0F1F3] transition-transform active:scale-95"
+            >
+              <BrandIcon src={BRAND_ICONS.shareQuiz} alt="" className="size-[18px]" />
+            </button>
+
+            <h3 className="font-heading pr-12 text-[1.55rem] leading-snug font-bold text-[#111]">
+              {quiz.title}
+            </h3>
+            {quiz.subtitle ? (
+              <p className="mt-2.5 font-heading text-[1.05rem] leading-snug text-[#111]">
+                {quiz.subtitle}
+              </p>
+            ) : null}
+
+            <p className="mt-7 flex items-center gap-2.5 font-heading text-[15px] font-medium text-[#111]">
+              <BrandIcon
+                src={BRAND_ICONS.questionsCount}
+                alt=""
+                className="size-7 shrink-0"
+              />
+              {quiz.totalQuestions} {t("questions")}
+            </p>
+
+            <div className="absolute top-[12rem] left-0">
+              {hasScore ? (
+                <span className="mb-2 font-heading text-[13px] font-medium text-[#526273]">
+                  {t("scoreLabel")}: {score.correctCount}/{score.totalQuestions}
+                </span>
+              ) : null}
+              <button
+                type="button"
+                onClick={onStart}
+                className="flex h-17 w-full items-center justify-start gap-3 rounded-full bg-[#2d689d] px-13 font-heading text-[1.2rem] font-bold text-white transition-transform active:scale-[0.98]"
+              >
+                <span
+                  aria-hidden
+                  className="block size-5.5 shrink-0 bg-white"
+                  style={{
+                    WebkitMaskImage: `url(${BRAND_ICONS.navPlayQuiz})`,
+                    maskImage: `url(${BRAND_ICONS.navPlayQuiz})`,
+                    WebkitMaskSize: "contain",
+                    maskSize: "contain",
+                    WebkitMaskRepeat: "no-repeat",
+                    maskRepeat: "no-repeat",
+                    WebkitMaskPosition: "center",
+                    maskPosition: "center",
+                  }}
+                />
+                {t("playQuiz")}
+              </button>
+            </div>
+          </div>
+        </div>
+      </article>
+    );
+  }
 
   return (
     // move entire box on above side of the screen

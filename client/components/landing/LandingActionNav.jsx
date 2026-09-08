@@ -135,3 +135,77 @@ function SideAction({ onClick, label, children }) {
     </button>
   );
 }
+
+const WIDE_PLAY_SIZE = 76;
+
+/**
+ * Desktop landing tray — centered capsule, side actions in a row, Play Quiz
+ * overlapping the bar. Used only on the wide welcome layout.
+ */
+export function LandingActionNavWide({ onPractice, onPlayQuiz, onG3qAi, className }) {
+  const { t } = useI18n();
+  const playParts = t("playQuiz").split(" ");
+
+  return (
+    <footer
+      className={cn(
+        "pointer-events-none absolute inset-x-0 bottom-0 z-30 px-6 pb-7",
+        className
+      )}
+    >
+      <div className="pointer-events-auto relative mx-auto w-full max-w-[30rem]">
+        <nav
+          aria-label={t("primaryActions")}
+          className="flex h-[5rem] items-center justify-between rounded-[2.15rem] bg-white px-3"
+        >
+          <WideSideAction onClick={onPractice} label={t("practice")}>
+            <BrandIcon src={BRAND_ICONS.navPractice} alt="" className="size-6" priority />
+          </WideSideAction>
+
+          <div className="w-[4rem] shrink-0" aria-hidden />
+
+          <WideSideAction onClick={onG3qAi} label="G3Q AI">
+            <BrandIcon src={BRAND_ICONS.navG3qAi} alt="" className="size-6" priority />
+          </WideSideAction>
+        </nav>
+
+        <button
+          type="button"
+          onClick={onPlayQuiz}
+          aria-label={t("playQuiz")}
+          className="absolute top-1/2 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 transition-transform active:scale-[0.975]"
+        >
+          <span
+            className="grid place-items-center rounded-full text-center font-canva text-white"
+            style={{
+              width: WIDE_PLAY_SIZE,
+              height: WIDE_PLAY_SIZE,
+              backgroundColor: BLUE,
+            }}
+          >
+            <span className="leading-[1.06] font-bold tracking-[-0.02em]">
+              <span className="block text-[1.02rem]">{playParts[0]}</span>
+              <span className="mt-0.5 block text-[1.02rem]">
+                {playParts.slice(1).join(" ") || "\u00A0"}
+              </span>
+            </span>
+          </span>
+        </button>
+      </div>
+    </footer>
+  );
+}
+
+function WideSideAction({ onClick, label, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-[3.8rem] min-w-[10rem] shrink-0 items-center justify-center gap-2.5 rounded-[1.15rem] px-1.5 font-canva active:opacity-90"
+      style={{ backgroundColor: SIDE_BG, color: BLUE }}
+    >
+      {children}
+      <span className="text-[15px] font-semibold leading-none tracking-[-0.01em]">{label}</span>
+    </button>
+  );
+}

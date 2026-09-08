@@ -28,6 +28,16 @@ export const leaderboardOverview = asyncHandler(async (req, res) => {
   return res.status(200).json(result);
 });
 
+export const betaLeaderboardOverview = asyncHandler(async (req, res) => {
+  const query = globalLeaderboardQuerySchema.parse(req.query);
+  const result = await leaderboardService.betaOverview({
+    userId: req.user?.id ?? null,
+    taluka: query.taluka,
+    limit: query.limit,
+  });
+  return res.status(200).json(result);
+});
+
 export const talukaLeaderboard = asyncHandler(async (req, res) => {
   const query = talukaLeaderboardQuerySchema.parse(req.query);
   const result = await leaderboardService.taluka({

@@ -61,11 +61,11 @@ export function DragIntoBlanksQuestion({ question, value, onChange, disabled, re
   return (
     <div>
       {/* Sentence with inline blanks */}
-      <div className="rounded-[1.40rem] border border-[#E2E8F0] bg-white p-4 text-base leading-[1.7] shadow-m1">
+      <div className="rounded-[1.40rem] border border-[#E2E8F0] bg-white p-4 text-[1.05rem] leading-[1.95] shadow-m1 sm:p-5 sm:text-[1.12rem] lg:text-[1.18rem]">
         {question.segments.map((segment, index) => {
           if (segment.type === "text") {
             return (
-              <span key={index} className="align-middle">
+              <span key={index} className="align-middle font-canva font-semibold text-[#111]">
                 {segment.value}{" "}
               </span>
             );
@@ -89,7 +89,7 @@ export function DragIntoBlanksQuestion({ question, value, onChange, disabled, re
                 place(segment.id, dragging);
               }}
               className={cn(
-                "mx-1 my-1 inline-flex min-w-24 h-[2.8rem] items-center justify-center gap-1 rounded-lg border px-2.5 py-1 align-middle font-heading text-sm font-semibold transition-all",
+                "mx-1 my-1 inline-flex h-[3.05rem] min-w-26 items-center justify-center gap-1 rounded-xl border px-3 py-1.5 align-middle font-canva text-[0.98rem] font-bold transition-all sm:h-[3.2rem] sm:min-w-28 sm:text-[1.03rem]",
                 !wordId && "border-dashed",
                 overBlank === segment.id && "scale-105 border-primary-500 bg-primary-50",
                 wordId && "border-primary-500 bg-primary-50 text-primary-800",

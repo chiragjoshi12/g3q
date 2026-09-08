@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { ChatMarkdown, decodeAiLineBreaks } from "@/components/g3q-ai/ChatMarkdown";
 import { BrandGlyph, BrandIcon } from "@/components/common/BrandIcon";
-import { AppShell } from "@/components/layout/AppShell";
+import { DesktopAppShell } from "@/components/layout/DesktopAppShell";
 import { useSpeechToText } from "@/hooks/useSpeechToText";
 import { useSmoothStream } from "@/hooks/useSmoothStream";
 import { BRAND_ICONS } from "@/lib/brand-icons";
@@ -223,23 +223,23 @@ export default function G3qAiPage() {
   const showEmpty = messages.length === 0 && !sending;
 
   return (
-    <AppShell className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F2F2F2]">
+    <DesktopAppShell className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F2F2F2]">
       <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[26.5rem] flex-col overflow-hidden bg-[#F7F9FC] md:max-w-none">
         <Image
           src="/g3q-ai-bg.jpeg"
           alt=""
           fill
           priority
-          sizes="(max-width: 768px) 100vw, 26.5rem"
+          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 26.5rem, 100vw"
           className="pointer-events-none object-cover object-top opacity-90"
         />
 
-        <header className="relative z-10 flex shrink-0 items-center justify-between px-4 pb-3 pt-[max(0.9rem,env(safe-area-inset-top))]">
-            <RoundIconButton label={t("close")} onClick={() => router.back()}>
+        <header className="relative z-10 flex shrink-0 items-center justify-between px-4 pb-3 pt-[max(0.9rem,env(safe-area-inset-top))] lg:px-8 lg:pt-5 lg:pb-3">
+            <RoundIconButton label={t("close")} onClick={() => router.back()} className="lg:invisible">
             <CloseIcon className={AI_ICON_SIZE} />
           </RoundIconButton>
 
-          <h1 className="flex select-none items-baseline gap-[0.22em] font-canva text-[1.4rem] font-bold tracking-tight">
+          <h1 className="flex select-none items-baseline gap-[0.22em] font-canva text-[1.4rem] font-bold tracking-tight lg:text-[1.65rem]">
             <span
               style={{
                 backgroundImage: TITLE_G3Q,
@@ -266,14 +266,14 @@ export default function G3qAiPage() {
           ref={listRef}
           onScroll={onListScroll}
           className={cn(
-            "relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-1 transition-[padding] duration-300",
+            "relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-1 transition-[padding] duration-300 lg:px-8",
             inputVisible ? "pb-[11.5rem]" : "pb-6"
           )}
         >
           {showEmpty ? (
             <EmptyWelcome onPick={send} />
           ) : (
-            <>
+            <div className="lg:mx-auto lg:max-w-[44rem]">
               <WelcomeHero />
               <ul className="mt-6 flex flex-col gap-3 pb-2">
                 {messages.map((m, i) => {
@@ -288,7 +288,7 @@ export default function G3qAiPage() {
                       className={cn(
                         "max-w-[72%] text-[16px] leading-relaxed",
                         m.role === "user"
-                          ? "mt-4 ml-auto rounded-[1.25rem] bg-[#eef7ff] px-3.5 py-2.5 text-[#000000]"
+                          ? "mt-4 ml-auto rounded-[1.25rem] bg-[#eef7ff] px-3.5 py-2.5 text-[#000000] text-[18px]"
                           : "mt-2 mr-auto w-full max-w-[92%] px-0.5 py-1 text-[#111]"
                       )}
                       style={
@@ -296,7 +296,7 @@ export default function G3qAiPage() {
                           ? {
                               fontFamily:
                                 'var(--font-noto), "Noto Sans", sans-serif',
-                              fontSize: 18,
+                              fontSize: 20,
                             }
                           : undefined
                       }
@@ -362,17 +362,19 @@ export default function G3qAiPage() {
                   );
                 })}
               </ul>
-            </>
+            </div>
           )}
           {error ? (
-            <p className="mt-2 rounded-xl bg-[#FEF2F2] px-3 py-2 text-[13px] text-[#B91C1C]">{error}</p>
+            <p className="mt-2 rounded-xl bg-[#FEF2F2] px-3 py-2 text-[13px] text-[#B91C1C] lg:mx-auto lg:max-w-[44rem]">
+              {error}
+            </p>
           ) : null}
         </main>
 
         {/* Slides away while reading older messages; returns at bottom */}
         <div
           className={cn(
-            "absolute inset-x-0 bottom-0 z-20 px-3.5 pb-[max(0.7rem,env(safe-area-inset-bottom))] pt-2 transition-transform duration-300 ease-out",
+            "absolute inset-x-0 bottom-0 z-20 px-3.5 pb-[max(0.7rem,env(safe-area-inset-bottom))] pt-2 transition-transform duration-300 ease-out lg:px-8",
             inputVisible ? "translate-y-0" : "pointer-events-none translate-y-full"
           )}
           aria-hidden={!inputVisible}
@@ -381,7 +383,7 @@ export default function G3qAiPage() {
             aria-hidden
             className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-white via-[#f4e9ff]/55 to-transparent blur-xl"
           />
-          <div className="relative rounded-[2rem] bg-[#ffffff] px-5 pt-4 pb-3">
+          <div className="relative rounded-[2rem] bg-[#ffffff] px-5 pt-4 pb-3 lg:mx-auto lg:max-w-[44rem]">
             <textarea
               ref={inputRef}
               value={draft}
@@ -441,15 +443,15 @@ export default function G3qAiPage() {
           </div>
         </div>
       </div>
-    </AppShell>
+    </DesktopAppShell>
   );
 }
 
 function EmptyWelcome({ onPick }) {
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="flex min-h-full flex-col lg:mx-auto lg:max-w-[44rem] lg:justify-center lg:gap-10">
       <WelcomeHero />
-      <SuggestionList onPick={onPick} className="mt-auto pb-2" />
+      <SuggestionList onPick={onPick} className="mt-auto pb-2 lg:mt-0 lg:max-w-[28rem] lg:self-center lg:w-full" />
     </div>
   );
 }
@@ -462,12 +464,12 @@ function WelcomeHero() {
         src={BRAND_ICONS.logo}
         alt="G3Q 3.0"
         priority
-        className="size-[5.25rem]"
+        className="size-[5.25rem] lg:size-[6.25rem]"
       />
-      <h2 className="mt-2 font-heading text-[1.5rem] font-bold leading-none tracking-tight text-[#2d689d]">
+      {/* <h2 className="mt-2 font-heading text-[1.5rem] font-bold leading-none tracking-tight text-[#2d689d] lg:mt-4 lg:text-[2rem]">
         {appName}
-      </h2>
-      <p className="mt-6 max-w-[20rem] font-heading text-[14px] leading-[1.75] text-[#000000]">
+      </h2> */}
+      <p className="mt-[-10px] max-w-[20rem] font-heading text-[14px] leading-[1.75] text-[#000000] lg:max-w-[28rem] lg:text-[15px]">
         {t("aiWelcomeBody")}
       </p>
     </div>
@@ -499,13 +501,16 @@ function SuggestionList({ onPick, className }) {
   );
 }
 
-function RoundIconButton({ label, onClick, children }) {
+function RoundIconButton({ label, onClick, children, className }) {
   return (
     <button
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="grid size-10 place-items-center rounded-full bg-[#ffffff] text-[#000000] active:scale-95"
+      className={cn(
+        "grid size-10 place-items-center rounded-full bg-[#ffffff] text-[#000000] active:scale-95",
+        className
+      )}
     >
       {children}
     </button>

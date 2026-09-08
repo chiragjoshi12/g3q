@@ -94,3 +94,4 @@ client/ios/
 
 # VS Code test
 .vscode-test
+/data

@@ -59,8 +59,8 @@ export const attemptRepository = {
     return userId ? all.filter((a) => a.userId === userId) : all;
   },
 
-  async getById(attemptId) {
-    if (appConfig.dataSource === DATA_SOURCE.REST) {
+  async getById(attemptId, { practice = false } = {}) {
+    if (appConfig.dataSource === DATA_SOURCE.REST && !practice) {
       const payload = await getDataSource().getSessionResult(attemptId);
       return mapSessionSummaryToAttempt(payload);
     }

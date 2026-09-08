@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { X } from "@/components/icons";
 
 import { ACTION_BUTTON_CLASS, ActionButtonRow, AppButton } from "@/components/common/AppButton";
@@ -11,6 +11,7 @@ import { BRAND_ICONS } from "@/lib/brand-icons";
 import { useI18n } from "@/lib/i18n";
 import { playAnswerSound } from "@/lib/quiz-sounds";
 import { cn } from "@/lib/utils";
+import { DESKTOP_OVERLAY } from "@/components/layout/desktop-overlay";
 
 const TYPEWRITER_INTERVAL_MS = 26;
 const MIN_STREAM_DURATION_MS = 2600;
@@ -48,6 +49,27 @@ export function AiExplanationSheet({
     charsPerTick,
     intervalMs: TYPEWRITER_INTERVAL_MS,
   });
+  const [desktopBox, setDesktopBox] = useState(null);
+
+  useLayoutEffect(() => {
+    const place = () => {
+      const desktop = window.matchMedia("(min-width: 1024px)").matches;
+      const card = document.querySelector("[data-quiz-question-card]");
+      const frame = document.querySelector("[data-app-frame]");
+      if (!desktop || !card || !frame) {
+        setDesktopBox(null);
+        return;
+      }
+      const cardRect = card.getBoundingClientRect();
+      const frameRect = frame.getBoundingClientRect();
+      setDesktopBox({
+        width: cardRect.width,
+      });
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, []);
   const [progressComplete, setProgressComplete] = useState(false);
   const [completionPauseDone, setCompletionPauseDone] = useState(false);
   const checkingProgress = source
@@ -79,7 +101,7 @@ export function AiExplanationSheet({
   return (
     <div
       className={cn(
-        "absolute inset-0 z-50 flex items-end justify-center",
+        DESKTOP_OVERLAY,
         !bodyDone && "bg-black/25",
         bodyDone && correct && "animate-flash-success bg-black/28",
         bodyDone && !correct && "animate-flash-error bg-black/30"
@@ -96,9 +118,12 @@ export function AiExplanationSheet({
         <div className="absolute inset-0" />
       )}
 
-      <div className="animate-slide-up relative w-full">
+      <div
+        className="animate-slide-up relative w-full lg:w-auto"
+        style={desktopBox ? { width: `${desktopBox.width}px` } : undefined}
+      >
         <div
-          className="relative flex max-h-[78dvh] min-h-[48%] w-full flex-col overflow-hidden rounded-t-[2rem] bg-white px-6 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-m3"
+          className="relative flex max-h-[78dvh] min-h-[48%] w-full flex-col overflow-hidden rounded-t-[2rem] bg-white px-6 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-m3 lg:min-h-0 lg:max-h-[min(28rem,72dvh)] lg:rounded-[1.75rem] lg:px-10 lg:py-5 lg:shadow-[0_24px_64px_rgb(15_23_42/0.18)]"
         >
           {!bodyDone ? (
             <>
@@ -108,7 +133,7 @@ export function AiExplanationSheet({
             </>
           ) : null}
 
-          <div className="relative mb-4 flex flex-col items-center justify-center gap-2.5">
+          <div className="relative mb-4 flex flex-col items-center justify-center gap-2.5 lg:mb-2.5">
 
             <div className="relative flex w-full items-center justify-center">
               <div className="flex items-center gap-2">
@@ -134,7 +159,7 @@ export function AiExplanationSheet({
             </div>
           </div>
 
-          <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain lg:flex-none lg:max-h-[7.5rem]">
             <div className="relative text-[#1F2937]">
               <ChatMarkdown className="text-[#1F2937]" style={{ fontSize: 15 }}>
                 {body}
@@ -144,7 +169,7 @@ export function AiExplanationSheet({
 
           {bodyDone ? <VerdictMark correct={correct} /> : null}
 
-          <ActionButtonRow className="mt-5">
+          <ActionButtonRow className="mt-5 lg:mt-3">
             {!bodyDone ? (
               <CheckingAnswerButton progress={checkingProgress} />
             ) : (
@@ -187,8 +212,8 @@ function CheckingAnswerButton({ progress }) {
 function VerdictMark({ correct }) {
   const { t } = useI18n();
   return (
-    <div className="relative mt-[-4] flex flex-col items-center justify-center overflow-visible py-2">
-      <div className="relative grid size-28 place-items-center overflow-visible">
+    <div className="relative mt-[-4] flex flex-col items-center justify-center overflow-visible py-2 lg:mt-0 lg:py-1">
+      <div className="relative grid size-28 place-items-center overflow-visible lg:size-[4.5rem]">
         <span
           aria-hidden
           className={cn(
@@ -199,12 +224,12 @@ function VerdictMark({ correct }) {
         <BrandIcon
           src={correct ? BRAND_ICONS.correct : BRAND_ICONS.incorrect}
           alt={correct ? t("correctAnswer") : t("incorrect")}
-          className="relative size-[4rem] animate-verdict-pop"
+          className="relative size-[4rem] animate-verdict-pop lg:size-9"
         />
       </div>
       <p
         className={cn(
-          "mt-[-3] font-heading text-[18px] font-bold animate-pop-in",
+          "mt-[-3] font-heading text-[18px] font-bold animate-pop-in lg:mt-0 lg:text-[15px]",
           correct ? "text-[#15803D]" : "text-[#B91C1C]"
         )}
       >

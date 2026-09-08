@@ -79,6 +79,8 @@ export function toQuestion(raw) {
     items: raw.items ?? null,
     segments: raw.segments ?? null,
     bank: raw.bank ?? null,
+    backgroundImageUrl: raw.backgroundImageUrl ?? null,
+    backgroundStyle: raw.backgroundStyle ?? null,
     answer: normalizedAnswer,
     acceptable: raw.acceptable ?? null,
   };

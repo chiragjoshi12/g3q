@@ -31,7 +31,7 @@ export function IdentityStep({
       }}
     >
       <div className="space-y-3 text-left">
-        <h2 className="text-xl font-bold text-[#111]">{t("yourIdFound")}</h2>
+        <h2 className="text-xl font-bold text-[#111] lg:text-[1.65rem]">{t("yourIdFound")}</h2>
         <div className="flex items-start gap-3.5 rounded-[1.75rem] bg-white px-4 py-4">
           <div className="relative size-14 shrink-0 overflow-hidden rounded-full bg-[#d8dde3]">
             <Image

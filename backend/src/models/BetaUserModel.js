@@ -31,6 +31,7 @@ export class BetaUserModel {
         const user = await tx.user.update({
           where: { id: existing.linkedUserId },
           data: {
+            role: ROLE.STUDENT,
             name: fullName,
             surname: last || null,
             district: districtName,
@@ -57,7 +58,7 @@ export class BetaUserModel {
 
       const user = await tx.user.create({
         data: {
-          role: ROLE.CITIZEN,
+          role: ROLE.STUDENT,
           name: fullName,
           surname: last || null,
           district: districtName,
