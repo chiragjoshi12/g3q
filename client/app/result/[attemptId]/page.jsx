@@ -41,7 +41,7 @@ export default function ResultPage({ params }) {
 function ResultScreen({ params }) {
   const { attemptId } = use(params);
   const router = useRouter();
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const practice = usePracticeMode();
   const { ready, isAuthenticated } = useAuthGuard({ optional: practice });
 
@@ -54,13 +54,13 @@ function ResultScreen({ params }) {
       if (practice || appConfig.dataSource !== DATA_SOURCE.REST) {
         const bundle =
           practice && appConfig.dataSource === DATA_SOURCE.REST
-            ? await quizController.loadPracticeBundle({ quizId: attempt.quizId })
+            ? await quizController.loadPracticeBundle({ quizId: attempt.quizId, language })
             : await quizController.loadBundle(attempt.quizId);
         return { attempt, bundle };
       }
       return { attempt, bundle: null };
     },
-    [attemptId, practice],
+    [attemptId, practice, language],
     ready
   );
 

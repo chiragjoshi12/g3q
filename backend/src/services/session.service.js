@@ -113,6 +113,10 @@ function isBetaUser(user) {
   return String(user?.institute || '').trim().toLowerCase() === 'beta user';
 }
 
+function normalizeSessionLanguage(language) {
+  return ['gu', 'en', 'hi'].includes(language) ? language : CONFIG.QUIZ.DEFAULT_LANGUAGE;
+}
+
 function betaRootCode(queId) {
   const match = String(queId || '').match(/^BETA_Q_\d{3}/);
   return match ? match[0] : String(queId || '');
@@ -405,19 +409,27 @@ export const sessionService = {
   async start({ userId, count, language }) {
     const user = await UserModel.findById(userId);
     if (!user) throw new AppError(ERROR_CODE.UNAUTHORIZED);
+    const requestedLanguage = normalizeSessionLanguage(language);
 
     const existingMeta = await QuizSessionModel.findInProgressMetaForUser(userId);
     if (existingMeta) {
       if (existingMeta.expiresAt && existingMeta.expiresAt.getTime() < Date.now()) {
         await QuizSessionModel.markExpired(existingMeta.id);
       } else {
-        const existing = await QuizSessionModel.findById(existingMeta.id);
+        let existing = await QuizSessionModel.findById(existingMeta.id);
+        if (existing && existing.language !== requestedLanguage) {
+          existing = await prisma.quizSession.update({
+            where: { id: existing.id },
+            data: { language: requestedLanguage },
+            include: { questions: { orderBy: { order: 'asc' } } },
+          });
+        }
         return toSessionPlayPayload(existing);
       }
     }
 
     const questionCount = count || CONFIG.QUIZ.QUESTION_COUNT;
-    const lang = language || CONFIG.QUIZ.DEFAULT_LANGUAGE;
+    const lang = requestedLanguage;
     const bankRows = await allocateBankQuestions(user, questionCount);
 
     // Optional Gemini pass: reframe the session questions with student profile before persist/serve.
@@ -459,10 +471,18 @@ export const sessionService = {
             data: { status: 'expired' },
           });
         } else {
-          return tx.quizSession.findUnique({
+          const activeSession = await tx.quizSession.findUnique({
             where: { id: latestMeta.id },
             include: { questions: { orderBy: { order: 'asc' } } },
           });
+          if (activeSession && activeSession.language !== lang) {
+            return tx.quizSession.update({
+              where: { id: activeSession.id },
+              data: { language: lang },
+              include: { questions: { orderBy: { order: 'asc' } } },
+            });
+          }
+          return activeSession;
         }
       }
       return QuizSessionModel.createWithQuestions({

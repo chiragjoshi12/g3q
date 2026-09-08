@@ -11,6 +11,7 @@ import { QUESTION_TYPE } from '../config/question-types.js';
  */
 
 let client = null;
+const questionTextLanguage = (language) => (language === 'en' ? 'en' : 'gu');
 
 const getClient = () => {
   if (!CONFIG.AI.API_KEY) {
@@ -66,7 +67,7 @@ const isAiEligible = (row) =>
   AI_SUPPORTED_TYPES.has(row?.type || QUESTION_TYPE.SINGLE_CHOICE) && Boolean(row?.correctOption);
 
 const buildInputPayload = (user, bankRows, language) => ({
-  language: language === 'en' ? 'en' : 'gu',
+  language: questionTextLanguage(language),
   student: profileForPrompt(user),
   questions: bankRows.filter(isAiEligible).map((row) => ({
     queId: row.queId,
@@ -177,7 +178,7 @@ export const aiEnhancementService = {
     }
 
     const started = Date.now();
-    const lang = language === 'en' ? 'en' : 'gu';
+    const lang = questionTextLanguage(language);
     const eligibleRows = bankRows.filter(isAiEligible);
 
     if (!eligibleRows.length) {

@@ -26,12 +26,12 @@ export const CREDENTIAL = {
   [ROLE.CITIZEN]: {
     key: 'phone',
     label: 'મોબાઈલ નંબર',
-    pattern: /^\d{10}$/,
-    error: 'મોબાઇલ નંબર 10 અંકનો હોવો જોઈએ.',
+    pattern: /^[6-9]\d{9}$/,
+    error: 'મોબાઇલ નંબર 10 અંકનો હોવો જોઈએ અને 6, 7, 8 અથવા 9 થી શરૂ થવો જોઈએ.',
   },
 };
 
-const PHONE_PATTERN = /^\d{10}$/;
+const PHONE_PATTERN = /^[6-9]\d{9}$/;
 
 export function isCitizen(role) {
   return role === ROLE.CITIZEN;
@@ -57,7 +57,9 @@ export function validateCredential(role, value) {
 export function validatePhone(value) {
   const trimmed = String(value ?? '').trim();
   if (!trimmed) return 'મોબાઇલ નંબર દાખલ કરો.';
-  if (!PHONE_PATTERN.test(trimmed)) return 'મોબાઇલ નંબર 10 અંકનો હોવો જોઈએ.';
+  if (!PHONE_PATTERN.test(trimmed)) {
+    return 'મોબાઇલ નંબર 10 અંકનો હોવો જોઈએ અને 6, 7, 8 અથવા 9 થી શરૂ થવો જોઈએ.';
+  }
   return null;
 }
 

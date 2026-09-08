@@ -34,7 +34,7 @@ export function getCredentialRules() {
       hint: translateCurrent("enterMobileNumber"),
       placeholder: translateCurrent("mobileNumber"),
       length: 10,
-      pattern: /^\d{10}$/,
+      pattern: /^[6-9]\d{9}$/,
       inputMode: "numeric",
       error: translateCurrent("errorInvalidPhone"),
     },
@@ -70,7 +70,7 @@ export function validateCredential(role, value) {
   return null;
 }
 
-const PHONE_PATTERN = /^\d{10}$/;
+const PHONE_PATTERN = /^[6-9]\d{9}$/;
 
 export function validatePhone(value) {
   const trimmed = String(value || "").trim();

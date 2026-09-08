@@ -3,6 +3,9 @@ import { ROLE } from '../config/roles.js';
 
 const roleSchema = z.enum([ROLE.STUDENT, ROLE.COLLEGE, ROLE.CITIZEN]);
 const rosterRoleSchema = z.enum([ROLE.STUDENT, ROLE.COLLEGE]);
+const phoneSchema = z.string().trim().regex(/^[6-9]\d{9}$/, {
+  message: 'phone must be a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9',
+});
 
 export const identityLookupSchema = z.object({
   role: rosterRoleSchema,
@@ -13,7 +16,7 @@ export const requestOtpSchema = z
   .object({
     role: roleSchema,
     credential: z.string().optional().default(''),
-    phone: z.string().min(1),
+    phone: phoneSchema,
   })
   .superRefine((data, ctx) => {
     if (data.role !== ROLE.CITIZEN && !String(data.credential || '').trim()) {
@@ -44,5 +47,5 @@ export const betaLoginSchema = z.object({
   lastName: z.string().trim().min(1).max(128),
   district: z.string().trim().min(1).max(128),
   taluka: z.string().trim().min(1).max(128),
-  phone: z.string().trim().min(10).max(20),
+  phone: phoneSchema,
 });

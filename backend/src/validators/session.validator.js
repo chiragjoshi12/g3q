@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const startSessionSchema = z.object({
   count: z.coerce.number().int().min(1).max(50).optional(),
-  language: z.enum(['gu', 'en']).optional(),
+  language: z.enum(['gu', 'en', 'hi']).optional(),
 });
 
 export const submitSessionSchema = z.object({

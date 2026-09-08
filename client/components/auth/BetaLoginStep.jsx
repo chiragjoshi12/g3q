@@ -7,6 +7,8 @@ import { AUTH_BUTTON_CLASS, AUTH_FIELD_CLASS } from "@/components/auth/AuthBrand
 import { ChoiceSheet } from "@/components/auth/ChoiceSheet";
 import { AppButton } from "@/components/common/AppButton";
 import { GUJARAT_DISTRICTS, talukasForDistrict } from "@/data/gujarat-geo";
+import { validatePhone } from "@/lib/domain/roles";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const FIELD_CLASS = cn(AUTH_FIELD_CLASS, "border border-[#d9d9d9]");
@@ -27,14 +29,17 @@ export function BetaLoginStep({
   onPhoneChange,
   onSubmit,
 }) {
+  const { t } = useI18n();
   const [picker, setPicker] = useState(null);
   const talukas = talukasForDistrict(district);
+  const validPhone = !validatePhone(phone);
   const ready = Boolean(
     String(firstName).trim() &&
       String(lastName).trim() &&
       String(district).trim() &&
       String(taluka).trim() &&
-      String(phone).trim()
+      String(phone).trim() &&
+      validPhone
   );
 
   return (
@@ -46,20 +51,20 @@ export function BetaLoginStep({
       }}
     >
       <div className="space-y-2 text-center lg:space-y-3">
-        <h2 className="text-xl font-bold text-[#111] lg:text-[1.65rem]">લોગિન કરો</h2>
-        <p className="text-sm leading-relaxed text-[#111] lg:text-[1.02rem]">બીટા યુઝર માટે નીચેની વિગતો ભરો</p>
+        <h2 className="text-xl font-bold text-[#111] lg:text-[1.65rem]">{t("login")}</h2>
+        <p className="text-sm leading-relaxed text-[#111] lg:text-[1.02rem]">{t("betaLoginBody")}</p>
       </div>
 
       <div className="space-y-5">
         <div className="space-y-2">
           <label htmlFor="beta-first-name" className="block translate-y-3 text-[16px] font-bold text-[#000000]">
-            પ્રથમ નામ
+            {t("firstName")}
           </label>
           <input
             id="beta-first-name"
             value={firstName}
             onChange={(event) => onFirstNameChange(event.target.value)}
-            placeholder="પ્રથમ નામ અહીં લખો"
+            placeholder={t("enterFirstName")}
             autoComplete="given-name"
             autoFocus
             className={FIELD_CLASS}
@@ -68,13 +73,13 @@ export function BetaLoginStep({
 
         <div className="space-y-2">
           <label htmlFor="beta-last-name" className="block translate-y-3 text-[16px] font-bold text-[#000000]">
-            છેલ્લું નામ
+            {t("lastName")}
           </label>
           <input
             id="beta-last-name"
             value={lastName}
             onChange={(event) => onLastNameChange(event.target.value)}
-            placeholder="છેલ્લું નામ અહીં લખો"
+            placeholder={t("enterLastName")}
             autoComplete="family-name"
             className={FIELD_CLASS}
           />
@@ -82,7 +87,7 @@ export function BetaLoginStep({
 
         <div className="space-y-2">
           <span id="beta-district-label" className="block translate-y-3 text-[16px] font-bold text-[#000000]">
-            જિલ્લો
+            {t("district")}
           </span>
           <button
             type="button"
@@ -97,14 +102,14 @@ export function BetaLoginStep({
               !district && "text-[#737373]"
             )}
           >
-            <span className="min-w-0 truncate">{district || "તમારો જિલ્લો પસંદ કરો"}</span>
+            <span className="min-w-0 truncate">{district || t("selectDistrict")}</span>
             <ChevronDown className="size-5 shrink-0 text-[#111]" />
           </button>
         </div>
 
         <div className="space-y-2">
           <span id="beta-taluka-label" className="block translate-y-3 text-[16px] font-bold text-[#000000]">
-            તાલુકો
+            {t("taluka")}
           </span>
           <button
             type="button"
@@ -121,21 +126,21 @@ export function BetaLoginStep({
               !district && "opacity-70"
             )}
           >
-            <span className="min-w-0 truncate">{taluka || "તમારો તાલુકો પસંદ કરો"}</span>
+            <span className="min-w-0 truncate">{taluka || t("selectTaluka")}</span>
             <ChevronDown className="size-5 shrink-0 text-[#111]" />
           </button>
         </div>
 
         <div className="space-y-2">
           <label htmlFor="beta-phone" className="block translate-y-3 text-[16px] font-bold text-[#000000]">
-            મોબાઈલ નંબર
+            {t("mobileNumber")}
           </label>
           <input
             id="beta-phone"
             value={phone}
             onChange={(event) => onPhoneChange(event.target.value.replace(/\D/g, "").slice(0, 10))}
             inputMode="numeric"
-            placeholder="મોબાઈલ નંબર અહીં લખો"
+            placeholder={t("mobileNumber")}
             autoComplete="tel"
             className={FIELD_CLASS}
           />
@@ -151,13 +156,13 @@ export function BetaLoginStep({
 
       <div className="mt-12 flex w-full justify-center">
         <AppButton type="submit" loading={loading} disabled={!ready} className={AUTH_BUTTON_CLASS}>
-          Next
+          {t("next")}
         </AppButton>
       </div>
 
       <ChoiceSheet
         open={picker === "district"}
-        title="જિલ્લો પસંદ કરો"
+        title={t("selectDistrictTitle")}
         options={DISTRICT_OPTIONS}
         value={district}
         onSelect={(next) => {
@@ -172,7 +177,7 @@ export function BetaLoginStep({
 
       <ChoiceSheet
         open={picker === "taluka"}
-        title="તાલુકો પસંદ કરો"
+        title={t("selectTalukaTitle")}
         options={talukas}
         value={taluka}
         onSelect={(next) => {

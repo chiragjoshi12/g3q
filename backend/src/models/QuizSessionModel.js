@@ -4,6 +4,7 @@ import { getActivePlatformWeek } from '../config/platformWeeks.js';
 import { QUESTION_TYPE } from '../config/question-types.js';
 
 const OPTION_KEYS = ['A', 'B', 'C', 'D'];
+const questionTextLanguage = (language) => (language === 'en' ? 'en' : 'gu');
 
 const optionText = (row, letter, lang) => {
   const map =
@@ -28,7 +29,7 @@ const parseJson = (value) => {
 const questionTypeOf = (row) => row.type || QUESTION_TYPE.SINGLE_CHOICE;
 
 const questionContent = (row, language = 'gu') => {
-  const lang = language === 'en' ? 'en' : 'gu';
+  const lang = questionTextLanguage(language);
   const content = parseJson(row.content) || {};
 
   if (Array.isArray(content.options) && content.options.length) {
@@ -84,7 +85,7 @@ const choiceAnswerText = (row, language = 'gu') => {
 };
 
 const explanationBody = (row, language = 'gu') => {
-  const lang = language === 'en' ? 'en' : 'gu';
+  const lang = questionTextLanguage(language);
   const type = questionTypeOf(row);
   const department =
     lang === 'en' ? row.departmentEn || row.departmentGu : row.departmentGu || row.departmentEn;
@@ -119,7 +120,7 @@ const explanationBody = (row, language = 'gu') => {
 };
 
 export const toPlayExplanation = (row, language = 'gu') => {
-  const lang = language === 'en' ? 'en' : 'gu';
+  const lang = questionTextLanguage(language);
   const storedExplanation = parseJson(row.content)?.explanation;
   if (storedExplanation?.body) {
     return {
@@ -152,7 +153,7 @@ export const toPlayExplanation = (row, language = 'gu') => {
 
 /** Client-facing question — never includes correctOption. */
 export const toPlayQuestion = (row, language = 'gu') => {
-  const lang = language === 'en' ? 'en' : 'gu';
+  const lang = questionTextLanguage(language);
   const prompt = lang === 'en' ? row.questionEn || row.questionGu : row.questionGu || row.questionEn;
   const content = questionContent(row, lang);
   return {
@@ -170,6 +171,7 @@ export const toPlayQuestion = (row, language = 'gu') => {
     bank: content.bank ?? null,
     backgroundImageUrl: content.backgroundImageUrl ?? null,
     backgroundStyle: content.backgroundStyle ?? null,
+    answer: questionAnswer(row),
   };
 };
 
