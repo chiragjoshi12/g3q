@@ -14,6 +14,7 @@
     "prisma:studio": "prisma studio --schema=src/prisma/schema.prisma",
     "prisma:seed": "node src/prisma/seed.js",
     "seed:demo": "node scripts/seed-demo-leaderboard-data.js",
+    "import:beta-backgrounds": "node scripts/import-beta-background-images.js",
     "import:beta-explanations": "node scripts/import-beta-explanations.js",
     "load:prepare": "node scripts/prepare-load-test-data.js",
     "load:mixed": "node scripts/run-load-mix.js",
@@ -31,10 +32,11 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.9",
+    "prisma": "^6.19.3"
   },
   "dependencies": {
-    "@google/genai": "^2.19.0",
+    "@google/genai": "^2.21.0",
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
@@ -45,7 +47,6 @@
     "morgan": "^1.10.0",
     "mysql2": "^3.24.2",
     "nanoid": "^5.0.9",
-    "prisma": "^6.19.3",
     "zod": "^3.24.1"
   }
 }

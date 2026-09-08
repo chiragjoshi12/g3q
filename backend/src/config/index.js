@@ -72,21 +72,21 @@ export const CONFIG = {
   },
 
   /**
-   * Meta AI Model API configuration for quiz personalisation and G3Q AI chat.
-   * Falls back to older Gemini env names locally so existing setups do not
-   * break during migration.
-   * @see https://dev.meta.ai/docs/overview/
+   * Gemini personalisation between question allocation and client payload.
+   * When ENABLED=false, session start skips AI and serves bank text as-is.
+   * @see https://ai.google.dev/gemini-api/docs/
    */
   AI: {
     ENABLED: parseBool(process.env.AI_ENHANCEMENT_ENABLED, false),
-    API_KEY: process.env.META_AI_API_KEY || process.env.MODEL_API_KEY || process.env.GEMINI_API_KEY || '',
-    MODEL:
-      process.env.META_AI_MODEL ||
-      process.env.MODEL_API_MODEL ||
-      process.env.GEMINI_MODEL ||
-      'muse-spark-1.3-contributor',
-    BASE_URL: process.env.META_AI_BASE_URL || 'https://api.meta.ai/v1',
-    // Typical enhance/chat responses are interactive; keep headroom for network latency.
-    TIMEOUT_MS: parseInt(process.env.AI_TIMEOUT_MS || process.env.GEMINI_TIMEOUT_MS) || 20000,
+    API_KEY: process.env.GEMINI_API_KEY || '',
+    MODEL: 'gemini-3.1-flash-lite',
+    // Typical enhance pass is ~8–10s; keep headroom for slow responses.
+    TIMEOUT_MS: 20000,
+  },
+
+  STORAGE: {
+    ACCOUNT_NAME: process.env.AZURE_STORAGE_ACCOUNT_NAME || '',
+    ACCOUNT_KEY: process.env.AZURE_STORAGE_ACCOUNT_KEY || '',
+    CONTAINER: process.env.AZURE_STORAGE_CONTAINER || 'g3q',
   },
 };

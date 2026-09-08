@@ -1,14 +1,26 @@
+import { GoogleGenAI, Type } from '@google/genai';
 import { CONFIG } from '../config/index.js';
 import { QUESTION_TYPE } from '../config/question-types.js';
-import { requestMetaChatCompletion } from './metaModelApi.service.js';
 
 /**
- * Meta AI reframing of allocated bank questions for one play session.
+ * Gemini reframing of allocated bank questions for one play session.
  * Controlled by CONFIG.AI.ENABLED — when false, callers skip this entirely.
  *
  * Docs: https://ai.google.dev/gemini-api/docs/
  * Model: gemini-3.5-flash-lite (cost/latency friendly Flash-Lite).
  */
+
+let client = null;
+
+const getClient = () => {
+  if (!CONFIG.AI.API_KEY) {
+    throw new Error('GEMINI_API_KEY is required when AI enhancement is enabled.');
+  }
+  if (!client) {
+    client = new GoogleGenAI({ apiKey: CONFIG.AI.API_KEY });
+  }
+  return client;
+};
 
 const pickPrompt = (row, language) => {
   if (language === 'en') return row.questionEn || row.questionGu || '';
@@ -83,39 +95,30 @@ Rules:
 6. Keep each question concise and readable for school students.
 7. Never reveal or hint which option is correct beyond normal question wording.`;
 
-const RESPONSE_FORMAT = {
-  type: 'json_schema',
-  json_schema: {
-    name: 'PersonalizedQuestionSet',
-    strict: true,
-    schema: {
-      type: 'object',
-      additionalProperties: false,
-      properties: {
-        questions: {
-          type: 'array',
-          items: {
-            type: 'object',
-            additionalProperties: false,
-            properties: {
-              queId: { type: 'string' },
-              question: { type: 'string' },
-              optionA: { type: 'string' },
-              optionB: { type: 'string' },
-              optionC: { type: 'string' },
-              optionD: { type: 'string' },
-            },
-            required: ['queId', 'question', 'optionA', 'optionB', 'optionC', 'optionD'],
-          },
+const RESPONSE_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    questions: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          queId: { type: Type.STRING },
+          question: { type: Type.STRING },
+          optionA: { type: Type.STRING },
+          optionB: { type: Type.STRING },
+          optionC: { type: Type.STRING },
+          optionD: { type: Type.STRING },
         },
+        required: ['queId', 'question', 'optionA', 'optionB', 'optionC', 'optionD'],
       },
-      required: ['questions'],
     },
   },
+  required: ['questions'],
 };
 
 const parseJsonText = (text) => {
-  if (!text) throw new Error('Empty Meta AI response');
+  if (!text) throw new Error('Empty Gemini response');
   const trimmed = String(text).trim();
   const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
   const raw = fenced ? fenced[1].trim() : trimmed;
@@ -151,6 +154,14 @@ const applyEnhancements = (bankRows, enhancedList, language) => {
   });
 };
 
+const withTimeout = (promise, ms) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error(`AI enhancement timed out after ${ms}ms`)), ms);
+    }),
+  ]);
+
 export const aiEnhancementService = {
   isEnabled() {
     return Boolean(CONFIG.AI.ENABLED);
@@ -174,22 +185,34 @@ export const aiEnhancementService = {
     }
 
     try {
+      const ai = getClient();
       const payload = buildInputPayload(user, eligibleRows, lang);
-      const response = await requestMetaChatCompletion({
-        messages: [
-          { role: 'system', content: SYSTEM_INSTRUCTION },
-          {
-            role: 'user',
-            content: `Personalise these quiz questions for the student.\n\n${JSON.stringify(payload)}`,
+      const response = await withTimeout(
+        ai.models.generateContent({
+          model: CONFIG.AI.MODEL,
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  text: `Personalise these quiz questions for the student.\n\n${JSON.stringify(payload)}`,
+                },
+              ],
+            },
+          ],
+          config: {
+            systemInstruction: SYSTEM_INSTRUCTION,
+            temperature: 0.7,
+            responseMimeType: 'application/json',
+            responseSchema: RESPONSE_SCHEMA,
           },
-        ],
-        responseFormat: RESPONSE_FORMAT,
-        maxCompletionTokens: 2400,
-      });
+        }),
+        CONFIG.AI.TIMEOUT_MS
+      );
 
-      const parsed = parseJsonText(response?.choices?.[0]?.message?.content);
+      const parsed = parseJsonText(response.text);
       if (!Array.isArray(parsed?.questions) || !parsed.questions.length) {
-        throw new Error('Meta AI returned no questions array');
+        throw new Error('Gemini returned no questions array');
       }
 
       const merged = applyEnhancements(bankRows, parsed.questions, lang);
