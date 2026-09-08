@@ -39,6 +39,8 @@ const questionContent = (row, language = 'gu') => {
       items: content.items ?? null,
       segments: content.segments ?? null,
       bank: content.bank ?? null,
+      backgroundImageUrl: content.backgroundImageUrl ?? null,
+      backgroundStyle: content.backgroundStyle ?? null,
     };
   }
 
@@ -53,6 +55,8 @@ const questionContent = (row, language = 'gu') => {
     items: content.items ?? null,
     segments: content.segments ?? null,
     bank: content.bank ?? null,
+    backgroundImageUrl: content.backgroundImageUrl ?? null,
+    backgroundStyle: content.backgroundStyle ?? null,
   };
 };
 
@@ -116,6 +120,16 @@ const explanationBody = (row, language = 'gu') => {
 
 const toPlayExplanation = (row, language = 'gu') => {
   const lang = language === 'en' ? 'en' : 'gu';
+  const storedExplanation = parseJson(row.content)?.explanation;
+  if (storedExplanation?.body) {
+    return {
+      questionId: row.bankQueId,
+      model: storedExplanation.model || 'G3Q',
+      summary: storedExplanation.summary ?? '',
+      body: storedExplanation.body,
+      keyPoints: Array.isArray(storedExplanation.keyPoints) ? storedExplanation.keyPoints : [],
+    };
+  }
   const correctText = choiceAnswerText(row, lang);
   return {
     questionId: row.bankQueId,
@@ -154,6 +168,8 @@ export const toPlayQuestion = (row, language = 'gu') => {
     items: content.items ?? null,
     segments: content.segments ?? null,
     bank: content.bank ?? null,
+    backgroundImageUrl: content.backgroundImageUrl ?? null,
+    backgroundStyle: content.backgroundStyle ?? null,
   };
 };
 

@@ -37,6 +37,23 @@ const normalizeOrderedAnswer = (value) => {
     .filter(Boolean);
 };
 
+const parseJson = (value) => {
+  if (value == null) return null;
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+  return value;
+};
+
+const pickRandom = (items) => {
+  if (!Array.isArray(items) || !items.length) return null;
+  return items[Math.floor(Math.random() * items.length)] ?? null;
+};
+
 const normalizeSubmittedAnswer = (question, rawAnswer) => {
   switch (question?.type) {
     case QUESTION_TYPE.SINGLE_CHOICE:
@@ -91,7 +108,146 @@ const personalizedTargetCount = () => {
   return min + Math.floor(Math.random() * (max - min + 1));
 };
 
-async function fetchCandidateQuestions({ userId, limit, districtRaw, casteRaw, personalized }) {
+function isBetaUser(user) {
+  return String(user?.institute || '').trim().toLowerCase() === 'beta user';
+}
+
+function betaRootCode(queId) {
+  const match = String(queId || '').match(/^BETA_Q_\d{3}/);
+  return match ? match[0] : String(queId || '');
+}
+
+function betaVariantKind(row) {
+  return betaRootCode(row?.queId) === String(row?.queId) ? 'original' : 'enhanced';
+}
+
+function pickBestBetaCandidate(candidates, usedDepartments, usedTypes, usedKinds) {
+  const ranked = candidates
+    .map((candidate) => {
+      const department = String(candidate.departmentGu || candidate.departmentEn || '').trim();
+      let score = Math.random();
+      if (department && !usedDepartments.has(department)) score += 4;
+      if (candidate.type && !usedTypes.has(candidate.type)) score += 3;
+      const kind = betaVariantKind(candidate);
+      if (!usedKinds.has(kind)) score += 2;
+      return { candidate, score };
+    })
+    .sort((left, right) => right.score - left.score);
+  return ranked[0]?.candidate ?? null;
+}
+
+function mixBetaQuestions(pool, count) {
+  const grouped = new Map();
+  for (const row of shuffle(pool)) {
+    const rootCode = betaRootCode(row.queId);
+    if (!grouped.has(rootCode)) grouped.set(rootCode, []);
+    grouped.get(rootCode).push(row);
+  }
+
+  const roots = shuffle([...grouped.keys()]);
+  const usedDepartments = new Set();
+  const usedTypes = new Set();
+  const usedKinds = new Set();
+  const picked = [];
+
+  for (const rootCode of roots) {
+    if (picked.length >= count) break;
+    const candidate = pickBestBetaCandidate(
+      grouped.get(rootCode) || [],
+      usedDepartments,
+      usedTypes,
+      usedKinds
+    );
+    if (!candidate) continue;
+    picked.push(candidate);
+    const department = String(candidate.departmentGu || candidate.departmentEn || '').trim();
+    if (department) usedDepartments.add(department);
+    if (candidate.type) usedTypes.add(candidate.type);
+    usedKinds.add(betaVariantKind(candidate));
+  }
+
+  if (picked.length < count) {
+    const leftovers = shuffle(
+      pool.filter((row) => !picked.some((selected) => selected.queId === row.queId))
+    );
+    for (const row of leftovers) {
+      if (picked.length >= count) break;
+      picked.push(row);
+    }
+  }
+
+  return picked.slice(0, count);
+}
+
+async function attachBetaQuestionBackgrounds(bankRows) {
+  const betaRows = bankRows.filter((row) => Number.isFinite(Number(row.betaDepartmentId)));
+  if (!betaRows.length) {
+    return { bankRows, backgroundStyle: null };
+  }
+
+  const departmentIds = [...new Set(betaRows.map((row) => Number(row.betaDepartmentId)))];
+  const imageRows = await prisma.betaDepartmentQuizImage.findMany({
+    where: {
+      betaDepartmentId: { in: departmentIds },
+      isActive: true,
+    },
+    select: {
+      betaDepartmentId: true,
+      style: true,
+      imageUrl: true,
+    },
+  });
+
+  if (!imageRows.length) {
+    return { bankRows, backgroundStyle: null };
+  }
+
+  const byDepartment = new Map();
+  const byDepartmentAndStyle = new Map();
+  const styles = new Set();
+
+  for (const row of imageRows) {
+    styles.add(row.style);
+    if (!byDepartment.has(row.betaDepartmentId)) byDepartment.set(row.betaDepartmentId, []);
+    byDepartment.get(row.betaDepartmentId).push(row);
+
+    if (!byDepartmentAndStyle.has(row.betaDepartmentId)) {
+      byDepartmentAndStyle.set(row.betaDepartmentId, new Map());
+    }
+    const styleMap = byDepartmentAndStyle.get(row.betaDepartmentId);
+    if (!styleMap.has(row.style)) styleMap.set(row.style, []);
+    styleMap.get(row.style).push(row);
+  }
+
+  const eligibleStyles = [...styles].filter((style) =>
+    departmentIds.every((departmentId) => (byDepartmentAndStyle.get(departmentId)?.get(style) || []).length > 0)
+  );
+  const chosenStyle = pickRandom(eligibleStyles.length ? eligibleStyles : [...styles]);
+
+  return {
+    backgroundStyle: chosenStyle || null,
+    bankRows: bankRows.map((row) => {
+      const departmentId = Number(row.betaDepartmentId);
+      if (!Number.isFinite(departmentId)) return row;
+      const preferred = chosenStyle
+        ? byDepartmentAndStyle.get(departmentId)?.get(chosenStyle) || []
+        : [];
+      const fallback = byDepartment.get(departmentId) || [];
+      const chosenImage = pickRandom(preferred.length ? preferred : fallback);
+      const content = parseJson(row.content) || {};
+      return {
+        ...row,
+        content: {
+          ...content,
+          backgroundImageUrl: chosenImage?.imageUrl ?? null,
+          backgroundStyle: chosenImage?.style ?? chosenStyle ?? null,
+        },
+      };
+    }),
+  };
+}
+
+async function fetchCandidateQuestions({ userId, limit, districtRaw, casteRaw, personalized, betaOnly }) {
   const params = [userId];
   const filters = [
     "bq.review_status = 'ACCEPTED'",
@@ -104,6 +260,7 @@ async function fetchCandidateQuestions({ userId, limit, districtRaw, casteRaw, p
       FROM user_question_exposures uqe
       WHERE uqe.user_id = ? AND uqe.bank_que_id = bq.que_id
     )`,
+    betaOnly ? "UPPER(COALESCE(bq.scope, '')) = 'BETA'" : "UPPER(COALESCE(bq.scope, 'GENERAL')) <> 'BETA'",
   ];
 
   if (personalized) {
@@ -137,6 +294,7 @@ async function fetchCandidateQuestions({ userId, limit, districtRaw, casteRaw, p
   const sql = `
     SELECT
       bq.que_id AS queId,
+      bq.beta_department_id AS betaDepartmentId,
       bq.department_gu AS departmentGu,
       bq.department_en AS departmentEn,
       bq.question_gu AS questionGu,
@@ -169,6 +327,26 @@ async function fetchCandidateQuestions({ userId, limit, districtRaw, casteRaw, p
  * still has unseen questions so the session can still start.
  */
 async function allocateBankQuestions(user, count) {
+  if (isBetaUser(user)) {
+    const betaPool = await fetchCandidateQuestions({
+      userId: user.id,
+      limit: Math.max(count * 20, 500),
+      districtRaw: null,
+      casteRaw: null,
+      personalized: false,
+      betaOnly: true,
+    });
+
+    if (betaPool.length < count) {
+      throw new AppError(
+        ERROR_CODE.INVALID_REQUEST,
+        `Only ${betaPool.length} unseen beta questions left (need ${count}).`
+      );
+    }
+
+    return mixBetaQuestions(betaPool, count);
+  }
+
   const district = (user.district || '').trim().toLowerCase();
   const caste = (user.socialCategory || '').trim().toUpperCase();
   const districtRaw = (user.district || '').trim();
@@ -182,6 +360,7 @@ async function allocateBankQuestions(user, count) {
       districtRaw,
       casteRaw,
       personalized: true,
+      betaOnly: false,
     });
     preferred = tagged.filter((q) => isProfileMatch(q, district, caste));
   }
@@ -193,6 +372,7 @@ async function allocateBankQuestions(user, count) {
     districtRaw,
     casteRaw,
     personalized: false,
+    betaOnly: false,
   });
 
   const general = [];
@@ -271,6 +451,15 @@ export const sessionService = {
       aiMeta = {
         aiEnhanced: enhanced.aiEnhanced,
         aiEnhancementMs: enhanced.aiEnhancementMs,
+      };
+    }
+
+    if (isBetaUser(user)) {
+      const betaBackgrounds = await attachBetaQuestionBackgrounds(rowsForSession);
+      rowsForSession = betaBackgrounds.bankRows;
+      aiMeta = {
+        ...aiMeta,
+        backgroundStyle: betaBackgrounds.backgroundStyle,
       };
     }
 
