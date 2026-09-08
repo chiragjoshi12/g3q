@@ -8,7 +8,7 @@ const writeSse = (res, payload) => {
 };
 
 /**
- * POST /api/g3q-ai/chat — SSE stream of Meta AI chunks.
+ * POST /api/g3q-ai/chat — SSE stream of Gemini chunks.
  * Events: { type: 'chunk', text } … { type: 'done', model, latencyMs }
  *          or { type: 'error', message }
  */

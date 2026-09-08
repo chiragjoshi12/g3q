@@ -12,6 +12,7 @@ import {
 import { UserModel } from '../models/UserModel.js';
 import { gradeQuestion } from './grading.service.js';
 import { aiEnhancementService } from './aiEnhancement.service.js';
+import { resolveAzureBlobUrl } from '../utils/azureStorage.js';
 
 const normalizeChoiceAnswer = (value) => {
   if (value == null) return null;
@@ -193,7 +194,6 @@ async function attachBetaQuestionBackgrounds(bankRows) {
     },
     select: {
       betaDepartmentId: true,
-      style: true,
       imageUrl: true,
     },
   });
@@ -203,44 +203,26 @@ async function attachBetaQuestionBackgrounds(bankRows) {
   }
 
   const byDepartment = new Map();
-  const byDepartmentAndStyle = new Map();
-  const styles = new Set();
 
   for (const row of imageRows) {
-    styles.add(row.style);
     if (!byDepartment.has(row.betaDepartmentId)) byDepartment.set(row.betaDepartmentId, []);
     byDepartment.get(row.betaDepartmentId).push(row);
-
-    if (!byDepartmentAndStyle.has(row.betaDepartmentId)) {
-      byDepartmentAndStyle.set(row.betaDepartmentId, new Map());
-    }
-    const styleMap = byDepartmentAndStyle.get(row.betaDepartmentId);
-    if (!styleMap.has(row.style)) styleMap.set(row.style, []);
-    styleMap.get(row.style).push(row);
   }
 
-  const eligibleStyles = [...styles].filter((style) =>
-    departmentIds.every((departmentId) => (byDepartmentAndStyle.get(departmentId)?.get(style) || []).length > 0)
-  );
-  const chosenStyle = pickRandom(eligibleStyles.length ? eligibleStyles : [...styles]);
-
   return {
-    backgroundStyle: chosenStyle || null,
+    backgroundStyle: null,
     bankRows: bankRows.map((row) => {
       const departmentId = Number(row.betaDepartmentId);
       if (!Number.isFinite(departmentId)) return row;
-      const preferred = chosenStyle
-        ? byDepartmentAndStyle.get(departmentId)?.get(chosenStyle) || []
-        : [];
       const fallback = byDepartment.get(departmentId) || [];
-      const chosenImage = pickRandom(preferred.length ? preferred : fallback);
+      const chosenImage = pickRandom(fallback);
       const content = parseJson(row.content) || {};
       return {
         ...row,
         content: {
           ...content,
-          backgroundImageUrl: chosenImage?.imageUrl ?? null,
-          backgroundStyle: chosenImage?.style ?? chosenStyle ?? null,
+          backgroundImageUrl: resolveAzureBlobUrl(chosenImage?.imageUrl),
+          backgroundStyle: null,
         },
       };
     }),
@@ -438,7 +420,7 @@ export const sessionService = {
     const lang = language || CONFIG.QUIZ.DEFAULT_LANGUAGE;
     const bankRows = await allocateBankQuestions(user, questionCount);
 
-    // Optional Meta AI pass: reframe the session questions with student profile before persist/serve.
+    // Optional Gemini pass: reframe the session questions with student profile before persist/serve.
     let rowsForSession = bankRows;
     let aiMeta = { aiEnhanced: false, aiEnhancementMs: 0 };
     if (aiEnhancementService.isEnabled()) {
