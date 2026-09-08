@@ -47,12 +47,15 @@ function ResultScreen({ params }) {
 
   const { status, data, error, reload } = useAsyncData(
     async () => {
-      const attempt = await quizController.getAttempt(attemptId);
+      const attempt = await quizController.getAttempt(attemptId, { practice });
       if (!attempt) {
         throw new AppError(ERROR_CODE.NOT_FOUND, t("errorNotFound"));
       }
       if (practice || appConfig.dataSource !== DATA_SOURCE.REST) {
-        const bundle = await quizController.loadBundle(attempt.quizId);
+        const bundle =
+          practice && appConfig.dataSource === DATA_SOURCE.REST
+            ? await quizController.loadPracticeBundle({ quizId: attempt.quizId })
+            : await quizController.loadBundle(attempt.quizId);
         return { attempt, bundle };
       }
       return { attempt, bundle: null };

@@ -118,7 +118,7 @@ const explanationBody = (row, language = 'gu') => {
   ].join(' ');
 };
 
-const toPlayExplanation = (row, language = 'gu') => {
+export const toPlayExplanation = (row, language = 'gu') => {
   const lang = language === 'en' ? 'en' : 'gu';
   const storedExplanation = parseJson(row.content)?.explanation;
   if (storedExplanation?.body) {

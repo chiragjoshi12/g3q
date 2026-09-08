@@ -146,6 +146,14 @@ export const httpSource = {
 
   getQuizById: (quizId) => request(`/quizzes/${quizId}`),
 
+  getPracticeBundle: ({ quizId, language } = {}) => {
+    const params = new URLSearchParams();
+    if (quizId) params.set("quiz_id", quizId);
+    if (language) params.set("language", language);
+    const qs = params.toString();
+    return request(`/quizzes/practice/bundle${qs ? `?${qs}` : ""}`);
+  },
+
   getQuestionsByQuizId: (quizId) => request(`/quizzes/${quizId}/questions`),
 
   getExplanationsByQuizId: (quizId) => request(`/quizzes/${quizId}/explanations`),

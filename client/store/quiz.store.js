@@ -98,6 +98,61 @@ export const useQuizStore = create()(
       loadQuiz: async (quizId, { restart = false, practice = false } = {}) => {
         set({ loading: true, error: null });
         try {
+          if (appConfig.dataSource === DATA_SOURCE.REST && practice) {
+            const { quiz, questions, explanations } = await quizController.loadPracticeBundle({
+              quizId,
+              language: "gu",
+            });
+            const state = get();
+            const resumable =
+              !restart &&
+              state.quizId === quizId &&
+              Boolean(state.attemptId) &&
+              state.phase !== QUIZ_PHASE.COMPLETED &&
+              state.currentIndex < questions.length;
+
+            if (resumable) {
+              set({
+                quiz,
+                questions,
+                explanations,
+                loading: false,
+                answers: withSeededAnswer(state.answers, questions[state.currentIndex]),
+                runningSince: state.phase === QUIZ_PHASE.ANSWERING ? Date.now() : null,
+              });
+              return;
+            }
+
+            const localAttemptId = createAttemptId(quizId);
+            set({
+              quiz,
+              questions,
+              explanations,
+              loading: false,
+              quizId,
+              ...blankSession,
+              answers: withSeededAnswer({}, questions[0]),
+              attemptId: localAttemptId,
+              startedAt: Date.now(),
+              runningSince: Date.now(),
+            });
+            void trackAnalyticsEvent({
+              eventId: createAnalyticsEventId("practice_start"),
+              eventType: "practice_quiz_start",
+              source: "practice_quiz",
+              quizId,
+              attemptId: localAttemptId,
+              questionCount: Array.isArray(questions) ? questions.length : 0,
+              success: true,
+              metadata: {
+                practice: true,
+                restart,
+                source: "database",
+              },
+            });
+            return;
+          }
+
           if (appConfig.dataSource === DATA_SOURCE.REST && !practice) {
             const session = await quizController.loadSession(quizId);
             const state = get();
@@ -272,6 +327,7 @@ export const useQuizStore = create()(
             startedAt: state.startedAt,
             user,
             abandoned,
+            practice,
           });
           if (practice) {
             void trackAnalyticsEvent({

@@ -234,6 +234,31 @@ export const jsonSource = {
     return clone(quiz);
   },
 
+  async getPracticeBundle({ quizId } = {}) {
+    await delay();
+    const practiceQuizId = quizId || quizzesJson[0]?.id;
+    const quiz = clone(quizzesJson.find((item) => item.id === practiceQuizId) || quizzesJson[0] || null);
+    const questions = clone((questionsJson[practiceQuizId] || []).slice(0, 5));
+    const explanations = {};
+    questions.forEach((question) => {
+      if (explanationsJson[question.id]) {
+        explanations[question.id] = clone(explanationsJson[question.id]);
+      }
+    });
+    return {
+      quiz: quiz
+        ? {
+            ...quiz,
+            id: quizId || quiz.id,
+            totalQuestions: questions.length,
+            totalPoints: questions.length,
+          }
+        : null,
+      questions,
+      explanations,
+    };
+  },
+
   async getQuestionsByQuizId(quizId) {
     const questions = questionsJson[quizId];
     if (!questions) {
