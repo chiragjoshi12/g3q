@@ -7,6 +7,7 @@ import { AUTH_BUTTON_CLASS, AUTH_FIELD_CLASS, AuthLink } from "@/components/auth
 import { AppButton } from "@/components/common/AppButton";
 import { appConfig } from "@/config/app.config";
 import { BRAND_ICONS } from "@/lib/brand-icons";
+import { validatePhone } from "@/lib/domain/roles";
 import { useI18n } from "@/lib/i18n";
 
 /** Step 2: the code resolved to this person — confirm it, then add a phone for the OTP. */
@@ -20,6 +21,7 @@ export function IdentityStep({
   onBack,
 }) {
   const { t } = useI18n();
+  const validPhone = !validatePhone(phone);
   if (!identity) return null;
 
   return (
@@ -83,7 +85,7 @@ export function IdentityStep({
           <AppButton
             type="submit"
             loading={loading}
-            disabled={phone.length !== appConfig.auth.phoneLength}
+            disabled={!validPhone || phone.length !== appConfig.auth.phoneLength}
             className={AUTH_BUTTON_CLASS}
           >
             {t("sendOtp")}

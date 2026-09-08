@@ -5,7 +5,7 @@ import { AlertCircle } from "@/components/icons";
 import { AUTH_BUTTON_CLASS, AUTH_FIELD_CLASS } from "@/components/auth/AuthBrandHeader";
 import { AppButton } from "@/components/common/AppButton";
 import { BrandIcon } from "@/components/common/BrandIcon";
-import { getCredentialRule, getRoleTabs } from "@/lib/domain/roles";
+import { ROLE, getCredentialRule, getRoleTabs, validateCredential } from "@/lib/domain/roles";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +22,7 @@ export function CredentialStep({
   const { t } = useI18n();
   const rule = role ? getCredentialRule(role) : null;
   const roleTabs = getRoleTabs();
+  const credentialValid = rule ? !validateCredential(role, credential) : false;
 
   return (
     <form
@@ -99,7 +100,7 @@ export function CredentialStep({
             <AppButton
               type="submit"
               loading={loading}
-              disabled={!credential}
+              disabled={!credential || (role === ROLE.CITIZEN && !credentialValid)}
               className={AUTH_BUTTON_CLASS}
             >
               {t("next")}

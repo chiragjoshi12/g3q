@@ -9,6 +9,7 @@ import { createAnalyticsEventId, trackAnalyticsEvent } from "@/lib/analytics-cli
 import { toMessage } from "@/lib/core/errors";
 import { emptyAnswerFor, isAnswered } from "@/lib/domain/grading";
 import { STORAGE_KEYS, zustandStorage } from "@/lib/storage/storage";
+import { useLanguageStore } from "@/store/language.store";
 
 /**
  * The quiz session state machine.
@@ -35,6 +36,7 @@ const blankSession = {
   answers: {},
   timings: {},
   phase: QUIZ_PHASE.ANSWERING,
+  contentLanguage: null,
   accumulatedMs: 0,
   runningSince: null,
   completedAttemptId: null,
@@ -95,18 +97,22 @@ export const useQuizStore = create()(
        * Loads quiz content and either resumes persisted progress for the same
        * quiz or starts a fresh attempt.
        */
-      loadQuiz: async (quizId, { restart = false, practice = false } = {}) => {
+      loadQuiz: async (
+        quizId,
+        { restart = false, practice = false, language = useLanguageStore.getState().language } = {}
+      ) => {
         set({ loading: true, error: null });
         try {
           if (appConfig.dataSource === DATA_SOURCE.REST && practice) {
             const { quiz, questions, explanations } = await quizController.loadPracticeBundle({
               quizId,
-              language: "gu",
+              language,
             });
             const state = get();
             const resumable =
               !restart &&
               state.quizId === quizId &&
+              state.contentLanguage === language &&
               Boolean(state.attemptId) &&
               state.phase !== QUIZ_PHASE.COMPLETED &&
               state.currentIndex < questions.length;
@@ -118,6 +124,7 @@ export const useQuizStore = create()(
                 explanations,
                 loading: false,
                 answers: withSeededAnswer(state.answers, questions[state.currentIndex]),
+                contentLanguage: language,
                 runningSince: state.phase === QUIZ_PHASE.ANSWERING ? Date.now() : null,
               });
               return;
@@ -134,6 +141,7 @@ export const useQuizStore = create()(
               answers: withSeededAnswer({}, questions[0]),
               attemptId: localAttemptId,
               startedAt: Date.now(),
+              contentLanguage: language,
               runningSince: Date.now(),
             });
             void trackAnalyticsEvent({
@@ -160,6 +168,7 @@ export const useQuizStore = create()(
             const resumable =
               !restart &&
               state.quizId === quizId &&
+              state.contentLanguage === session?.language &&
               Boolean(state.attemptId) &&
               state.phase !== QUIZ_PHASE.COMPLETED &&
               state.currentIndex < questions.length;
@@ -181,6 +190,7 @@ export const useQuizStore = create()(
                 explanations: session?.explanations ?? {},
                 loading: false,
                 answers: withSeededAnswer(state.answers, questions[state.currentIndex]),
+                contentLanguage: session?.language ?? null,
                 runningSince: state.phase === QUIZ_PHASE.ANSWERING ? Date.now() : null,
               });
               return;
@@ -206,6 +216,7 @@ export const useQuizStore = create()(
               answers: withSeededAnswer({}, questions[0]),
               attemptId: session.sessionId,
               startedAt: session.startedAt ?? Date.now(),
+              contentLanguage: session?.language ?? null,
               runningSince: Date.now(),
             });
             return;
@@ -216,6 +227,7 @@ export const useQuizStore = create()(
           const resumable =
             !restart &&
             state.quizId === quizId &&
+            state.contentLanguage === language &&
             Boolean(state.attemptId) &&
             state.phase !== QUIZ_PHASE.COMPLETED &&
             state.currentIndex < questions.length;
@@ -227,6 +239,7 @@ export const useQuizStore = create()(
               explanations,
               loading: false,
               answers: withSeededAnswer(state.answers, questions[state.currentIndex]),
+              contentLanguage: language,
               // Restart the running span now so time spent with the app closed
               // is never billed to the question.
               runningSince: state.phase === QUIZ_PHASE.ANSWERING ? Date.now() : null,
@@ -245,6 +258,7 @@ export const useQuizStore = create()(
             answers: withSeededAnswer({}, questions[0]),
             attemptId: localAttemptId,
             startedAt: Date.now(),
+            contentLanguage: language,
             runningSince: Date.now(),
           });
           if (practice) {
@@ -373,6 +387,7 @@ export const useQuizStore = create()(
         answers: state.answers,
         timings: state.timings,
         phase: state.phase,
+        contentLanguage: state.contentLanguage,
         accumulatedMs: state.accumulatedMs,
         completedAttemptId: state.completedAttemptId,
       }),

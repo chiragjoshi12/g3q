@@ -55,7 +55,7 @@ export default function QuizPage({ params }) {
 function QuizScreen({ params }) {
   const { quizId } = use(params);
   const router = useRouter();
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const practice = usePracticeMode();
   const { ready, user } = useAuthGuard({ optional: practice });
   const [confirmExit, setConfirmExit] = useState(false);
@@ -78,8 +78,8 @@ function QuizScreen({ params }) {
   const error = useQuizStore((state) => state.error);
 
   useEffect(() => {
-    if (ready) loadQuiz(quizId, { practice });
-  }, [ready, quizId, practice, loadQuiz]);
+    if (ready) loadQuiz(quizId, { practice, language });
+  }, [ready, quizId, practice, language, loadQuiz]);
 
   const question = questions[currentIndex] ?? null;
   const inlinePromptQuestion =
@@ -176,7 +176,7 @@ function QuizScreen({ params }) {
               {error ? (
                 <ErrorState
                   message={error}
-                  onRetry={() => loadQuiz(quizId, { restart: true, practice })}
+                  onRetry={() => loadQuiz(quizId, { restart: true, practice, language })}
                 />
               ) : null}
 
