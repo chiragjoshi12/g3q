@@ -101,20 +101,30 @@ export class BetaQuizSessionModel {
   }
 
   static async listForUser(userId) {
-    const rows = await prisma.betaQuizSession.findMany({
-      where: { userId, status: 'submitted' },
-      orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }],
-    });
+    // Prefer beta_* rows; also include legacy quiz_sessions from before the split
+    // so certificates / quiz-attempts pages are not blank for existing beta users.
+    const [betaRows, legacyRows] = await Promise.all([
+      prisma.betaQuizSession.findMany({
+        where: { userId, status: 'submitted' },
+        orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }],
+      }),
+      prisma.quizSession.findMany({
+        where: { userId, status: 'submitted' },
+        orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }],
+      }),
+    ]);
 
     const seenWeeks = new Set();
     const items = [];
 
-    for (const session of rows) {
+    for (const session of [...betaRows, ...legacyRows]) {
       const weekMeta = getActivePlatformWeek(session.completedAt || session.startedAt || new Date());
       if (seenWeeks.has(weekMeta.id)) continue;
       seenWeeks.add(weekMeta.id);
       items.push(toSessionHistoryEntry(session));
     }
+
+    items.sort((a, b) => Number(b.completedAt || 0) - Number(a.completedAt || 0));
 
     return {
       participatedWeeks: items.map((item) => item.week),
@@ -124,21 +134,31 @@ export class BetaQuizSessionModel {
   }
 
   static async findCurrentWeekForUser(userId) {
-    const rows = await prisma.betaQuizSession.findMany({
-      where: {
-        userId,
-        status: { in: ['in_progress', 'submitted', 'abandoned'] },
-      },
-      orderBy: [{ createdAt: 'desc' }, { completedAt: 'desc' }],
-    });
+    const [betaRows, legacyRows] = await Promise.all([
+      prisma.betaQuizSession.findMany({
+        where: {
+          userId,
+          status: { in: ['in_progress', 'submitted', 'abandoned'] },
+        },
+        orderBy: [{ createdAt: 'desc' }, { completedAt: 'desc' }],
+      }),
+      prisma.quizSession.findMany({
+        where: {
+          userId,
+          status: { in: ['in_progress', 'submitted', 'abandoned'] },
+        },
+        orderBy: [{ createdAt: 'desc' }, { completedAt: 'desc' }],
+      }),
+    ]);
 
-    return (
+    const matchWeek = (rows) =>
       rows.find(
         (session) =>
           getActivePlatformWeek(session.completedAt || session.startedAt || new Date()).id ===
           CONFIG.QUIZ.CURRENT_WEEK
-      ) || null
-    );
+      ) || null;
+
+    return matchWeek(betaRows) || matchWeek(legacyRows);
   }
 
   static async createWithQuestions({ userId, language, bankRows, tx = prisma }) {
@@ -239,8 +259,18 @@ export class BetaQuizSessionModel {
   }
 
   static async userStats(userId) {
-    const [sessions, exposureAgg] = await Promise.all([
+    const [betaSessions, legacySessions, betaExposure, legacyExposure] = await Promise.all([
       prisma.betaQuizSession.aggregate({
+        where: { userId, status: 'submitted' },
+        _count: { _all: true },
+        _sum: {
+          correctCount: true,
+          wrongCount: true,
+          totalTimeMs: true,
+        },
+        _avg: { percentage: true },
+      }),
+      prisma.quizSession.aggregate({
         where: { userId, status: 'submitted' },
         _count: { _all: true },
         _sum: {
@@ -259,17 +289,31 @@ export class BetaQuizSessionModel {
           totalTimeMs: true,
         },
       }),
+      prisma.userQuestionExposure.aggregate({
+        where: { userId },
+        _count: { _all: true },
+        _sum: {
+          timesCorrect: true,
+          timesWrong: true,
+          totalTimeMs: true,
+        },
+      }),
     ]);
 
+    const sessionsCompleted = betaSessions._count._all + legacySessions._count._all;
+    const percentageSum =
+      (betaSessions._avg.percentage ?? 0) * betaSessions._count._all +
+      (legacySessions._avg.percentage ?? 0) * legacySessions._count._all;
+
     return {
-      sessionsCompleted: sessions._count._all,
-      correctCount: sessions._sum.correctCount ?? 0,
-      wrongCount: sessions._sum.wrongCount ?? 0,
-      totalTimeMs: sessions._sum.totalTimeMs ?? 0,
-      averagePercentage: sessions._avg.percentage != null ? Math.round(sessions._avg.percentage) : 0,
-      uniqueQuestionsSeen: exposureAgg._count._all,
-      exposureCorrect: exposureAgg._sum.timesCorrect ?? 0,
-      exposureWrong: exposureAgg._sum.timesWrong ?? 0,
+      sessionsCompleted,
+      correctCount: (betaSessions._sum.correctCount ?? 0) + (legacySessions._sum.correctCount ?? 0),
+      wrongCount: (betaSessions._sum.wrongCount ?? 0) + (legacySessions._sum.wrongCount ?? 0),
+      totalTimeMs: (betaSessions._sum.totalTimeMs ?? 0) + (legacySessions._sum.totalTimeMs ?? 0),
+      averagePercentage: sessionsCompleted > 0 ? Math.round(percentageSum / sessionsCompleted) : 0,
+      uniqueQuestionsSeen: betaExposure._count._all + legacyExposure._count._all,
+      exposureCorrect: (betaExposure._sum.timesCorrect ?? 0) + (legacyExposure._sum.timesCorrect ?? 0),
+      exposureWrong: (betaExposure._sum.timesWrong ?? 0) + (legacyExposure._sum.timesWrong ?? 0),
     };
   }
 }

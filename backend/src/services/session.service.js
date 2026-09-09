@@ -479,7 +479,11 @@ export const sessionService = {
   async get({ userId, sessionId }) {
     const user = await UserModel.findById(userId);
     if (!user) throw new AppError(ERROR_CODE.UNAUTHORIZED);
-    const session = await sessionModelFor(user).findById(sessionId);
+    let session = await sessionModelFor(user).findById(sessionId);
+    // Legacy beta plays lived in quiz_sessions before the beta_* split.
+    if ((!session || session.userId !== userId) && isBetaUser(user)) {
+      session = await QuizSessionModel.findById(sessionId);
+    }
     if (!session || session.userId !== userId) {
       throw new AppError(ERROR_CODE.NOT_FOUND, 'Session not found.');
     }
@@ -609,7 +613,10 @@ export const sessionService = {
   async getResult({ userId, sessionId }) {
     const user = await UserModel.findById(userId);
     if (!user) throw new AppError(ERROR_CODE.UNAUTHORIZED);
-    const session = await sessionModelFor(user).findById(sessionId);
+    let session = await sessionModelFor(user).findById(sessionId);
+    if ((!session || session.userId !== userId) && isBetaUser(user)) {
+      session = await QuizSessionModel.findById(sessionId);
+    }
     if (!session || session.userId !== userId) {
       throw new AppError(ERROR_CODE.NOT_FOUND, 'Session not found.');
     }
