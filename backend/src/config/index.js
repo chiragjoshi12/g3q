@@ -54,8 +54,10 @@ export const CONFIG = {
     DEV_BYPASS_CODE: process.env.OTP_DEV_BYPASS_CODE || '1234',
   },
 
+  // Platform is in beta testing: beta login, beta bank pool, beta leaderboard.
+  // Flip to false when launching production auth.
   BETA: {
-    ENABLED: parseBool(process.env.IS_BETA_TIME, false),
+    ENABLED: true,
   },
 
   // Bank-backed quiz sessions (allocate from ACCEPTED bank_questions).

@@ -94,7 +94,7 @@ export default function AuthPage() {
             step === AUTH_STEP.WELCOME ? "overflow-hidden" : "overflow-y-auto"
           }`}
         >
-          {appConfig.beta.isBetaTime && visibleStep === AUTH_STEP.CREDENTIAL ? (
+          {appConfig.beta.enabled && visibleStep === AUTH_STEP.CREDENTIAL ? (
             <BetaLoginStep
               firstName={profileFirstName}
               lastName={profileLastName}
@@ -112,7 +112,7 @@ export default function AuthPage() {
             />
           ) : null}
 
-          {!appConfig.beta.isBetaTime && visibleStep === AUTH_STEP.CREDENTIAL ? (
+          {!appConfig.beta.enabled && visibleStep === AUTH_STEP.CREDENTIAL ? (
             <CredentialStep
               role={role}
               credential={credential}
@@ -124,7 +124,7 @@ export default function AuthPage() {
             />
           ) : null}
 
-          {!appConfig.beta.isBetaTime && visibleStep === AUTH_STEP.IDENTITY ? (
+          {!appConfig.beta.enabled && visibleStep === AUTH_STEP.IDENTITY ? (
             <IdentityStep
               identity={identity}
               phone={phone}
@@ -136,7 +136,7 @@ export default function AuthPage() {
             />
           ) : null}
 
-          {!appConfig.beta.isBetaTime && visibleStep === AUTH_STEP.OTP ? (
+          {!appConfig.beta.enabled && visibleStep === AUTH_STEP.OTP ? (
             <OtpStep
               otp={otp}
               error={error}
@@ -147,7 +147,7 @@ export default function AuthPage() {
             />
           ) : null}
 
-          {!appConfig.beta.isBetaTime && visibleStep === AUTH_STEP.PROFILE ? (
+          {!appConfig.beta.enabled && visibleStep === AUTH_STEP.PROFILE ? (
             <CitizenProfileStep
               name={profileName}
               district={profileDistrict}

@@ -15,14 +15,6 @@
 import { resolveApiBaseUrl } from "@/config/backend-origin.mjs";
 import { getActivePlatformWeek, PLATFORM_WEEKS } from "@/config/platformWeeks";
 
-function parseBool(value, fallback = false) {
-  if (value == null || String(value).trim() === "") return fallback;
-  const normalized = String(value).trim().toLowerCase();
-  if (["1", "true", "yes", "on"].includes(normalized)) return true;
-  if (["0", "false", "no", "off"].includes(normalized)) return false;
-  return fallback;
-}
-
 export const DATA_SOURCE = {
   JSON: "json",
   REST: "rest",
@@ -52,8 +44,12 @@ export const appConfig = {
     phoneLength: 10,
   },
 
+  /**
+   * Platform is in beta testing: beta login (no OTP), beta question bank,
+   * and beta leaderboard. Flip to false when launching production auth.
+   */
   beta: {
-    isBetaTime: parseBool(process.env.NEXT_PUBLIC_IS_BETA_TIME, false),
+    enabled: true,
   },
 
   storage: {

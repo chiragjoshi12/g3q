@@ -47,7 +47,7 @@ export default function LeaderboardPage() {
   };
 
   const liveLeaderboard = hydrated && appConfig.dataSource === DATA_SOURCE.REST;
-  const betaLeaderboard = liveLeaderboard && appConfig.beta.isBetaTime;
+  const betaLeaderboard = liveLeaderboard && appConfig.beta.enabled;
 
   const {
     status,
