@@ -1,5 +1,7 @@
 "use client";
 
+import { Suspense } from "react";
+
 import { Loader2 } from "@/components/icons";
 
 import { BottomNav } from "@/components/layout/BottomNav";
@@ -20,7 +22,9 @@ export default function MainLayout({ children }) {
       footer={
         <>
           <LoginToast />
-          <BottomNav />
+          <Suspense fallback={null}>
+            <BottomNav />
+          </Suspense>
         </>
       }
     >
