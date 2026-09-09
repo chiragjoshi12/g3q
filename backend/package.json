@@ -19,6 +19,7 @@
     "load:prepare": "node scripts/prepare-load-test-data.js",
     "load:mixed": "node scripts/run-load-mix.js",
     "leaderboard:rebuild": "node scripts/rebuild-leaderboard-aggregates.js",
+    "geography:sync": "node scripts/sync-gujarat-geography.js",
     "departments:normalize": "node scripts/normalize-departments.js",
     "import:bank": "node scripts/import-bank-csv.js",
     "import:legacy-bank": "node scripts/import-legacy-bank.js",

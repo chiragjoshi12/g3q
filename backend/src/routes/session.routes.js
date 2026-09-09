@@ -11,6 +11,7 @@ import {
   submitSession,
   getSessionResult,
   listMySessions,
+  myCurrentSession,
   mySessionStats,
 } from '../controllers/session.controller.js';
 
@@ -20,6 +21,7 @@ router.use(requireAuth);
 
 router.post('/', validateRequest(startSessionSchema), startSession);
 router.get('/', listMySessions);
+router.get('/current', myCurrentSession);
 router.get('/stats', mySessionStats);
 router.get('/:sessionId', getSession);
 router.get('/:sessionId/result', getSessionResult);

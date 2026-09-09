@@ -29,6 +29,7 @@ export function toUser(raw) {
       "",
     district: raw.district ?? "",
     taluka: raw.taluka ?? "",
+    talukaId: raw.talukaId != null ? Number(raw.talukaId) : null,
     phone: raw.phone ?? "",
     joinedOn: raw.joinedOn ?? null,
     credential,
@@ -55,6 +56,38 @@ export function toQuiz(raw) {
   };
 }
 
+function optionEntries(rawOptions) {
+  if (!rawOptions) return [];
+  if (Array.isArray(rawOptions)) {
+    return rawOptions.map((option) => [
+      option.id,
+      option.imageUrl || option.image ? { label: option.label, imageUrl: option.imageUrl || option.image } : option.label,
+    ]);
+  }
+  return Object.entries(rawOptions);
+}
+
+function toOptionList(rawOptions) {
+  return optionEntries(rawOptions).map(([id, value]) =>
+    typeof value === "object" && value !== null
+      ? {
+          id,
+          label: value.label ?? "",
+          image: value.imageUrl ?? value.image ?? null,
+        }
+      : { id, label: value ?? "" }
+  );
+}
+
+function toPromptSegments(questionText = "") {
+  const source = String(questionText ?? "");
+  const parts = source.split(/(\{\{[A-Za-z0-9_-]+\}\})/g).filter(Boolean);
+  return parts.map((part) => {
+    const match = part.match(/^\{\{([A-Za-z0-9_-]+)\}\}$/);
+    return match ? { type: "blank", id: match[1] } : { type: "text", value: part };
+  });
+}
+
 export function toQuestion(raw) {
   if (!raw) return null;
   const choiceAnswerTypes = [
@@ -62,26 +95,42 @@ export function toQuestion(raw) {
     QUESTION_TYPE.TRUE_FALSE,
     QUESTION_TYPE.IMAGE_CHOICE,
   ];
+  const rawAnswer = raw.answer?.value ?? raw.answer;
   const normalizedAnswer =
-    choiceAnswerTypes.includes(raw.type) && !Array.isArray(raw.answer) && raw.answer != null
-      ? [String(raw.answer).toLowerCase()]
-      : raw.answer;
+    choiceAnswerTypes.includes(raw.type) && !Array.isArray(rawAnswer) && rawAnswer != null
+      ? [String(rawAnswer).toLowerCase()]
+      : rawAnswer;
+  const options = toOptionList(raw.options);
+  const targets =
+    raw.targets && !Array.isArray(raw.targets) ? Object.entries(raw.targets).map(([id, label]) => ({ id, label })) : [];
   return {
     id: raw.id,
     order: Number(raw.order ?? 0),
     type: raw.type,
     points: Number(raw.points ?? 1),
-    prompt: raw.prompt,
+    prompt: raw.question ?? raw.prompt,
     placeholder: raw.placeholder ?? "",
-    options: raw.options ?? null,
-    left: raw.left ?? null,
-    right: raw.right ?? null,
-    items: raw.items ?? null,
-    segments: raw.segments ?? null,
-    bank: raw.bank ?? null,
-    backgroundImageUrl: raw.backgroundImageUrl ?? null,
+    options:
+      raw.type === QUESTION_TYPE.MATCH_FOLLOWING ||
+      raw.type === QUESTION_TYPE.DRAG_DROP ||
+      raw.type === QUESTION_TYPE.DRAG_INTO_BLANKS ||
+      raw.type === QUESTION_TYPE.SINGLE_CHOICE ||
+      raw.type === QUESTION_TYPE.TRUE_FALSE ||
+      raw.type === QUESTION_TYPE.IMAGE_CHOICE
+        ? options
+        : raw.options ?? null,
+    left: raw.type === QUESTION_TYPE.MATCH_FOLLOWING ? targets : raw.left ?? null,
+    right: raw.type === QUESTION_TYPE.MATCH_FOLLOWING ? options : raw.right ?? null,
+    items: raw.type === QUESTION_TYPE.DRAG_DROP ? options : raw.items ?? null,
+    segments:
+      raw.type === QUESTION_TYPE.DRAG_INTO_BLANKS
+        ? toPromptSegments(raw.question ?? raw.prompt)
+        : raw.segments ?? null,
+    bank: raw.type === QUESTION_TYPE.DRAG_INTO_BLANKS ? options : raw.bank ?? null,
+    backgroundImageUrl: raw.bg ?? raw.backgroundImageUrl ?? null,
     backgroundStyle: raw.backgroundStyle ?? null,
     answer: normalizedAnswer,
+    explanation: raw.explanation ?? null,
     acceptable: raw.acceptable ?? null,
   };
 }

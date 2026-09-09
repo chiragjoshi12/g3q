@@ -34,15 +34,15 @@ function pickFeaturedQuiz(list) {
   );
 }
 
-/** Latest finished attempt for this quiz (skips abandoned early exits). */
-function pickQuizScore(attempts, quizId) {
+/** Current week's finished attempt score in REST mode; latest score otherwise. */
+function pickQuizScore(attempts, quizId, currentWeek) {
   if (!quizId || !Array.isArray(attempts)) return null;
   if (appConfig.dataSource === DATA_SOURCE.REST) {
-    const latest = attempts.find((attempt) => !attempt.abandoned);
-    if (!latest) return null;
+    const currentWeekAttempt = attempts[0] ?? null;
+    if (!currentWeekAttempt) return null;
     return {
-      correctCount: Number(latest.correctCount) || 0,
-      totalQuestions: Number(latest.totalQuestions) || 0,
+      correctCount: Number(currentWeekAttempt.correctCount) || 0,
+      totalQuestions: Number(currentWeekAttempt.totalQuestions) || 0,
     };
   }
   const match = attempts.find(
@@ -86,14 +86,27 @@ export default function HomePage() {
       }
     : pickFeaturedQuiz(quizzes);
 
-  const { data: attempts } = useAsyncData(
-    () => attemptRepository.list(user?.id),
+  const { data: sessionSummary } = useAsyncData(
+    () => (usingRest ? attemptRepository.currentWeek(user?.id) : attemptRepository.list(user?.id)),
     [user?.id],
     hydrated && Boolean(user?.id)
   );
 
   const week = Number(landingSummary?.week) || appConfig.certificate.week || 5;
-  const score = pickQuizScore(attempts, quiz?.id);
+  const attempts = usingRest ? [] : sessionSummary ?? [];
+  const currentWeek = usingRest ? Number(sessionSummary?.currentWeek) || week : week;
+  const currentWeekSession =
+    usingRest
+      ? sessionSummary?.session ?? null
+      : null;
+  const showPlayAction = usingRest
+    ? !currentWeekSession || currentWeekSession.status === "in_progress"
+    : true;
+  const score = usingRest
+    ? currentWeekSession && currentWeekSession.status !== "in_progress"
+      ? pickQuizScore([currentWeekSession], quiz?.id, currentWeek)
+      : null
+    : pickQuizScore(attempts, quiz?.id, currentWeek);
 
   useEffect(() => {
     if (preparingQuiz && overlayDone && nextQuizPath) {
@@ -162,7 +175,12 @@ export default function HomePage() {
                 />
               ) : null}
               {quiz ? (
-                <FeaturedQuizCard quiz={quiz} onStart={startQuiz} score={score} />
+                <FeaturedQuizCard
+                  quiz={quiz}
+                  onStart={startQuiz}
+                  score={score}
+                  showPlayAction={showPlayAction}
+                />
               ) : null}
             </div>
           </div>
@@ -212,7 +230,13 @@ export default function HomePage() {
               />
             ) : null}
             {quiz ? (
-              <FeaturedQuizCard wide quiz={quiz} onStart={startQuiz} score={score} />
+              <FeaturedQuizCard
+                wide
+                quiz={quiz}
+                onStart={startQuiz}
+                score={score}
+                showPlayAction={showPlayAction}
+              />
             ) : null}
           </div>
 

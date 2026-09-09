@@ -12,7 +12,8 @@ export const schoolLeaderboard = asyncHandler(async (req, res) => {
     userId: req.user?.id ?? null,
     schoolId: query.school_id,
     institute: query.institute,
-    taluka: query.taluka,
+    talukaId: query.taluka,
+    lang: query.lang,
     limit: query.limit,
   });
   return res.status(200).json(result);
@@ -22,17 +23,8 @@ export const leaderboardOverview = asyncHandler(async (req, res) => {
   const query = globalLeaderboardQuerySchema.parse(req.query);
   const result = await leaderboardService.overview({
     userId: req.user?.id ?? null,
-    taluka: query.taluka,
-    limit: query.limit,
-  });
-  return res.status(200).json(result);
-});
-
-export const betaLeaderboardOverview = asyncHandler(async (req, res) => {
-  const query = globalLeaderboardQuerySchema.parse(req.query);
-  const result = await leaderboardService.betaOverview({
-    userId: req.user?.id ?? null,
-    taluka: query.taluka,
+    talukaId: query.taluka,
+    lang: query.lang,
     limit: query.limit,
   });
   return res.status(200).json(result);
@@ -42,7 +34,8 @@ export const talukaLeaderboard = asyncHandler(async (req, res) => {
   const query = talukaLeaderboardQuerySchema.parse(req.query);
   const result = await leaderboardService.taluka({
     userId: req.user?.id ?? null,
-    taluka: query.taluka,
+    talukaId: query.taluka,
+    lang: query.lang,
     limit: query.limit,
   });
   return res.status(200).json(result);
@@ -52,7 +45,8 @@ export const collegeLeaderboard = asyncHandler(async (req, res) => {
   const query = globalLeaderboardQuerySchema.parse(req.query);
   const result = await leaderboardService.college({
     userId: req.user?.id ?? null,
-    taluka: query.taluka,
+    talukaId: query.taluka,
+    lang: query.lang,
     limit: query.limit,
   });
   return res.status(200).json(result);
@@ -62,7 +56,8 @@ export const citizenLeaderboard = asyncHandler(async (req, res) => {
   const query = globalLeaderboardQuerySchema.parse(req.query);
   const result = await leaderboardService.citizen({
     userId: req.user?.id ?? null,
-    taluka: query.taluka,
+    talukaId: query.taluka,
+    lang: query.lang,
     limit: query.limit,
   });
   return res.status(200).json(result);

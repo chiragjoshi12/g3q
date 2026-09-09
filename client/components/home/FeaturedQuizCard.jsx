@@ -12,7 +12,7 @@ const FEATURED_IMAGE = "/home/quiz-banner.jpeg";
  * Home featured quiz: photo, title row with share, question count +
  * Play Quiz — or "Your Score - X/Y" once the user has already played.
  */
-export function FeaturedQuizCard({ quiz, onStart, score = null, wide = false }) {
+export function FeaturedQuizCard({ quiz, onStart, score = null, wide = false, showPlayAction = true }) {
   const { t } = useI18n();
   if (!quiz) return null;
 
@@ -33,6 +33,10 @@ export function FeaturedQuizCard({ quiz, onStart, score = null, wide = false }) 
     score &&
     Number.isFinite(score.correctCount) &&
     Number.isFinite(score.totalQuestions);
+
+  const scoreLabel = hasScore
+    ? `${t("scoreLabel")}: ${score.correctCount}/${score.totalQuestions}`
+    : null;
 
   if (wide) {
     return (
@@ -78,32 +82,33 @@ export function FeaturedQuizCard({ quiz, onStart, score = null, wide = false }) 
             </p>
 
             <div className="absolute top-[12rem] left-0">
-              {hasScore ? (
-                <span className="mb-2 font-heading text-[13px] font-medium text-[#526273]">
-                  {t("scoreLabel")}: {score.correctCount}/{score.totalQuestions}
-                </span>
+              {showPlayAction ? (
+                <button
+                  type="button"
+                  onClick={onStart}
+                  className="flex h-17 w-full items-center justify-start gap-3 rounded-full bg-[#2d689d] px-13 font-heading text-[1.2rem] font-bold text-white transition-transform active:scale-[0.98]"
+                >
+                  <span
+                    aria-hidden
+                    className="block size-5.5 shrink-0 bg-white"
+                    style={{
+                      WebkitMaskImage: `url(${BRAND_ICONS.navPlayQuiz})`,
+                      maskImage: `url(${BRAND_ICONS.navPlayQuiz})`,
+                      WebkitMaskSize: "contain",
+                      maskSize: "contain",
+                      WebkitMaskRepeat: "no-repeat",
+                      maskRepeat: "no-repeat",
+                      WebkitMaskPosition: "center",
+                      maskPosition: "center",
+                    }}
+                  />
+                  {t("playQuiz")}
+                </button>
+              ) : hasScore ? (
+                <div className="flex h-17 w-full items-center justify-start rounded-full bg-[#E8F0F7] px-6 font-heading text-[1.05rem] font-bold text-[#2d689d]">
+                  {scoreLabel}
+                </div>
               ) : null}
-              <button
-                type="button"
-                onClick={onStart}
-                className="flex h-17 w-full items-center justify-start gap-3 rounded-full bg-[#2d689d] px-13 font-heading text-[1.2rem] font-bold text-white transition-transform active:scale-[0.98]"
-              >
-                <span
-                  aria-hidden
-                  className="block size-5.5 shrink-0 bg-white"
-                  style={{
-                    WebkitMaskImage: `url(${BRAND_ICONS.navPlayQuiz})`,
-                    maskImage: `url(${BRAND_ICONS.navPlayQuiz})`,
-                    WebkitMaskSize: "contain",
-                    maskSize: "contain",
-                    WebkitMaskRepeat: "no-repeat",
-                    maskRepeat: "no-repeat",
-                    WebkitMaskPosition: "center",
-                    maskPosition: "center",
-                  }}
-                />
-                {t("playQuiz")}
-              </button>
             </div>
           </div>
         </div>
@@ -158,32 +163,33 @@ export function FeaturedQuizCard({ quiz, onStart, score = null, wide = false }) 
           </p>
 
           <div className="flex flex-col items-end gap-1.5">
-            {hasScore ? (
-              <span className="text-right font-heading text-[12px] font-medium text-[#526273]">
-                {t("scoreLabel")}: {score.correctCount}/{score.totalQuestions}
-              </span>
+            {showPlayAction ? (
+              <button
+                type="button"
+                onClick={onStart}
+                className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[#2d689d] px-4.5 font-heading text-[16px] font-bold text-white transition-transform active:scale-[0.98]"
+              >
+                <span
+                  aria-hidden
+                  className="block size-3.5 shrink-0 bg-white"
+                  style={{
+                    WebkitMaskImage: `url(${BRAND_ICONS.navPlayQuiz})`,
+                    maskImage: `url(${BRAND_ICONS.navPlayQuiz})`,
+                    WebkitMaskSize: "contain",
+                    maskSize: "contain",
+                    WebkitMaskRepeat: "no-repeat",
+                    maskRepeat: "no-repeat",
+                    WebkitMaskPosition: "center",
+                    maskPosition: "center",
+                  }}
+                />
+                {t("playQuiz")}
+              </button>
+            ) : hasScore ? (
+              <div className="inline-flex h-10 items-center rounded-full bg-[#E8F0F7] px-4.5 font-heading text-[14px] font-bold text-[#2d689d]">
+                {scoreLabel}
+              </div>
             ) : null}
-            <button
-              type="button"
-              onClick={onStart}
-              className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[#2d689d] px-4.5 font-heading text-[16px] font-bold text-white transition-transform active:scale-[0.98]"
-            >
-              <span
-                aria-hidden
-                className="block size-3.5 shrink-0 bg-white"
-                style={{
-                  WebkitMaskImage: `url(${BRAND_ICONS.navPlayQuiz})`,
-                  maskImage: `url(${BRAND_ICONS.navPlayQuiz})`,
-                  WebkitMaskSize: "contain",
-                  maskSize: "contain",
-                  WebkitMaskRepeat: "no-repeat",
-                  maskRepeat: "no-repeat",
-                  WebkitMaskPosition: "center",
-                  maskPosition: "center",
-                }}
-              />
-              {t("playQuiz")}
-            </button>
           </div>
         </div>
       </div>
