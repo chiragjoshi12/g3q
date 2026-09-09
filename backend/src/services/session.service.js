@@ -9,9 +9,12 @@ import {
   toSessionPlayPayload,
   toSessionResult,
 } from '../models/QuizSessionModel.js';
+import { BetaQuizSessionModel } from '../models/BetaQuizSessionModel.js';
 import { UserModel } from '../models/UserModel.js';
 import { gradeQuestion } from './grading.service.js';
 import { resolveAzureBlobUrl } from '../utils/azureStorage.js';
+
+const sessionModelFor = (user) => (isBetaUser(user) ? BetaQuizSessionModel : QuizSessionModel);
 
 const normalizeChoiceAnswer = (value) => {
   if (value == null) return null;
@@ -234,6 +237,7 @@ async function attachBetaQuestionBackgrounds(bankRows) {
 
 async function fetchCandidateQuestions({ userId, limit, districtRaw, casteRaw, personalized, betaOnly }) {
   const params = [userId];
+  const exposureTable = betaOnly ? 'beta_user_question_exposures' : 'user_question_exposures';
   const filters = [
     "bq.review_status = 'ACCEPTED'",
     `(
@@ -242,7 +246,7 @@ async function fetchCandidateQuestions({ userId, limit, districtRaw, casteRaw, p
     )`,
     `NOT EXISTS (
       SELECT 1
-      FROM user_question_exposures uqe
+      FROM ${exposureTable} uqe
       WHERE uqe.user_id = ? AND uqe.bank_que_id = bq.que_id
     )`,
     betaOnly ? "UPPER(COALESCE(bq.scope, '')) = 'BETA'" : "UPPER(COALESCE(bq.scope, 'GENERAL')) <> 'BETA'",
@@ -408,17 +412,20 @@ export const sessionService = {
   async start({ userId, count, language }) {
     const user = await UserModel.findById(userId);
     if (!user) throw new AppError(ERROR_CODE.UNAUTHORIZED);
+    const SessionModel = sessionModelFor(user);
     const requestedLanguage = normalizeSessionLanguage(language);
 
-    const existingMeta = await QuizSessionModel.findInProgressMetaForUser(userId);
+    const existingMeta = await SessionModel.findInProgressMetaForUser(userId);
     if (existingMeta) {
-      let existing = await QuizSessionModel.findById(existingMeta.id);
+      let existing = await SessionModel.findById(existingMeta.id);
       if (existing && existing.language !== requestedLanguage) {
-        existing = await prisma.quizSession.update({
-          where: { id: existing.id },
-          data: { language: requestedLanguage },
-          include: { questions: { orderBy: { order: 'asc' } } },
-        });
+        existing = isBetaUser(user)
+          ? await BetaQuizSessionModel.updateLanguage(existing.id, requestedLanguage)
+          : await prisma.quizSession.update({
+              where: { id: existing.id },
+              data: { language: requestedLanguage },
+              include: { questions: { orderBy: { order: 'asc' } } },
+            });
       }
       return toSessionMeta(existing);
     }
@@ -436,22 +443,29 @@ export const sessionService = {
 
     const session = await prisma.$transaction(async (tx) => {
       await tx.$queryRawUnsafe('SELECT id FROM users WHERE id = ? FOR UPDATE', userId);
-      const latestMeta = await QuizSessionModel.findInProgressMetaForUser(userId, tx);
+      const latestMeta = await SessionModel.findInProgressMetaForUser(userId, tx);
       if (latestMeta) {
-        const activeSession = await tx.quizSession.findUnique({
-          where: { id: latestMeta.id },
-          include: { questions: { orderBy: { order: 'asc' } } },
-        });
+        const activeSession = isBetaUser(user)
+          ? await tx.betaQuizSession.findUnique({
+              where: { id: latestMeta.id },
+              include: { questions: { orderBy: { order: 'asc' } } },
+            })
+          : await tx.quizSession.findUnique({
+              where: { id: latestMeta.id },
+              include: { questions: { orderBy: { order: 'asc' } } },
+            });
         if (activeSession && activeSession.language !== lang) {
-          return tx.quizSession.update({
-            where: { id: activeSession.id },
-            data: { language: lang },
-            include: { questions: { orderBy: { order: 'asc' } } },
-          });
+          return isBetaUser(user)
+            ? BetaQuizSessionModel.updateLanguage(activeSession.id, lang, tx)
+            : tx.quizSession.update({
+                where: { id: activeSession.id },
+                data: { language: lang },
+                include: { questions: { orderBy: { order: 'asc' } } },
+              });
         }
         return activeSession;
       }
-      return QuizSessionModel.createWithQuestions({
+      return SessionModel.createWithQuestions({
         userId,
         language: lang,
         bankRows: rowsForSession,
@@ -463,7 +477,9 @@ export const sessionService = {
   },
 
   async get({ userId, sessionId }) {
-    const session = await QuizSessionModel.findById(sessionId);
+    const user = await UserModel.findById(userId);
+    if (!user) throw new AppError(ERROR_CODE.UNAUTHORIZED);
+    const session = await sessionModelFor(user).findById(sessionId);
     if (!session || session.userId !== userId) {
       throw new AppError(ERROR_CODE.NOT_FOUND, 'Session not found.');
     }
@@ -476,12 +492,13 @@ export const sessionService = {
   },
 
   async submit({ userId, sessionId, answers, timings, startedAt, abandoned = false }) {
-    const session = await QuizSessionModel.findById(sessionId);
+    const user = await UserModel.findById(userId);
+    if (!user) throw new AppError(ERROR_CODE.UNAUTHORIZED);
+    const SessionModel = sessionModelFor(user);
+    const session = await SessionModel.findById(sessionId);
     if (!session || session.userId !== userId) {
       throw new AppError(ERROR_CODE.NOT_FOUND, 'Session not found.');
     }
-    const user = await UserModel.findById(userId);
-    if (!user) throw new AppError(ERROR_CODE.UNAUTHORIZED);
 
     if (session.status === 'submitted' || session.status === 'abandoned') {
       return toSessionResult(session);
@@ -528,37 +545,40 @@ export const sessionService = {
     const totalTimeMs = attemptedRows.reduce((sum, r) => sum + r.timeSpentMs, 0);
     const totalQuestions = gradedRows.length;
 
-    const updated = await QuizSessionModel.submit(
-      sessionId,
-      gradedRows,
-      {
-        correctCount,
-        wrongCount: attemptedRows.length - correctCount,
-        totalTimeMs,
-        wallClockMs: completedMs - startedMs,
-        averageTimeMs:
-          attemptedRows.length > 0 ? Math.round(totalTimeMs / attemptedRows.length) : 0,
-        percentage:
-          totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0,
-        abandoned: Boolean(abandoned),
-      },
-      {
-        userId,
-        role: user.role,
-        district: user.district || null,
-        taluka: user.taluka || null,
-      }
-    );
+    const totals = {
+      correctCount,
+      wrongCount: attemptedRows.length - correctCount,
+      totalTimeMs,
+      wallClockMs: completedMs - startedMs,
+      averageTimeMs:
+        attemptedRows.length > 0 ? Math.round(totalTimeMs / attemptedRows.length) : 0,
+      percentage:
+        totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0,
+      abandoned: Boolean(abandoned),
+    };
+
+    const updated = isBetaUser(user)
+      ? await BetaQuizSessionModel.submit(sessionId, gradedRows, totals)
+      : await QuizSessionModel.submit(sessionId, gradedRows, totals, {
+          userId,
+          role: user.role,
+          district: user.district || null,
+          taluka: user.taluka || null,
+        });
 
     return toSessionResult(updated);
   },
 
   async listMine({ userId }) {
-    return QuizSessionModel.listForUser(userId);
+    const user = await UserModel.findById(userId);
+    if (!user) throw new AppError(ERROR_CODE.UNAUTHORIZED);
+    return sessionModelFor(user).listForUser(userId);
   },
 
   async currentMine({ userId }) {
-    const session = await QuizSessionModel.findCurrentWeekForUser(userId);
+    const user = await UserModel.findById(userId);
+    if (!user) throw new AppError(ERROR_CODE.UNAUTHORIZED);
+    const session = await sessionModelFor(user).findCurrentWeekForUser(userId);
     const sessionMeta = session ? toSessionMeta(session) : null;
     return {
       currentWeek: CONFIG.QUIZ.CURRENT_WEEK,
@@ -581,11 +601,15 @@ export const sessionService = {
   },
 
   async stats(userId) {
-    return QuizSessionModel.userStats(userId);
+    const user = await UserModel.findById(userId);
+    if (!user) throw new AppError(ERROR_CODE.UNAUTHORIZED);
+    return sessionModelFor(user).userStats(userId);
   },
 
   async getResult({ userId, sessionId }) {
-    const session = await QuizSessionModel.findById(sessionId);
+    const user = await UserModel.findById(userId);
+    if (!user) throw new AppError(ERROR_CODE.UNAUTHORIZED);
+    const session = await sessionModelFor(user).findById(sessionId);
     if (!session || session.userId !== userId) {
       throw new AppError(ERROR_CODE.NOT_FOUND, 'Session not found.');
     }

@@ -66,6 +66,8 @@ model User {
   attempts    Attempt[]
   quizSessions QuizSession[]
   questionExposures UserQuestionExposure[]
+  betaQuizSessions BetaQuizSession[]
+  betaQuestionExposures BetaUserQuestionExposure[]
   betaProfile BetaUser?
   analyticsVisitors AnalyticsVisitor[]
   analyticsEvents AnalyticsEvent[]
@@ -281,6 +283,89 @@ model BetaUser {
 
   @@index([phone])
   @@map("beta_users")
+}
+
+/// Beta play sessions — same shape as quiz_sessions, isolated from production results.
+model BetaQuizSession {
+  id             String        @id @default(cuid())
+  userId         String        @map("user_id")
+  status         SessionStatus @default(in_progress)
+  questionCount  Int           @map("question_count")
+  language       String        @default("gu") @db.VarChar(8)
+  startedAt      DateTime      @map("started_at")
+  expiresAt      DateTime?     @map("expires_at")
+  completedAt    DateTime?     @map("completed_at")
+  correctCount   Int?          @map("correct_count")
+  wrongCount     Int?          @map("wrong_count")
+  totalTimeMs    Int?          @map("total_time_ms")
+  wallClockMs    Int?          @map("wall_clock_ms")
+  averageTimeMs  Int?          @map("average_time_ms")
+  percentage     Int?
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  user      User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questions BetaQuizSessionQuestion[]
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+  @@index([userId, status, completedAt])
+  @@index([status, completedAt, userId])
+  @@map("beta_quiz_sessions")
+}
+
+model BetaQuizSessionQuestion {
+  id             String       @id @default(cuid())
+  sessionId      String       @map("session_id")
+  order          Int
+  type           QuestionType @default(single_choice)
+  bankQueId      String       @map("bank_que_id") @db.VarChar(32)
+  points         Int          @default(1)
+  departmentGu   String?      @map("department_gu") @db.VarChar(255)
+  departmentEn   String?      @map("department_en") @db.VarChar(255)
+  questionGu     String?      @map("question_gu") @db.Text
+  questionEn     String?      @map("question_en") @db.Text
+  optionAGu      String?      @map("option_a_gu") @db.Text
+  optionBGu      String?      @map("option_b_gu") @db.Text
+  optionCGu      String?      @map("option_c_gu") @db.Text
+  optionDGu      String?      @map("option_d_gu") @db.Text
+  optionAEn      String?      @map("option_a_en") @db.Text
+  optionBEn      String?      @map("option_b_en") @db.Text
+  optionCEn      String?      @map("option_c_en") @db.Text
+  optionDEn      String?      @map("option_d_en") @db.Text
+  correctOption  String       @map("correct_option") @db.Char(1)
+  content        Json?
+  answer         Json?
+  selectedOption String?      @map("selected_option") @db.Char(1)
+  selectedAnswer Json?        @map("selected_answer")
+  isCorrect      Boolean?     @map("is_correct")
+  timeSpentMs    Int?         @map("time_spent_ms")
+
+  session      BetaQuizSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  bankQuestion BankQuestion    @relation(fields: [bankQueId], references: [queId], onDelete: Restrict)
+
+  @@unique([sessionId, order])
+  @@unique([sessionId, bankQueId])
+  @@index([bankQueId])
+  @@map("beta_quiz_session_questions")
+}
+
+model BetaUserQuestionExposure {
+  userId       String   @map("user_id")
+  bankQueId    String   @map("bank_que_id") @db.VarChar(32)
+  firstSeenAt  DateTime @map("first_seen_at")
+  lastSeenAt   DateTime @map("last_seen_at")
+  timesSeen    Int      @default(1) @map("times_seen")
+  timesCorrect Int      @default(0) @map("times_correct")
+  timesWrong   Int      @default(0) @map("times_wrong")
+  totalTimeMs  Int      @default(0) @map("total_time_ms")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankQuestion BankQuestion @relation(fields: [bankQueId], references: [queId], onDelete: Cascade)
+
+  @@id([userId, bankQueId])
+  @@index([userId, lastSeenAt])
+  @@index([userId, bankQueId])
+  @@map("beta_user_question_exposures")
 }
 
 model BetaQuestionRoot {
@@ -652,6 +737,8 @@ model BankQuestion {
   activities BankQuestionActivity[]
   sessionQuestions QuizSessionQuestion[]
   exposures  UserQuestionExposure[]
+  betaSessionQuestions BetaQuizSessionQuestion[]
+  betaExposures BetaUserQuestionExposure[]
   assignment AdminQuestionAssignment?
 
   @@index([departmentId])
