@@ -3,6 +3,12 @@ import { CONFIG } from '../config/index.js';
 import { AppError, ERROR_CODE } from '../utils/appError.js';
 import { UserModel } from '../models/UserModel.js';
 import { ROLE } from '../config/roles.js';
+import {
+  BETA_CITIZEN_LEADERBOARD,
+  BETA_COLLEGE_LEADERBOARD,
+  BETA_LEADERBOARD_TALUKA,
+  BETA_SCHOOL_LEADERBOARD,
+} from '../data/betaLeaderboard.js';
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
@@ -249,6 +255,20 @@ function clampLimit(limit) {
   return Math.min(MAX_LIMIT, Math.max(1, Math.floor(n)));
 }
 
+function fixedBetaCategory(scope, items, taluka, limit) {
+  const cap = clampLimit(limit);
+  return {
+    scope,
+    taluka,
+    week: CONFIG.QUIZ.CURRENT_WEEK,
+    weekMeta: CONFIG.QUIZ.CURRENT_WEEK_META,
+    label: schoolLabel(taluka, CONFIG.QUIZ.CURRENT_WEEK),
+    total: Math.min(items.length, cap),
+    items: items.slice(0, cap),
+    me: null,
+  };
+}
+
 async function resolveScopedUser(userId) {
   if (!userId) return null;
   return UserModel.findById(userId);
@@ -430,6 +450,21 @@ export const leaderboardService = {
       school,
       college,
       citizen,
+    };
+  },
+
+  async betaOverview({ userId, taluka, limit }) {
+    const me = await resolveScopedUser(userId);
+    const scopeTaluka =
+      String(taluka || '').trim() || String(me?.taluka || '').trim() || BETA_LEADERBOARD_TALUKA;
+
+    return {
+      taluka: scopeTaluka,
+      week: CONFIG.QUIZ.CURRENT_WEEK,
+      weekMeta: CONFIG.QUIZ.CURRENT_WEEK_META,
+      school: fixedBetaCategory('school', BETA_SCHOOL_LEADERBOARD, scopeTaluka, limit),
+      college: fixedBetaCategory(ROLE.COLLEGE, BETA_COLLEGE_LEADERBOARD, scopeTaluka, limit),
+      citizen: fixedBetaCategory(ROLE.CITIZEN, BETA_CITIZEN_LEADERBOARD, scopeTaluka, limit),
     };
   },
 

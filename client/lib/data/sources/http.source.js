@@ -133,6 +133,12 @@ export const httpSource = {
       body: { requestId, name, district, taluka },
     }),
 
+  betaLogin: ({ firstName, lastName, district, taluka, phone }) =>
+    request("/auth/beta/login", {
+      method: "POST",
+      body: { firstName, lastName, district, taluka, phone },
+    }),
+
   getLandingSummary: () => request("/landing/summary"),
 
   getMe: () => request("/users/me"),
@@ -187,6 +193,14 @@ export const httpSource = {
     if (lang) params.set("lang", lang);
     const qs = params.toString();
     return request(`/leaderboard${qs ? `?${qs}` : ""}`);
+  },
+
+  getBetaLeaderboardOverview: ({ limit, taluka } = {}) => {
+    const params = new URLSearchParams();
+    if (limit) params.set("limit", String(limit));
+    if (taluka) params.set("taluka", taluka);
+    const qs = params.toString();
+    return request(`/leaderboard/beta${qs ? `?${qs}` : ""}`);
   },
 
   getSchoolLeaderboard: ({ limit, schoolId, institute, talukaId, lang } = {}) => {

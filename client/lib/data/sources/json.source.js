@@ -205,6 +205,23 @@ export const jsonSource = {
     return { user: clone(user), token: `static.${user.id}.token` };
   },
 
+  async betaLogin({ firstName, lastName, district, taluka, phone }) {
+    await delay();
+    const user = {
+      id: `beta_${Date.now()}`,
+      role: ROLE.STUDENT,
+      name: [String(firstName || "").trim(), String(lastName || "").trim()].filter(Boolean).join(" "),
+      district: String(district || "").trim(),
+      taluka: String(taluka || "").trim(),
+      phone: digits(phone),
+      institute: "Beta User",
+      grade: "",
+      joinedOn: today(),
+    };
+    extraStudents.push(user);
+    return { user: clone(user), token: `static.${user.id}.token`, beta: true };
+  },
+
   async listQuizzes() {
     return clone(quizzesJson);
   },
