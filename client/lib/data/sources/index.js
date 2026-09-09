@@ -16,11 +16,12 @@ import { httpSource } from "@/lib/data/sources/http.source";
  *   getQuizById(quizId)                       -> Quiz
  *   getQuestionsByQuizId(quizId)              -> Question[]
  *   getExplanationsByQuizId(quizId)           -> Record<questionId, Explanation>
- *   startSession({ count, language })         -> SessionPlayPayload
+ *   startSession({ count, language })         -> SessionMeta
  *   getSession(sessionId)                     -> SessionPlayPayload | SessionResult
  *   submitSession({ sessionId, answers, timings, startedAt }) -> SessionResult
  *   getSessionResult(sessionId)               -> SessionResult
- *   listMySessions({ page, pageSize })        -> { items, total, ... }
+ *   listMySessions()                          -> { participatedWeeks, currentWeek, quizSessions }
+ *   getMyCurrentSession()                     -> { currentWeek, weekMeta, session }
  *   getMySessionStats()                       -> Stats
  *   clearMyAttempts()                         -> Stats
  *   getSchoolLeaderboard({ ... })             -> Leaderboard

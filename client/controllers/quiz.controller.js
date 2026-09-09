@@ -11,19 +11,23 @@ export function createAttemptId(quizId) {
   return `att_${quizId}_${Date.now()}_${random}`;
 }
 
-function normalizeLiveSession(session) {
-  if (!session) return null;
-  const questions = (session.questions ?? []).map(toQuestion).filter(Boolean);
-  const questionLevelExplanations = Object.fromEntries(
-    questions
-      .map((question, index) => {
-        const rawExplanation = session.questions?.[index]?.explanation;
-        const explanation = toExplanation(rawExplanation);
-        if (!explanation) return null;
-        return [question.id, { ...explanation, questionId: question.id }];
+function extractQuestionExplanations(rawQuestions = []) {
+  return Object.fromEntries(
+    (rawQuestions ?? [])
+      .map((rawQuestion) => {
+        const explanation = toExplanation(rawQuestion?.explanation);
+        if (!explanation || !rawQuestion?.id) return null;
+        return [rawQuestion.id, { ...explanation, questionId: rawQuestion.id }];
       })
       .filter(Boolean)
   );
+}
+
+function normalizeLiveSession(session) {
+  if (!session) return null;
+  const rawQuestions = session.questions ?? [];
+  const questions = (session.questions ?? []).map(toQuestion).filter(Boolean);
+  const questionLevelExplanations = extractQuestionExplanations(rawQuestions);
   const apiExplanations = Object.fromEntries(
     Object.entries(session.explanations ?? {})
       .map(([id, value]) => {
@@ -63,7 +67,7 @@ export const quizController = {
 
   async startSession({ count, language } = {}) {
     if (appConfig.dataSource !== DATA_SOURCE.REST) return null;
-    return normalizeLiveSession(await getDataSource().startSession({ count, language }));
+    return getDataSource().startSession({ count, language });
   },
 
   async loadSession(sessionId) {
@@ -89,6 +93,7 @@ export const quizController = {
         answers,
         timings,
         startedAt,
+        abandoned,
       });
       return {
         attemptId: result.sessionId,
@@ -98,17 +103,13 @@ export const quizController = {
         completedAt: result.completedAt,
         totalQuestions: Number(result.questionCount ?? questions.length ?? 0),
         attemptedCount: Number(result.correctCount ?? 0) + Number(result.wrongCount ?? 0),
-        abandoned:
-          Number(result.questionCount ?? 0) >
-          Number(result.correctCount ?? 0) + Number(result.wrongCount ?? 0),
+        abandoned: result.status === "abandoned",
         correctCount: Number(result.correctCount ?? 0),
         wrongCount: Number(result.wrongCount ?? 0),
         earnedPoints: Number(result.correctCount ?? 0),
         maxPoints: Number(result.questionCount ?? questions.length ?? 0),
         percentage: Number(result.percentage ?? 0),
         totalTimeMs: Number(result.totalTimeMs ?? 0),
-        wallClockMs: Number(result.wallClockMs ?? 0),
-        averageTimeMs: Number(result.averageTimeMs ?? 0),
         breakdown: result.breakdown ?? [],
         userId: user?.id ?? null,
         userName: user?.name ?? "",

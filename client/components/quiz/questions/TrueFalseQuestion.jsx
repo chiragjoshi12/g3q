@@ -5,16 +5,12 @@ import Image from "next/image";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-const OPTIONS = [
+const OPTION_STYLES = [
   {
-    id: "true",
-    label: "સાચું",
     icon: "/icons/correct.png",
     headerClass: "bg-[#e8f8ed]",
   },
   {
-    id: "false",
-    label: "ખોટું",
     icon: "/icons/incorrect.png",
     headerClass: "bg-[#f4d5d1]",
   },
@@ -26,11 +22,11 @@ const OPTIONS = [
 export function TrueFalseQuestion({ question, value, onChange, disabled, revealed }) {
   const { t } = useI18n();
   const selected = value ?? [];
-  const options = OPTIONS.map((option) => {
-    const custom = (question.options ?? []).find((item) => item.id === option.id);
-    const baseLabel = option.id === "true" ? t("correct") : t("incorrect");
-    return custom ? { ...option, label: custom.label } : { ...option, label: baseLabel };
-  });
+  const options = (question.options ?? []).slice(0, 2).map((option, index) => ({
+    ...(OPTION_STYLES[index] ?? OPTION_STYLES[0]),
+    id: option.id,
+    label: option.label ?? (index === 0 ? t("correct") : t("incorrect")),
+  }));
 
   return (
     <div className="mx-auto grid w-full max-w-[22rem] grid-cols-2 gap-3.5 sm:max-w-[24rem] sm:gap-4">

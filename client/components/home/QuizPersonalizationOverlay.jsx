@@ -76,12 +76,17 @@ export function QuizPersonalizationOverlay({ name, taluka, onComplete }) {
   const [revealed, setRevealed] = useState(0);
   const [progress, setProgress] = useState(0);
   const doneRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
   const totalMsRef = useRef(DURATION_OPTIONS_MS[1]);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     const totalMs = totalMsRef.current;
     if (reduceMotion) {
-      const t = window.setTimeout(() => onComplete?.(), 900);
+      const t = window.setTimeout(() => onCompleteRef.current?.(), 900);
       return () => window.clearTimeout(t);
     }
 
@@ -107,7 +112,7 @@ export function QuizPersonalizationOverlay({ name, taluka, onComplete }) {
       window.clearInterval(progressTimer);
       setProgress(100);
       setRevealed(SIGNALS.length);
-      window.setTimeout(() => onComplete?.(), 250);
+      window.setTimeout(() => onCompleteRef.current?.(), 250);
     }, totalMs);
 
     return () => {
@@ -115,7 +120,7 @@ export function QuizPersonalizationOverlay({ name, taluka, onComplete }) {
       window.clearInterval(progressTimer);
       window.clearTimeout(doneTimer);
     };
-  }, [onComplete, reduceMotion]);
+  }, [reduceMotion]);
 
   return (
     <div

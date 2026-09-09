@@ -95,7 +95,7 @@ export const useQuizStore = create()(
 
       /**
        * Loads quiz content and either resumes persisted progress for the same
-       * quiz or starts a fresh attempt.
+       * quiz or starts a fresh attempt. Practice always starts fresh.
        */
       loadQuiz: async (
         quizId,
@@ -109,13 +109,7 @@ export const useQuizStore = create()(
               language,
             });
             const state = get();
-            const resumable =
-              !restart &&
-              state.quizId === quizId &&
-              state.contentLanguage === language &&
-              Boolean(state.attemptId) &&
-              state.phase !== QUIZ_PHASE.COMPLETED &&
-              state.currentIndex < questions.length;
+            const resumable = false;
 
             if (resumable) {
               set({
@@ -225,6 +219,7 @@ export const useQuizStore = create()(
           const { quiz, questions, explanations } = await quizController.loadBundle(quizId);
           const state = get();
           const resumable =
+            !practice &&
             !restart &&
             state.quizId === quizId &&
             state.contentLanguage === language &&

@@ -18,7 +18,7 @@ export const BRAND_ICONS = {
   resultCertificate: "/icons/result-certificate.png",
   resultTrophy: "/icons/result-trophy.png",
   profilePhoto: "/profile-photo.jpg",
-  navPractice: "/icons/nav-practice.png",
+  navPractice: "/icons/nav-practice.svg",
   navG3qAi: "/icons/nav-g3q-ai.png",
   navPlayQuiz: "/icons/play-quiz.png",
   navHome: "/icons/nav-home.svg",

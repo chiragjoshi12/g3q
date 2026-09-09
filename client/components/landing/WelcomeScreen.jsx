@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { BrandGlyph, BrandIcon } from "@/components/common/BrandIcon";
 import { ErrorState } from "@/components/common/StateViews";
 import { BannerSlider } from "@/components/landing/BannerSlider";
-import { LandingActionNav, LandingActionNavWide } from "@/components/landing/LandingActionNav";
+import { LandingActionNavWide } from "@/components/landing/LandingActionNav";
 import { LeaderboardPreviewCard } from "@/components/landing/LeaderboardList";
 import { AppShell } from "@/components/layout/AppShell";
 import { BrandHeader } from "@/components/layout/BrandHeader";
@@ -45,6 +45,12 @@ function weekPlaysBadge(language, weeklyPlays, week) {
   if (language === "gu") return `${count} માં ${week}મું અઠવાડિયું`;
   if (language === "hi") return `${count} में सप्ताह ${week}`;
   return `${count} in week ${week}`;
+}
+
+function practiceSubtitle(language) {
+  if (language === "gu") return "5 પ્રશ્નોની પ્રેક્ટિસ કરો";
+  if (language === "hi") return "5 प्रश्नों की प्रैक्टिस करें";
+  return "Practice 5 questions";
 }
 
 export function WelcomeScreen() {
@@ -161,10 +167,25 @@ export function WelcomeScreen() {
               className="shadow-none"
               onClick={() => router.push(ROUTES.leaderboard)}
             />
+
+            <LandingQuickActionCard
+              iconSrc={BRAND_ICONS.navPractice}
+              title={t("practice")}
+              subtitle={practiceSubtitle(language)}
+              onClick={navHandlers.onPractice}
+            />
           </div>
         </main>
 
-        <LandingActionNav floating {...navHandlers} />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#F2F2F2] via-[#F2F2F2]/88 to-transparent blur-xl"
+          />
+          <div className="pointer-events-auto relative flex justify-center">
+            <PlayQuizButton label={t("playQuiz")} onClick={navHandlers.onPlayQuiz} />
+          </div>
+        </div>
       </div>
 
       <div className="relative hidden h-full min-h-0 w-full flex-col bg-[#f5f5f5] lg:flex">
@@ -250,5 +271,62 @@ export function WelcomeScreen() {
         <LandingActionNavWide {...navHandlers} />
       </div>
     </AppShell>
+  );
+}
+
+function LandingQuickActionCard({ iconSrc, title, subtitle, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex min-h-[5.75rem] w-full items-start gap-4 rounded-[2rem] bg-white px-6 pt-5 pb-5 text-left shadow-none transition-transform active:scale-[0.99] active:bg-[#fafafa]"
+    >
+      <BrandGlyph src={iconSrc} color="#2d689d" className="size-9 shrink-0" />
+      <div className="min-w-0 flex-1">
+        <p className="font-heading text-[1.35rem] font-bold leading-tight text-[#2d689d]">{title}</p>
+        <p className="mt-1 font-heading text-[15px] leading-snug text-black">{subtitle}</p>
+      </div>
+      <ChevronRightIcon className="size-5 shrink-0 text-[#111]" />
+    </button>
+  );
+}
+
+function PlayQuizButton({ label, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex h-17 items-center gap-3 rounded-full bg-[#2d689d] px-8 font-heading text-[1.05rem] font-bold text-white shadow-[0_10px_24px_rgb(45_104_157/0.28)] transition-transform active:scale-[0.98]"
+    >
+      <span
+        aria-hidden
+        className="block size-6 shrink-0 bg-white"
+        style={{
+          WebkitMaskImage: `url(${BRAND_ICONS.navPlayQuiz})`,
+          maskImage: `url(${BRAND_ICONS.navPlayQuiz})`,
+          WebkitMaskSize: "contain",
+          maskSize: "contain",
+          WebkitMaskRepeat: "no-repeat",
+          maskRepeat: "no-repeat",
+          WebkitMaskPosition: "center",
+          maskPosition: "center",
+        }}
+      />
+      <span className="text-[1.1rem]">{label}</span>
+    </button>
+  );
+}
+
+function ChevronRightIcon({ className }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <path
+        d="m9 6 6 6-6 6"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

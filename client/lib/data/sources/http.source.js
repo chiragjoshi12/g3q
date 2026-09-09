@@ -10,7 +10,8 @@ function cacheTtlMsForPath(path) {
   if (path.startsWith("/landing/summary")) return 30_000;
   if (path.startsWith("/leaderboard")) return 15_000;
   if (path.startsWith("/users/me")) return 30_000;
-  if (path.startsWith("/sessions?page=")) return 10_000;
+  if (path === "/sessions") return 10_000;
+  if (path === "/sessions/current") return 10_000;
   if (path.startsWith("/sessions/stats")) return 10_000;
   return GET_RESPONSE_TTL_MS;
 }
@@ -132,12 +133,6 @@ export const httpSource = {
       body: { requestId, name, district, taluka },
     }),
 
-  betaLogin: ({ firstName, lastName, district, taluka, phone }) =>
-    request("/auth/beta/login", {
-      method: "POST",
-      body: { firstName, lastName, district, taluka, phone },
-    }),
-
   getLandingSummary: () => request("/landing/summary"),
 
   getMe: () => request("/users/me"),
@@ -169,69 +164,65 @@ export const httpSource = {
 
   getSession: (sessionId) => request(`/sessions/${sessionId}`),
 
-  submitSession: ({ sessionId, answers, timings, startedAt }) =>
+  submitSession: ({ sessionId, answers, timings, startedAt, abandoned }) =>
     request(`/sessions/${sessionId}/submit`, {
       method: "POST",
-      body: { answers, timings, startedAt },
+      body: { answers, timings, startedAt, abandoned },
     }),
 
   getSessionResult: (sessionId) => request(`/sessions/${sessionId}/result`),
 
-  listMySessions: ({ page, pageSize } = {}) =>
-    request(
-      `/sessions?page=${encodeURIComponent(page ?? 1)}&page_size=${encodeURIComponent(pageSize ?? 20)}`
-    ),
+  listMySessions: () => request("/sessions"),
+
+  getMyCurrentSession: () => request("/sessions/current"),
 
   getMySessionStats: () => request("/sessions/stats"),
 
   clearMyAttempts: () => request("/users/me/attempts", { method: "DELETE" }),
 
-  getLeaderboardOverview: ({ limit, taluka } = {}) => {
+  getLeaderboardOverview: ({ limit, talukaId, lang } = {}) => {
     const params = new URLSearchParams();
     if (limit) params.set("limit", String(limit));
-    if (taluka) params.set("taluka", taluka);
+    if (talukaId) params.set("taluka", String(talukaId));
+    if (lang) params.set("lang", lang);
     const qs = params.toString();
     return request(`/leaderboard${qs ? `?${qs}` : ""}`);
   },
 
-  getBetaLeaderboardOverview: ({ limit, taluka } = {}) => {
-    const params = new URLSearchParams();
-    if (limit) params.set("limit", String(limit));
-    if (taluka) params.set("taluka", taluka);
-    const qs = params.toString();
-    return request(`/leaderboard/beta${qs ? `?${qs}` : ""}`);
-  },
-
-  getSchoolLeaderboard: ({ limit, schoolId, institute, taluka } = {}) => {
+  getSchoolLeaderboard: ({ limit, schoolId, institute, talukaId, lang } = {}) => {
     const params = new URLSearchParams();
     if (limit) params.set("limit", String(limit));
     if (schoolId) params.set("school_id", schoolId);
     if (institute) params.set("institute", institute);
-    if (taluka) params.set("taluka", taluka);
+    if (talukaId) params.set("taluka", String(talukaId));
+    if (lang) params.set("lang", lang);
     const qs = params.toString();
     return request(`/leaderboard/school${qs ? `?${qs}` : ""}`);
   },
 
-  getCollegeLeaderboard: ({ limit, taluka } = {}) => {
+  getCollegeLeaderboard: ({ limit, talukaId, lang } = {}) => {
     const params = new URLSearchParams();
     if (limit) params.set("limit", String(limit));
-    if (taluka) params.set("taluka", taluka);
+    if (talukaId) params.set("taluka", String(talukaId));
+    if (lang) params.set("lang", lang);
     const qs = params.toString();
     return request(`/leaderboard/college${qs ? `?${qs}` : ""}`);
   },
 
-  getCitizenLeaderboard: ({ limit, taluka } = {}) => {
+  getCitizenLeaderboard: ({ limit, talukaId, lang } = {}) => {
     const params = new URLSearchParams();
     if (limit) params.set("limit", String(limit));
-    if (taluka) params.set("taluka", taluka);
+    if (talukaId) params.set("taluka", String(talukaId));
+    if (lang) params.set("lang", lang);
     const qs = params.toString();
     return request(`/leaderboard/citizen${qs ? `?${qs}` : ""}`);
   },
 
-  getTalukaLeaderboard: ({ limit, taluka } = {}) => {
+  getTalukaLeaderboard: ({ limit, talukaId, lang } = {}) => {
     const params = new URLSearchParams();
     if (limit) params.set("limit", String(limit));
-    if (taluka) params.set("taluka", taluka);
+    if (talukaId) params.set("taluka", String(talukaId));
+    if (lang) params.set("lang", lang);
     const qs = params.toString();
     return request(`/leaderboard/taluka${qs ? `?${qs}` : ""}`);
   },

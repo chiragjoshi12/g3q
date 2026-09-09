@@ -30,7 +30,6 @@ export default function G3qAiPage() {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
-  const [inputVisible, setInputVisible] = useState(true);
   const [copiedIndex, setCopiedIndex] = useState(null);
   const [feedback, setFeedback] = useState({});
   const copiedTimerRef = useRef(0);
@@ -78,13 +77,11 @@ export default function G3qAiPage() {
     // Empty / short threads always count as "at bottom".
     if (el.scrollHeight <= el.clientHeight + 4) {
       nearBottomRef.current = true;
-      setInputVisible(true);
       return true;
     }
     const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
     const atBottom = distance <= BOTTOM_THRESHOLD_PX;
     nearBottomRef.current = atBottom;
-    setInputVisible(atBottom);
     return atBottom;
   }, []);
 
@@ -120,7 +117,6 @@ export default function G3qAiPage() {
     setCopiedIndex(null);
     setFeedback({});
     nearBottomRef.current = true;
-    setInputVisible(true);
     inputRef.current?.focus();
   };
 
@@ -159,7 +155,6 @@ export default function G3qAiPage() {
 
     smooth.reset();
     nearBottomRef.current = true;
-    setInputVisible(true);
     const history = [...messages, { role: "user", content: text }];
     setMessages([...history, { role: "assistant", content: "" }]);
     setDraft("");
@@ -204,7 +199,7 @@ export default function G3qAiPage() {
   };
 
   const onMicClick = () => {
-    if (sending || !inputVisible) return;
+    if (sending) return;
     if (!speech.listening) {
       const cur = draft.trim();
       draftBaseRef.current = cur ? `${cur} ` : "";
@@ -265,10 +260,7 @@ export default function G3qAiPage() {
         <main
           ref={listRef}
           onScroll={onListScroll}
-          className={cn(
-            "relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-1 transition-[padding] duration-300 lg:px-8",
-            inputVisible ? "pb-[11.5rem]" : "pb-6"
-          )}
+          className="relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-1 pb-[11.5rem] transition-[padding] duration-300 lg:px-8"
         >
           {showEmpty ? (
             <EmptyWelcome onPick={send} />
@@ -288,7 +280,7 @@ export default function G3qAiPage() {
                       className={cn(
                         "max-w-[72%] text-[16px] leading-relaxed",
                         m.role === "user"
-                          ? "mt-4 ml-auto rounded-[1.25rem] bg-[#eef7ff] px-3.5 py-2.5 text-[#000000] text-[18px]"
+                          ? "mt-4 ml-auto rounded-[1.25rem] bg-[#eef7ff] px-3.5 py-2.5 text-[#000000] text-[16px]"
                           : "mt-2 mr-auto w-full max-w-[92%] px-0.5 py-1 text-[#111]"
                       )}
                       style={
@@ -371,13 +363,8 @@ export default function G3qAiPage() {
           ) : null}
         </main>
 
-        {/* Slides away while reading older messages; returns at bottom */}
         <div
-          className={cn(
-            "absolute inset-x-0 bottom-0 z-20 px-3.5 pb-[max(0.7rem,env(safe-area-inset-bottom))] pt-2 transition-transform duration-300 ease-out lg:px-8",
-            inputVisible ? "translate-y-0" : "pointer-events-none translate-y-full"
-          )}
-          aria-hidden={!inputVisible}
+          className="fixed inset-x-0 bottom-0 z-20 px-3.5 pb-[max(0.7rem,env(safe-area-inset-bottom))] pt-2 transition-transform duration-300 ease-out lg:px-8"
         >
           <div
             aria-hidden
@@ -391,8 +378,7 @@ export default function G3qAiPage() {
               onKeyDown={onKeyDown}
               rows={2}
               placeholder={speech.listening ? t("listening") : t("askHere")}
-              disabled={sending || !inputVisible}
-              tabIndex={inputVisible ? 0 : -1}
+              disabled={sending}
               className="w-full resize-none bg-transparent font-canva text-[16px] leading-snug text-[#111] outline-none placeholder:text-[#000000] disabled:opacity-60"
             />
             <div className="mt-2 flex items-center justify-between">
@@ -411,7 +397,7 @@ export default function G3qAiPage() {
                   aria-label={speech.listening ? t("stopListening") : t("speakPrompt")}
                   aria-pressed={speech.listening}
                   onClick={onMicClick}
-                  disabled={sending || !inputVisible}
+                  disabled={sending}
                   className={cn(
                     "grid size-10 place-items-center rounded-full active:opacity-80 disabled:opacity-50",
                     speech.listening

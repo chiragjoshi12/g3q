@@ -4,11 +4,18 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 
+import { ACTION_BUTTON_CLASS, ActionButtonRow, AppButton } from "@/components/common/AppButton";
 import { DESKTOP_OVERLAY, DESKTOP_OVERLAY_CARD } from "@/components/layout/desktop-overlay";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const GUIDE_IMAGE = "/home/guide-question-type.jpg";
+const GUIDE_MEDIA = {
+  mcq: { kind: "image", src: "/gif/mcq.gif" },
+  truefalse: { kind: "video", src: "/gif/true-false.mp4" },
+  blanks: { kind: "image", src: "/gif/fill-blanks.gif" },
+  match: { kind: "image", src: "/gif/match-pair.gif" },
+};
 
 /**
  * Bottom-sheet explainer for a question type. Portals into the app frame so
@@ -24,6 +31,7 @@ export function QuestionTypeGuide({ typeId, open, onClose }) {
     sequence: { title: t("sequenceGuideTitle"), body: t("sequenceGuideBody") },
   };
   const guide = guides[typeId] ?? null;
+  const media = GUIDE_MEDIA[typeId] ?? null;
   const frame = typeof document === "undefined" ? null : document.querySelector("[data-app-frame]");
 
   useEffect(() => {
@@ -51,9 +59,9 @@ export function QuestionTypeGuide({ typeId, open, onClose }) {
         aria-labelledby="question-type-guide-title"
         aria-describedby="question-type-guide-body"
         className={cn(
-          "animate-slide-up relative w-full overflow-hidden rounded-t-[2rem] bg-white px-5 pt-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-m3",
+          "animate-slide-up relative flex h-[38rem] w-full flex-col overflow-hidden rounded-t-[2rem] bg-white px-4 pt-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-m3",
           DESKTOP_OVERLAY_CARD,
-          "lg:w-[min(22rem,88vw)] lg:px-5 lg:pt-5 lg:pb-5"
+          "lg:h-[31rem] lg:w-[min(25rem,92vw)] lg:px-5 lg:pt-5 lg:pb-5"
         )}
       >
         <h3
@@ -70,26 +78,36 @@ export function QuestionTypeGuide({ typeId, open, onClose }) {
         </h3>
         <p
           id="question-type-guide-body"
-          className="mt-3 text-center font-heading text-[14px] leading-[1.65] text-[#222]"
+          className="mt-3 min-h-[2.6rem] whitespace-normal text-center font-heading text-[14px] leading-normal tracking-[-0.01em] text-[#222] lg:min-h-[2.25rem] lg:text-[13px]"
         >
           {guide.body}
         </p>
-        <div className="relative mt-4 aspect-[3/2] w-full overflow-hidden rounded-[1.15rem] bg-[#F3F4F6] lg:mt-3 lg:aspect-[16/10] lg:max-h-36">
-          <Image
-            src={GUIDE_IMAGE}
-            alt=""
-            fill
-            sizes="(max-width: 1024px) 22.5rem, 26rem"
-            className="object-cover"
-          />
+        <div className="relative mt-[10] min-h-0 w-full flex-1 overflow-hidden rounded-[1.15rem] p-2 lg:mt-3">
+          {media?.kind === "video" ? (
+            <video
+              src={media.src}
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="h-full w-full object-contain"
+            />
+          ) : (
+            <Image
+              src={media?.src ?? GUIDE_IMAGE}
+              alt=""
+              fill
+              unoptimized={Boolean(media?.src?.endsWith(".gif"))}
+              sizes="(max-width: 1024px) 22.5rem, 26rem"
+              className="object-contain p-2"
+            />
+          )}
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-5 flex h-12 w-full items-center justify-center rounded-full bg-[#2d689d] font-heading text-[1.05rem] font-bold text-white transition-transform active:scale-[0.98] lg:mt-4 lg:h-11"
-        >
-          {t("understood")}
-        </button>
+        <ActionButtonRow className="mt-4">
+          <AppButton className={ACTION_BUTTON_CLASS} onClick={onClose}>
+            {t("understood")}
+          </AppButton>
+        </ActionButtonRow>
       </div>
     </div>,
     frame
