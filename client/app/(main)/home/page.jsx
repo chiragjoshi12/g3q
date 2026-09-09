@@ -34,24 +34,14 @@ function pickFeaturedQuiz(list) {
   );
 }
 
-/** Current week's finished attempt score in REST mode; latest score otherwise. */
+/** Latest finished attempt score (REST or local). */
 function pickQuizScore(attempts, quizId, currentWeek) {
-  if (!quizId || !Array.isArray(attempts)) return null;
-  if (appConfig.dataSource === DATA_SOURCE.REST) {
-    const currentWeekAttempt = attempts[0] ?? null;
-    if (!currentWeekAttempt) return null;
-    return {
-      correctCount: Number(currentWeekAttempt.correctCount) || 0,
-      totalQuestions: Number(currentWeekAttempt.totalQuestions) || 0,
-    };
-  }
-  const match = attempts.find(
-    (attempt) => attempt.quizId === quizId && !attempt.abandoned
-  );
-  if (!match) return null;
+  if (!Array.isArray(attempts) || !attempts.length) return null;
+  const finished = attempts.find((attempt) => !attempt.abandoned) || attempts[0];
+  if (!finished) return null;
   return {
-    correctCount: Number(match.correctCount) || 0,
-    totalQuestions: Number(match.totalQuestions) || 0,
+    correctCount: Number(finished.correctCount) || 0,
+    totalQuestions: Number(finished.totalQuestions) || 0,
   };
 }
 
@@ -87,26 +77,22 @@ export default function HomePage() {
     : pickFeaturedQuiz(quizzes);
 
   const { data: sessionSummary } = useAsyncData(
-    () => (usingRest ? attemptRepository.currentWeek(user?.id) : attemptRepository.list(user?.id)),
+    () => (usingRest ? attemptRepository.currentWeek(user?.id) : null),
+    [user?.id],
+    hydrated && Boolean(user?.id) && usingRest
+  );
+  const { data: attemptHistory } = useAsyncData(
+    () => (user?.id ? attemptRepository.list(user.id) : Promise.resolve([])),
     [user?.id],
     hydrated && Boolean(user?.id)
   );
 
   const week = Number(landingSummary?.week) || appConfig.certificate.week || 5;
-  const attempts = usingRest ? [] : sessionSummary ?? [];
+  const attempts = attemptHistory ?? [];
   const currentWeek = usingRest ? Number(sessionSummary?.currentWeek) || week : week;
-  const currentWeekSession =
-    usingRest
-      ? sessionSummary?.session ?? null
-      : null;
-  const showPlayAction = usingRest
-    ? !currentWeekSession || currentWeekSession.status === "in_progress"
-    : true;
-  const score = usingRest
-    ? currentWeekSession && currentWeekSession.status !== "in_progress"
-      ? pickQuizScore([currentWeekSession], quiz?.id, currentWeek)
-      : null
-    : pickQuizScore(attempts, quiz?.id, currentWeek);
+  // Always allow another play. In-progress sessions are resumed by startSession.
+  const showPlayAction = true;
+  const score = pickQuizScore(attempts, quiz?.id, currentWeek);
 
   useEffect(() => {
     if (preparingQuiz && overlayDone && nextQuizPath) {

@@ -286,6 +286,7 @@ const toSessionHistoryEntry = (session) => {
   const weekMeta = getActivePlatformWeek(session.completedAt || session.startedAt || new Date());
   return {
     sessionId: session.id,
+    status: session.status,
     questionCount: session.questionCount,
     completedAt: session.completedAt ? session.completedAt.getTime() : null,
     correctCount: session.correctCount ?? 0,
@@ -446,45 +447,26 @@ export class QuizSessionModel {
   }
 
   static async listForUser(userId) {
-    const where = { userId, status: 'submitted' };
     const rows = await prisma.quizSession.findMany({
-      where,
+      where: { userId, status: { in: ['submitted', 'abandoned'] } },
       orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }],
     });
 
-    const seenWeeks = new Set();
-    const items = [];
-
-    for (const session of rows) {
-      const weekMeta = getActivePlatformWeek(session.completedAt || session.startedAt || new Date());
-      if (seenWeeks.has(weekMeta.id)) continue;
-      seenWeeks.add(weekMeta.id);
-      items.push(toSessionHistoryEntry(session));
-    }
+    const items = rows.map((session) => toSessionHistoryEntry(session)).filter(Boolean);
 
     return {
-      participatedWeeks: items.map((item) => item.week),
+      participatedWeeks: [...new Set(items.map((item) => item.week))],
       currentWeek: CONFIG.QUIZ.CURRENT_WEEK,
       quizSessions: items,
     };
   }
 
   static async findCurrentWeekForUser(userId) {
-    const rows = await prisma.quizSession.findMany({
-      where: {
-        userId,
-        status: { in: ['in_progress', 'submitted', 'abandoned'] },
-      },
-      orderBy: [{ createdAt: 'desc' }, { completedAt: 'desc' }],
+    // Resume only an open attempt — finished plays must not lock replay.
+    return prisma.quizSession.findFirst({
+      where: { userId, status: 'in_progress' },
+      orderBy: { createdAt: 'desc' },
     });
-
-    return (
-      rows.find(
-        (session) =>
-          getActivePlatformWeek(session.completedAt || session.startedAt || new Date()).id ===
-          CONFIG.QUIZ.CURRENT_WEEK
-      ) || null
-    );
   }
 
   static async createWithQuestions({ userId, language, bankRows, tx = prisma }) {

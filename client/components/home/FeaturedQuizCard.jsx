@@ -81,7 +81,12 @@ export function FeaturedQuizCard({ quiz, onStart, score = null, wide = false, sh
               {quiz.totalQuestions} {t("questions")}
             </p>
 
-            <div className="absolute top-[12rem] left-0">
+            <div className="absolute top-[12rem] left-0 flex flex-col items-start gap-2">
+              {hasScore ? (
+                <div className="inline-flex h-10 items-center rounded-full bg-[#E8F0F7] px-5 font-heading text-[0.95rem] font-bold text-[#2d689d]">
+                  {scoreLabel}
+                </div>
+              ) : null}
               {showPlayAction ? (
                 <button
                   type="button"
@@ -104,10 +109,6 @@ export function FeaturedQuizCard({ quiz, onStart, score = null, wide = false, sh
                   />
                   {t("playQuiz")}
                 </button>
-              ) : hasScore ? (
-                <div className="flex h-17 w-full items-center justify-start rounded-full bg-[#E8F0F7] px-6 font-heading text-[1.05rem] font-bold text-[#2d689d]">
-                  {scoreLabel}
-                </div>
               ) : null}
             </div>
           </div>
@@ -163,6 +164,11 @@ export function FeaturedQuizCard({ quiz, onStart, score = null, wide = false, sh
           </p>
 
           <div className="flex flex-col items-end gap-1.5">
+            {hasScore ? (
+              <div className="inline-flex h-8 items-center rounded-full bg-[#E8F0F7] px-3.5 font-heading text-[13px] font-bold text-[#2d689d]">
+                {scoreLabel}
+              </div>
+            ) : null}
             {showPlayAction ? (
               <button
                 type="button"
@@ -185,10 +191,6 @@ export function FeaturedQuizCard({ quiz, onStart, score = null, wide = false, sh
                 />
                 {t("playQuiz")}
               </button>
-            ) : hasScore ? (
-              <div className="inline-flex h-10 items-center rounded-full bg-[#E8F0F7] px-4.5 font-heading text-[14px] font-bold text-[#2d689d]">
-                {scoreLabel}
-              </div>
             ) : null}
           </div>
         </div>

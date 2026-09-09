@@ -20,6 +20,7 @@ const toSessionHistoryEntry = (session) => {
   const weekMeta = getActivePlatformWeek(session.completedAt || session.startedAt || new Date());
   return {
     sessionId: session.id,
+    status: session.status,
     questionCount: session.questionCount,
     completedAt: session.completedAt ? session.completedAt.getTime() : null,
     correctCount: session.correctCount ?? 0,
@@ -103,62 +104,45 @@ export class BetaQuizSessionModel {
   static async listForUser(userId) {
     // Prefer beta_* rows; also include legacy quiz_sessions from before the split
     // so certificates / quiz-attempts pages are not blank for existing beta users.
+    const finished = { in: ['submitted', 'abandoned'] };
     const [betaRows, legacyRows] = await Promise.all([
       prisma.betaQuizSession.findMany({
-        where: { userId, status: 'submitted' },
+        where: { userId, status: finished },
         orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }],
       }),
       prisma.quizSession.findMany({
-        where: { userId, status: 'submitted' },
+        where: { userId, status: finished },
         orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }],
       }),
     ]);
 
-    const seenWeeks = new Set();
-    const items = [];
-
-    for (const session of [...betaRows, ...legacyRows]) {
-      const weekMeta = getActivePlatformWeek(session.completedAt || session.startedAt || new Date());
-      if (seenWeeks.has(weekMeta.id)) continue;
-      seenWeeks.add(weekMeta.id);
-      items.push(toSessionHistoryEntry(session));
-    }
-
-    items.sort((a, b) => Number(b.completedAt || 0) - Number(a.completedAt || 0));
+    const items = [...betaRows, ...legacyRows]
+      .map((session) => toSessionHistoryEntry(session))
+      .filter(Boolean)
+      .sort((a, b) => Number(b.completedAt || 0) - Number(a.completedAt || 0));
 
     return {
-      participatedWeeks: items.map((item) => item.week),
+      participatedWeeks: [...new Set(items.map((item) => item.week))],
       currentWeek: CONFIG.QUIZ.CURRENT_WEEK,
       quizSessions: items,
     };
   }
 
   static async findCurrentWeekForUser(userId) {
-    const [betaRows, legacyRows] = await Promise.all([
-      prisma.betaQuizSession.findMany({
-        where: {
-          userId,
-          status: { in: ['in_progress', 'submitted', 'abandoned'] },
-        },
-        orderBy: [{ createdAt: 'desc' }, { completedAt: 'desc' }],
+    // Only an active in-progress session should block/resume play.
+    // Finished sessions must not lock the user out of playing again.
+    const [betaInProgress, legacyInProgress] = await Promise.all([
+      prisma.betaQuizSession.findFirst({
+        where: { userId, status: 'in_progress' },
+        orderBy: { createdAt: 'desc' },
       }),
-      prisma.quizSession.findMany({
-        where: {
-          userId,
-          status: { in: ['in_progress', 'submitted', 'abandoned'] },
-        },
-        orderBy: [{ createdAt: 'desc' }, { completedAt: 'desc' }],
+      prisma.quizSession.findFirst({
+        where: { userId, status: 'in_progress' },
+        orderBy: { createdAt: 'desc' },
       }),
     ]);
 
-    const matchWeek = (rows) =>
-      rows.find(
-        (session) =>
-          getActivePlatformWeek(session.completedAt || session.startedAt || new Date()).id ===
-          CONFIG.QUIZ.CURRENT_WEEK
-      ) || null;
-
-    return matchWeek(betaRows) || matchWeek(legacyRows);
+    return betaInProgress || legacyInProgress || null;
   }
 
   static async createWithQuestions({ userId, language, bankRows, tx = prisma }) {
