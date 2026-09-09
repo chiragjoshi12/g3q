@@ -178,10 +178,30 @@ model District {
   id        Int      @id
   nameEn    String   @unique @map("name_en") @db.VarChar(128)
   nameGu    String   @unique @map("name_gu") @db.VarChar(128)
+  nameHi    String?  @unique @map("name_hi") @db.VarChar(128)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  talukas Taluka[]
+
   @@map("districts")
+}
+
+model Taluka {
+  id         Int      @id @default(autoincrement())
+  districtId Int      @map("district_id")
+  nameEn     String   @map("name_en") @db.VarChar(128)
+  nameGu     String   @map("name_gu") @db.VarChar(128)
+  nameHi     String   @map("name_hi") @db.VarChar(128)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  district District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+
+  @@unique([districtId, nameEn])
+  @@unique([districtId, nameGu])
+  @@index([districtId])
+  @@map("talukas")
 }
 
 model Department {
@@ -314,6 +334,7 @@ model BetaQuestionVariant {
 enum SessionStatus {
   in_progress
   submitted
+  abandoned
   expired
 }
 

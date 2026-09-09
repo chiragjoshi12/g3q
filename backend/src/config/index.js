@@ -54,10 +54,6 @@ export const CONFIG = {
     DEV_BYPASS_CODE: process.env.OTP_DEV_BYPASS_CODE || '1234',
   },
 
-  BETA: {
-    ENABLED: parseBool(process.env.IS_BETA_TIME, false),
-  },
-
   // Bank-backed quiz sessions (allocate from ACCEPTED bank_questions).
   QUIZ: {
     QUESTION_COUNT: parseInt(process.env.QUIZ_SESSION_QUESTION_COUNT) || 15,
@@ -71,16 +67,10 @@ export const CONFIG = {
     CURRENT_WEEK_META: getActivePlatformWeek(),
   },
 
-  /**
-   * Gemini personalisation between question allocation and client payload.
-   * When ENABLED=false, session start skips AI and serves bank text as-is.
-   * @see https://ai.google.dev/gemini-api/docs/
-   */
+  /** Gemini configuration used by G3Q AI chat and related features. */
   AI: {
-    ENABLED: parseBool(process.env.AI_ENHANCEMENT_ENABLED, false),
     API_KEY: process.env.GEMINI_API_KEY || '',
     MODEL: 'gemini-3.1-flash-lite',
-    // Typical enhance pass is ~8–10s; keep headroom for slow responses.
     TIMEOUT_MS: 20000,
   },
 

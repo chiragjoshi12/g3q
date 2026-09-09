@@ -5,13 +5,12 @@ import { AppError, ERROR_CODE } from '../utils/appError.js';
 import {
   QuizSessionModel,
   toGradingQuestion,
+  toSessionMeta,
   toSessionPlayPayload,
   toSessionResult,
-  toSessionSummary,
 } from '../models/QuizSessionModel.js';
 import { UserModel } from '../models/UserModel.js';
 import { gradeQuestion } from './grading.service.js';
-import { aiEnhancementService } from './aiEnhancement.service.js';
 import { resolveAzureBlobUrl } from '../utils/azureStorage.js';
 
 const normalizeChoiceAnswer = (value) => {
@@ -413,91 +412,54 @@ export const sessionService = {
 
     const existingMeta = await QuizSessionModel.findInProgressMetaForUser(userId);
     if (existingMeta) {
-      if (existingMeta.expiresAt && existingMeta.expiresAt.getTime() < Date.now()) {
-        await QuizSessionModel.markExpired(existingMeta.id);
-      } else {
-        let existing = await QuizSessionModel.findById(existingMeta.id);
-        if (existing && existing.language !== requestedLanguage) {
-          existing = await prisma.quizSession.update({
-            where: { id: existing.id },
-            data: { language: requestedLanguage },
-            include: { questions: { orderBy: { order: 'asc' } } },
-          });
-        }
-        return toSessionPlayPayload(existing);
+      let existing = await QuizSessionModel.findById(existingMeta.id);
+      if (existing && existing.language !== requestedLanguage) {
+        existing = await prisma.quizSession.update({
+          where: { id: existing.id },
+          data: { language: requestedLanguage },
+          include: { questions: { orderBy: { order: 'asc' } } },
+        });
       }
+      return toSessionMeta(existing);
     }
 
     const questionCount = count || CONFIG.QUIZ.QUESTION_COUNT;
     const lang = requestedLanguage;
     const bankRows = await allocateBankQuestions(user, questionCount);
 
-    // Optional Gemini pass: reframe the session questions with student profile before persist/serve.
     let rowsForSession = bankRows;
-    let aiMeta = { aiEnhanced: false, aiEnhancementMs: 0 };
-    if (aiEnhancementService.isEnabled()) {
-      const enhanced = await aiEnhancementService.enhanceSessionQuestions({
-        user,
-        bankRows,
-        language: lang,
-      });
-      rowsForSession = enhanced.bankRows;
-      aiMeta = {
-        aiEnhanced: enhanced.aiEnhanced,
-        aiEnhancementMs: enhanced.aiEnhancementMs,
-      };
-    }
 
     if (isBetaUser(user)) {
       const betaBackgrounds = await attachBetaQuestionBackgrounds(rowsForSession);
       rowsForSession = betaBackgrounds.bankRows;
-      aiMeta = {
-        ...aiMeta,
-        backgroundStyle: betaBackgrounds.backgroundStyle,
-      };
     }
-
-    const expiresAt = new Date(
-      Date.now() + CONFIG.QUIZ.EXPIRY_MINUTES * 60 * 1000
-    );
 
     const session = await prisma.$transaction(async (tx) => {
       await tx.$queryRawUnsafe('SELECT id FROM users WHERE id = ? FOR UPDATE', userId);
       const latestMeta = await QuizSessionModel.findInProgressMetaForUser(userId, tx);
       if (latestMeta) {
-        if (latestMeta.expiresAt && latestMeta.expiresAt.getTime() < Date.now()) {
-          await tx.quizSession.update({
-            where: { id: latestMeta.id },
-            data: { status: 'expired' },
-          });
-        } else {
-          const activeSession = await tx.quizSession.findUnique({
-            where: { id: latestMeta.id },
+        const activeSession = await tx.quizSession.findUnique({
+          where: { id: latestMeta.id },
+          include: { questions: { orderBy: { order: 'asc' } } },
+        });
+        if (activeSession && activeSession.language !== lang) {
+          return tx.quizSession.update({
+            where: { id: activeSession.id },
+            data: { language: lang },
             include: { questions: { orderBy: { order: 'asc' } } },
           });
-          if (activeSession && activeSession.language !== lang) {
-            return tx.quizSession.update({
-              where: { id: activeSession.id },
-              data: { language: lang },
-              include: { questions: { orderBy: { order: 'asc' } } },
-            });
-          }
-          return activeSession;
         }
+        return activeSession;
       }
       return QuizSessionModel.createWithQuestions({
         userId,
         language: lang,
-        expiresAt,
         bankRows: rowsForSession,
         tx,
       });
     });
 
-    return {
-      ...toSessionPlayPayload(session),
-      ...aiMeta,
-    };
+    return toSessionMeta(session);
   },
 
   async get({ userId, sessionId }) {
@@ -506,23 +468,14 @@ export const sessionService = {
       throw new AppError(ERROR_CODE.NOT_FOUND, 'Session not found.');
     }
 
-    if (
-      session.status === 'in_progress' &&
-      session.expiresAt &&
-      session.expiresAt.getTime() < Date.now()
-    ) {
-      await QuizSessionModel.markExpired(session.id);
-      throw new AppError(ERROR_CODE.INVALID_REQUEST, 'Session has expired.');
-    }
-
-    if (session.status === 'submitted') {
+    if (session.status === 'submitted' || session.status === 'abandoned') {
       return toSessionResult(session);
     }
 
     return toSessionPlayPayload(session);
   },
 
-  async submit({ userId, sessionId, answers, timings, startedAt }) {
+  async submit({ userId, sessionId, answers, timings, startedAt, abandoned = false }) {
     const session = await QuizSessionModel.findById(sessionId);
     if (!session || session.userId !== userId) {
       throw new AppError(ERROR_CODE.NOT_FOUND, 'Session not found.');
@@ -530,17 +483,12 @@ export const sessionService = {
     const user = await UserModel.findById(userId);
     if (!user) throw new AppError(ERROR_CODE.UNAUTHORIZED);
 
-    if (session.status === 'submitted') {
+    if (session.status === 'submitted' || session.status === 'abandoned') {
       return toSessionResult(session);
     }
 
     if (session.status !== 'in_progress') {
       throw new AppError(ERROR_CODE.INVALID_REQUEST, 'Session is not active.');
-    }
-
-    if (session.expiresAt && session.expiresAt.getTime() < Date.now()) {
-      await QuizSessionModel.markExpired(session.id);
-      throw new AppError(ERROR_CODE.INVALID_REQUEST, 'Session has expired.');
     }
 
     const startedMs = Number(startedAt) || session.startedAt.getTime();
@@ -592,6 +540,7 @@ export const sessionService = {
           attemptedRows.length > 0 ? Math.round(totalTimeMs / attemptedRows.length) : 0,
         percentage:
           totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0,
+        abandoned: Boolean(abandoned),
       },
       {
         userId,
@@ -604,8 +553,31 @@ export const sessionService = {
     return toSessionResult(updated);
   },
 
-  async listMine({ userId, page, pageSize }) {
-    return QuizSessionModel.listForUser(userId, { page, pageSize });
+  async listMine({ userId }) {
+    return QuizSessionModel.listForUser(userId);
+  },
+
+  async currentMine({ userId }) {
+    const session = await QuizSessionModel.findCurrentWeekForUser(userId);
+    const sessionMeta = session ? toSessionMeta(session) : null;
+    return {
+      currentWeek: CONFIG.QUIZ.CURRENT_WEEK,
+      weekMeta: CONFIG.QUIZ.CURRENT_WEEK_META,
+      session: sessionMeta
+        ? {
+            sessionId: sessionMeta.sessionId,
+            status: sessionMeta.status,
+            questionCount: sessionMeta.questionCount,
+            language: sessionMeta.language,
+            startedAt: sessionMeta.startedAt,
+            completedAt: sessionMeta.completedAt,
+            correctCount: sessionMeta.correctCount,
+            wrongCount: sessionMeta.wrongCount,
+            totalTimeMs: sessionMeta.totalTimeMs,
+            percentage: sessionMeta.percentage,
+          }
+        : null,
+    };
   },
 
   async stats(userId) {
@@ -617,8 +589,8 @@ export const sessionService = {
     if (!session || session.userId !== userId) {
       throw new AppError(ERROR_CODE.NOT_FOUND, 'Session not found.');
     }
-    if (session.status !== 'submitted') {
-      throw new AppError(ERROR_CODE.INVALID_REQUEST, 'Session is not submitted yet.');
+    if (!['submitted', 'abandoned'].includes(session.status)) {
+      throw new AppError(ERROR_CODE.INVALID_REQUEST, 'Session is not finished yet.');
     }
     return toSessionResult(session);
   },

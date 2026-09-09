@@ -1,7 +1,7 @@
 import { prisma } from '../config/prisma.client.js';
 import { CONFIG } from '../config/index.js';
 import { QuizModel } from '../models/QuizModel.js';
-import { toPlayExplanation, toPlayQuestion } from '../models/QuizSessionModel.js';
+import { toPlayQuestion } from '../models/QuizSessionModel.js';
 import { AppError, ERROR_CODE } from '../utils/appError.js';
 
 const PRACTICE_QUESTION_IDS = [
@@ -36,7 +36,8 @@ export const quizService = {
     if (!(await QuizModel.exists(quizId))) {
       throw new AppError(ERROR_CODE.NOT_FOUND, 'પ્રશ્નો મળ્યા નથી.');
     }
-    return QuizModel.getQuestions(quizId);
+    const rows = await QuizModel.getQuestions(quizId);
+    return rows.map((row) => toPlayQuestion({ ...row, bankQueId: row.id || row.queId }, CONFIG.QUIZ.DEFAULT_LANGUAGE));
   },
 
   async getExplanations(quizId) {
@@ -86,9 +87,6 @@ export const quizService = {
         week: CONFIG.QUIZ.CURRENT_WEEK,
       },
       questions: questions.map((row) => toPlayQuestion(row, language)),
-      explanations: Object.fromEntries(
-        questions.map((row) => [row.bankQueId, toPlayExplanation(row, language)])
-      ),
     };
   },
 };
