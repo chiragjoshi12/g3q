@@ -30,24 +30,43 @@ function mapSessionSummaryToAttempt(raw) {
     totalQuestions: Number(raw.questionCount ?? 0),
     attemptedCount,
     abandoned:
-      Number(raw.questionCount ?? 0) > 0 && attemptedCount < Number(raw.questionCount ?? 0),
+      raw.status === "abandoned" ||
+      (Number(raw.questionCount ?? 0) > 0 && attemptedCount < Number(raw.questionCount ?? 0)),
     correctCount: Number(raw.correctCount ?? 0),
     wrongCount: Number(raw.wrongCount ?? 0),
     earnedPoints: Number(raw.correctCount ?? 0),
     maxPoints: Number(raw.questionCount ?? 0),
     percentage: Number(raw.percentage ?? 0),
     totalTimeMs: Number(raw.totalTimeMs ?? 0),
-    wallClockMs: Number(raw.wallClockMs ?? 0),
-    averageTimeMs: Number(raw.averageTimeMs ?? 0),
     breakdown: raw.breakdown ?? [],
     week: raw.week ?? null,
+    weekMeta: raw.weekMeta ?? raw.week_meta ?? null,
     status: raw.status ?? null,
   };
 }
 
 async function listRemote() {
+  const payload = await listRemoteSummary();
+  return payload.quizSessions;
+}
+
+async function listRemoteSummary() {
   const payload = await getDataSource().listMySessions();
-  return (payload?.items ?? []).map(mapSessionSummaryToAttempt).filter(Boolean);
+  const quizSessions = (payload?.quizSessions ?? []).map(mapSessionSummaryToAttempt).filter(Boolean);
+  return {
+    participatedWeeks: Array.isArray(payload?.participatedWeeks) ? payload.participatedWeeks : [],
+    currentWeek: Number(payload?.currentWeek ?? 0) || null,
+    quizSessions,
+  };
+}
+
+async function currentWeekRemoteSummary() {
+  const payload = await getDataSource().getMyCurrentSession();
+  return {
+    currentWeek: Number(payload?.currentWeek ?? 0) || null,
+    weekMeta: payload?.weekMeta ?? payload?.week_meta ?? null,
+    session: mapSessionSummaryToAttempt(payload?.session),
+  };
 }
 
 export const attemptRepository = {
@@ -57,6 +76,34 @@ export const attemptRepository = {
     }
     const all = readAll();
     return userId ? all.filter((a) => a.userId === userId) : all;
+  },
+
+  async weeklySummary(userId) {
+    if (appConfig.dataSource === DATA_SOURCE.REST) {
+      return listRemoteSummary();
+    }
+    const attempts = await this.list(userId);
+    const currentWeek = Number(appConfig.certificate.week) || 1;
+    return {
+      participatedWeeks: [...new Set(attempts.map((attempt) => Number(attempt.week)).filter(Boolean))],
+      currentWeek,
+      quizSessions: attempts,
+    };
+  },
+
+  async currentWeek(userId) {
+    if (appConfig.dataSource === DATA_SOURCE.REST) {
+      return currentWeekRemoteSummary();
+    }
+    const attempts = await this.list(userId);
+    const currentWeek = Number(appConfig.certificate.week) || 1;
+    const session =
+      attempts.find((attempt) => Number(attempt.week) === currentWeek && !attempt.abandoned) ?? null;
+    return {
+      currentWeek,
+      weekMeta: null,
+      session,
+    };
   },
 
   async getById(attemptId, { practice = false } = {}) {

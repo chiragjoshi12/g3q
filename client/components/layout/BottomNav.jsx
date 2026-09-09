@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import { BrandGlyph, BrandIcon } from "@/components/common/BrandIcon";
 import { getBottomNavItems } from "@/config/navigation";
@@ -17,8 +17,10 @@ const INACTIVE = "#000000";
  */
 export function BottomNav({ className }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { t } = useI18n();
   const items = getBottomNavItems(t);
+  const practiceMode = searchParams.get("practice") === "1";
 
   return (
     <nav
@@ -29,7 +31,7 @@ export function BottomNav({ className }) {
       )}
     >
       <ul
-        className="pointer-events-auto mx-auto flex w-full max-w-[26.5rem] items-stretch rounded-[2rem] bg-white px-3 py-2.5"
+        className="pointer-events-auto mx-auto flex w-full max-w-[26.5rem] items-stretch rounded-[2rem] bg-white px-2 py-2.5"
         style={{
           boxShadow:
             "0 14px 40px rgb(15 23 42 / 0.18), 0 4px 14px rgb(15 23 42 / 0.10), 0 0 0 1px rgb(15 23 42 / 0.04)",
@@ -37,7 +39,9 @@ export function BottomNav({ className }) {
       >
         {items.map((item) => {
           const active =
-            pathname === item.href || pathname.startsWith(`${item.href}/`);
+            item.id === "practice"
+              ? practiceMode && pathname.startsWith("/quiz/")
+              : pathname === item.href || pathname.startsWith(`${item.href}/`);
           const color = active ? ACTIVE : INACTIVE;
 
           return (
@@ -45,7 +49,7 @@ export function BottomNav({ className }) {
               <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className="group flex flex-col items-center gap-2.5 rounded-full px-2 py-1.5 outline-none transition-colors"
+                className="group flex flex-col items-center gap-2 rounded-full px-2 py-1.5 outline-none transition-colors"
                 style={{ color }}
               >
                 <span className="grid h-7 place-items-center">
@@ -53,15 +57,19 @@ export function BottomNav({ className }) {
                     <BrandGlyph
                       src={item.iconSrc}
                       color={color}
-                      className={item.id === "home" || item.id === "profile" ? "size-[1.45rem]" : "size-[1.7rem]"}
+                      className={item.id === "home" || item.id === "profile" ? "size-[1.45rem]" : "size-[1.6rem]"}
                     />
                   ) : (
-                    <BrandIcon src={item.iconSrc} alt="" className="size-[1.55rem]" />
+                    <BrandIcon
+                      src={item.iconSrc}
+                      alt=""
+                      className={item.id === "practice" ? "size-[1.7rem]" : "size-[1.55rem]"}
+                    />
                   )}
                 </span>
                 <span
                   className={cn(
-                    "text-[13px] leading-none tracking-wide transition-colors",
+                    "text-[12.5px] leading-none tracking-wide transition-colors",
                     active ? "font-semibold" : "font-medium"
                   )}
                 >

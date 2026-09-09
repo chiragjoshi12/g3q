@@ -29,8 +29,6 @@ const initialFlow = {
   requestId: null,
   maskedPhone: "",
   pendingUser: null,
-  profileFirstName: "",
-  profileLastName: "",
   profileName: "",
   profileDistrict: "",
   profileTaluka: "",
@@ -57,8 +55,6 @@ export const useAuthStore = create()(
           identity: null,
           phone: "",
           otp: "",
-          profileFirstName: "",
-          profileLastName: "",
           profileName: "",
           profileDistrict: "",
           profileTaluka: "",
@@ -72,10 +68,6 @@ export const useAuthStore = create()(
         set({ phone: phone.replace(/\D/g, "").slice(0, appConfig.auth.phoneLength), error: null }),
 
       setOtp: (otp) => set({ otp, error: null }),
-
-      setProfileFirstName: (profileFirstName) => set({ profileFirstName, error: null }),
-
-      setProfileLastName: (profileLastName) => set({ profileLastName, error: null }),
 
       setProfileName: (profileName) => set({ profileName, error: null }),
 
@@ -186,31 +178,6 @@ export const useAuthStore = create()(
         }
       },
 
-      betaLogin: async () => {
-        const { credential, profileFirstName, profileLastName, profileDistrict, profileTaluka } = get();
-        set({ loading: true, error: null });
-        try {
-          const { user, token } = await authController.betaLogin({
-            firstName: profileFirstName,
-            lastName: profileLastName,
-            district: profileDistrict,
-            taluka: profileTaluka,
-            phone: credential,
-          });
-          set({
-            loading: false,
-            step: AUTH_STEP.WELCOME,
-            welcomeSourceStep: AUTH_STEP.CREDENTIAL,
-            pendingUser: user,
-            token,
-          });
-          return true;
-        } catch (error) {
-          set({ loading: false, error: toMessage(error) });
-          return false;
-        }
-      },
-
       /** After the success pause, commit the session so Home can open. */
       completeLogin: () => {
         const { pendingUser, token } = get();
@@ -233,8 +200,6 @@ export const useAuthStore = create()(
           otp: "",
           error: null,
           requestId: null,
-          profileFirstName: "",
-          profileLastName: "",
           profileName: "",
           profileDistrict: "",
           profileTaluka: "",

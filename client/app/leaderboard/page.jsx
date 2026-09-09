@@ -45,9 +45,10 @@ export default function LeaderboardPage() {
     college: t("noPlaysYetDescription"),
     citizen: t("noPlaysYetDescription"),
   };
+  const requestedTalukaId = user?.talukaId || null;
+  const fallbackTalukaId = requestedTalukaId || null;
 
   const liveLeaderboard = hydrated && appConfig.dataSource === DATA_SOURCE.REST;
-  const betaLeaderboard = liveLeaderboard && appConfig.beta.isBetaTime;
 
   const {
     status,
@@ -57,16 +58,17 @@ export default function LeaderboardPage() {
   } = useAsyncData(
     async () => {
       if (!liveLeaderboard) return null;
-      const taluka = isAuthenticated ? user?.taluka : undefined;
-      return betaLeaderboard
-        ? getDataSource().getBetaLeaderboardOverview({ limit: LEADERBOARD_LIMIT, taluka })
-        : getDataSource().getLeaderboardOverview({ limit: LEADERBOARD_LIMIT, taluka });
+      return getDataSource().getLeaderboardOverview({
+        limit: LEADERBOARD_LIMIT,
+        talukaId: fallbackTalukaId || undefined,
+        lang: language,
+      });
     },
-    [liveLeaderboard, betaLeaderboard, isAuthenticated, user?.taluka],
+    [liveLeaderboard, isAuthenticated, user?.taluka, fallbackTalukaId, language],
     liveLeaderboard
   );
   const activeBoard = liveLeaderboard ? data?.[tab] ?? null : null;
-  const talukaLabel = data?.taluka || activeBoard?.taluka || user?.taluka || "Palanpur";
+  const talukaLabel = data?.taluka?.name || user?.taluka || "Palanpur";
   const week = Number(data?.week) || appConfig.certificate.week || 5;
   const youName = hydrated ? user?.name : null;
   const rows = liveLeaderboard

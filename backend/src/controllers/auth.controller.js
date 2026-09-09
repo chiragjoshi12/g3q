@@ -24,9 +24,3 @@ export const registerCitizen = asyncHandler(async (req, res) => {
   const result = await authService.registerCitizen({ requestId, name, district, taluka });
   return res.status(200).json(result);
 });
-
-export const betaLogin = asyncHandler(async (req, res) => {
-  const { firstName, lastName, district, taluka, phone } = req.body;
-  const result = await authService.betaLogin({ firstName, lastName, district, taluka, phone });
-  return res.status(200).json(result);
-});

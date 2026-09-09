@@ -6,8 +6,28 @@ function phoneDigits(value) {
 }
 
 /** Fields exposed to clients — mirrors roster + login identity. */
-const toRaw = (user) => {
+async function resolveTalukaId(taluka) {
+  const trimmed = String(taluka ?? '').trim();
+  if (!trimmed) return null;
+  const rows = await prisma.$queryRawUnsafe(
+    `
+      SELECT id
+      FROM talukas
+      WHERE LOWER(name_en) = LOWER(?)
+        OR LOWER(name_gu) = LOWER(?)
+        OR LOWER(name_hi) = LOWER(?)
+      LIMIT 1
+    `,
+    trimmed,
+    trimmed,
+    trimmed
+  );
+  return rows[0]?.id ?? null;
+}
+
+const toRaw = async (user) => {
   if (!user) return null;
+  const talukaId = await resolveTalukaId(user.taluka);
   return {
     id: user.id,
     role: user.role,
@@ -21,6 +41,7 @@ const toRaw = (user) => {
     grade: user.grade ?? '',
     district: user.district ?? '',
     taluka: user.taluka ?? null,
+    talukaId,
     village: user.village ?? null,
     socialCategory: user.socialCategory ?? null,
     dateOfBirth: user.dateOfBirth ?? null,
@@ -38,12 +59,12 @@ export class UserModel {
     const user = await prisma.user.findFirst({
       where: { role, [field]: credential },
     });
-    return toRaw(user);
+    return await toRaw(user);
   }
 
   static async findById(id) {
     const user = await prisma.user.findUnique({ where: { id } });
-    return toRaw(user);
+    return await toRaw(user);
   }
 
   static async findByPhone(role, phone) {
@@ -54,7 +75,7 @@ export class UserModel {
     });
     if (!user) return null;
     if (role && user.role !== role) return null;
-    return toRaw(user);
+    return await toRaw(user);
   }
 
   static async createCitizen({ name, district, taluka, phone }) {
@@ -69,7 +90,7 @@ export class UserModel {
         joinedOn: new Date(),
       },
     });
-    return toRaw(user);
+    return await toRaw(user);
   }
 
   static async updateCitizenProfile(id, { name, district, taluka }) {
@@ -82,6 +103,6 @@ export class UserModel {
         institute: 'નાગરિક સહભાગી',
       },
     });
-    return toRaw(user);
+    return await toRaw(user);
   }
 }

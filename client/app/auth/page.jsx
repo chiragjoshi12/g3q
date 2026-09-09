@@ -4,14 +4,12 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { AuthBrandHeader } from "@/components/auth/AuthBrandHeader";
-import { BetaLoginStep } from "@/components/auth/BetaLoginStep";
 import { CitizenProfileStep } from "@/components/auth/CitizenProfileStep";
 import { CredentialStep } from "@/components/auth/CredentialStep";
 import { IdentityStep } from "@/components/auth/IdentityStep";
 import { OtpStep } from "@/components/auth/OtpStep";
 import { WelcomeStep } from "@/components/auth/WelcomeStep";
 import { DesktopAppShell } from "@/components/layout/DesktopAppShell";
-import { appConfig } from "@/config/app.config";
 import { consumePostAuthPath, markLoginToast, ROUTES } from "@/config/routes";
 import { useStoreHydrated } from "@/hooks/useStoreHydrated";
 import { isCitizen } from "@/lib/domain/roles";
@@ -36,8 +34,6 @@ export default function AuthPage() {
   const identity = useAuthStore((state) => state.identity);
   const phone = useAuthStore((state) => state.phone);
   const otp = useAuthStore((state) => state.otp);
-  const profileFirstName = useAuthStore((state) => state.profileFirstName);
-  const profileLastName = useAuthStore((state) => state.profileLastName);
   const profileName = useAuthStore((state) => state.profileName);
   const profileDistrict = useAuthStore((state) => state.profileDistrict);
   const profileTaluka = useAuthStore((state) => state.profileTaluka);
@@ -48,8 +44,6 @@ export default function AuthPage() {
   const setCredential = useAuthStore((state) => state.setCredential);
   const setPhone = useAuthStore((state) => state.setPhone);
   const setOtp = useAuthStore((state) => state.setOtp);
-  const setProfileFirstName = useAuthStore((state) => state.setProfileFirstName);
-  const setProfileLastName = useAuthStore((state) => state.setProfileLastName);
   const setProfileName = useAuthStore((state) => state.setProfileName);
   const setProfileDistrict = useAuthStore((state) => state.setProfileDistrict);
   const setProfileTaluka = useAuthStore((state) => state.setProfileTaluka);
@@ -57,7 +51,6 @@ export default function AuthPage() {
   const requestOtp = useAuthStore((state) => state.requestOtp);
   const verifyOtp = useAuthStore((state) => state.verifyOtp);
   const completeCitizenProfile = useAuthStore((state) => state.completeCitizenProfile);
-  const betaLogin = useAuthStore((state) => state.betaLogin);
   const completeLogin = useAuthStore((state) => state.completeLogin);
   const backToCredential = useAuthStore((state) => state.backToCredential);
   const backToIdentity = useAuthStore((state) => state.backToIdentity);
@@ -94,25 +87,7 @@ export default function AuthPage() {
             step === AUTH_STEP.WELCOME ? "overflow-hidden" : "overflow-y-auto"
           }`}
         >
-          {appConfig.beta.isBetaTime && visibleStep === AUTH_STEP.CREDENTIAL ? (
-            <BetaLoginStep
-              firstName={profileFirstName}
-              lastName={profileLastName}
-              district={profileDistrict}
-              taluka={profileTaluka}
-              phone={credential}
-              error={error}
-              loading={loading}
-              onFirstNameChange={setProfileFirstName}
-              onLastNameChange={setProfileLastName}
-              onDistrictChange={setProfileDistrict}
-              onTalukaChange={setProfileTaluka}
-              onPhoneChange={setCredential}
-              onSubmit={betaLogin}
-            />
-          ) : null}
-
-          {!appConfig.beta.isBetaTime && visibleStep === AUTH_STEP.CREDENTIAL ? (
+          {visibleStep === AUTH_STEP.CREDENTIAL ? (
             <CredentialStep
               role={role}
               credential={credential}
@@ -124,7 +99,7 @@ export default function AuthPage() {
             />
           ) : null}
 
-          {!appConfig.beta.isBetaTime && visibleStep === AUTH_STEP.IDENTITY ? (
+          {visibleStep === AUTH_STEP.IDENTITY ? (
             <IdentityStep
               identity={identity}
               phone={phone}
@@ -136,7 +111,7 @@ export default function AuthPage() {
             />
           ) : null}
 
-          {!appConfig.beta.isBetaTime && visibleStep === AUTH_STEP.OTP ? (
+          {visibleStep === AUTH_STEP.OTP ? (
             <OtpStep
               otp={otp}
               error={error}
@@ -147,7 +122,7 @@ export default function AuthPage() {
             />
           ) : null}
 
-          {!appConfig.beta.isBetaTime && visibleStep === AUTH_STEP.PROFILE ? (
+          {visibleStep === AUTH_STEP.PROFILE ? (
             <CitizenProfileStep
               name={profileName}
               district={profileDistrict}

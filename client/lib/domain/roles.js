@@ -16,17 +16,17 @@ export function getCredentialRules() {
       length: 18,
       pattern: /^\d{11}$|^\d{18}$/,
       inputMode: "numeric",
-      error: "CTS Number must be 11 or 18 digits.",
+      error: translateCurrent("errorInvalidCtsNumber"),
     },
     [ROLE.COLLEGE]: {
       key: "abcId",
-      label: "ABC (Academic Bank of Credits) ID",
-      hint: translateCurrent("enterCtsCode").replace("CTS", "ABC"),
-      placeholder: "ABC ID",
+      label: translateCurrent("abcIdLabel"),
+      hint: translateCurrent("enterAbcId"),
+      placeholder: translateCurrent("abcIdPlaceholder"),
       length: 12,
       pattern: /^\d{12}$/,
       inputMode: "numeric",
-      error: "ABC ID must be 12 digits.",
+      error: translateCurrent("errorInvalidAbcId"),
     },
     [ROLE.CITIZEN]: {
       key: "phone",
@@ -65,7 +65,7 @@ export function validateCredential(role, value) {
   const rule = getCredentialRule(role);
   if (!rule) return translateCurrent("somethingWentWrong");
   const trimmed = String(value || "").trim();
-  if (!trimmed) return `${rule.label} ${translateCurrent("submit")}`;
+  if (!trimmed) return translateCurrent("enterField", { field: rule.label });
   if (!rule.pattern.test(trimmed)) return rule.error;
   return null;
 }

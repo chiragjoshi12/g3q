@@ -28,6 +28,21 @@ const parseJson = (value) => {
 
 const questionTypeOf = (row) => row.type || QUESTION_TYPE.SINGLE_CHOICE;
 
+const answerModeForType = (type) => {
+  switch (type) {
+    case QUESTION_TYPE.MATCH_FOLLOWING:
+    case QUESTION_TYPE.DRAG_INTO_BLANKS:
+      return 'map';
+    case QUESTION_TYPE.DRAG_DROP:
+      return 'sequence';
+    case QUESTION_TYPE.SINGLE_CHOICE:
+    case QUESTION_TYPE.TRUE_FALSE:
+    case QUESTION_TYPE.IMAGE_CHOICE:
+    default:
+      return 'single';
+  }
+};
+
 const questionContent = (row, language = 'gu') => {
   const lang = questionTextLanguage(language);
   const content = parseJson(row.content) || {};
@@ -74,6 +89,74 @@ const questionAnswer = (row) => {
     return row.correctOption ? [String(row.correctOption).toLowerCase()] : [];
   }
   return null;
+};
+
+const optionListToMap = (options = []) =>
+  Object.fromEntries(
+    (options || []).map((option) => [
+      option.id,
+      option.image || option.imageUrl
+        ? {
+            label: option.label,
+            imageUrl: option.image || option.imageUrl,
+          }
+        : option.label,
+    ])
+  );
+
+const promptWithBlankTokens = (segments = []) =>
+  (segments || [])
+    .map((segment) =>
+      segment?.type === 'blank' ? `{{${segment.id}}}` : String(segment?.value || '').trim()
+    )
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const compactTargets = (row, language = 'gu') => {
+  const type = questionTypeOf(row);
+  const content = questionContent(row, language);
+  if (type === QUESTION_TYPE.MATCH_FOLLOWING) {
+    return Object.fromEntries((content.left || []).map((item) => [item.id, item.label]));
+  }
+  return undefined;
+};
+
+const compactQuestionText = (row, language = 'gu') => {
+  const type = questionTypeOf(row);
+  const lang = questionTextLanguage(language);
+  const prompt = lang === 'en' ? row.questionEn || row.questionGu : row.questionGu || row.questionEn;
+  if (type !== QUESTION_TYPE.DRAG_INTO_BLANKS) return prompt || '';
+  return promptWithBlankTokens(questionContent(row, lang).segments || []);
+};
+
+const compactOptions = (row, language = 'gu') => {
+  const type = questionTypeOf(row);
+  const content = questionContent(row, language);
+  if (type === QUESTION_TYPE.MATCH_FOLLOWING) {
+    return optionListToMap(content.right || []);
+  }
+  if (type === QUESTION_TYPE.DRAG_DROP) {
+    return optionListToMap(content.items || []);
+  }
+  if (type === QUESTION_TYPE.DRAG_INTO_BLANKS) {
+    return optionListToMap(content.bank || []);
+  }
+  const baseOptions = (content.options || []).filter((option) => option?.id && option?.label);
+  if (type === QUESTION_TYPE.TRUE_FALSE) {
+    return optionListToMap(baseOptions.slice(0, 2));
+  }
+  return optionListToMap(baseOptions);
+};
+
+const compactAnswer = (row) => {
+  const type = questionTypeOf(row);
+  const raw = questionAnswer(row);
+  const mode = answerModeForType(type);
+  return {
+    mode,
+    value: mode === 'single' ? raw?.[0] ?? null : raw,
+  };
 };
 
 const choiceAnswerText = (row, language = 'gu') => {
@@ -154,24 +237,21 @@ export const toPlayExplanation = (row, language = 'gu') => {
 /** Client-facing question — never includes correctOption. */
 export const toPlayQuestion = (row, language = 'gu') => {
   const lang = questionTextLanguage(language);
-  const prompt = lang === 'en' ? row.questionEn || row.questionGu : row.questionGu || row.questionEn;
-  const content = questionContent(row, lang);
+  const type = questionTypeOf(row);
+  const explanation = toPlayExplanation(row, lang);
+  const targets = compactTargets(row, lang);
   return {
     id: row.bankQueId,
     order: row.order,
-    type: questionTypeOf(row),
+    type,
     points: row.points,
-    prompt: prompt || '',
+    question: compactQuestionText(row, lang),
     department: lang === 'en' ? row.departmentEn || row.departmentGu : row.departmentGu || row.departmentEn,
-    options: content.options ?? null,
-    left: content.left ?? null,
-    right: content.right ?? null,
-    items: content.items ?? null,
-    segments: content.segments ?? null,
-    bank: content.bank ?? null,
-    backgroundImageUrl: content.backgroundImageUrl ?? null,
-    backgroundStyle: content.backgroundStyle ?? null,
-    answer: questionAnswer(row),
+    bg: questionContent(row, lang).backgroundImageUrl ?? null,
+    options: compactOptions(row, lang),
+    ...(targets ? { targets } : {}),
+    answer: compactAnswer(row),
+    explanation: explanation?.body || '',
   };
 };
 
@@ -180,39 +260,49 @@ export const toGradingQuestion = (row, language = 'gu') => ({
   answer: questionAnswer(row),
 });
 
-export const toSessionSummary = (session) => {
+export const toSessionMeta = (session) => {
   if (!session) return null;
+  const weekMeta = getActivePlatformWeek(session.completedAt || session.startedAt || new Date());
   return {
     sessionId: session.id,
     status: session.status,
     questionCount: session.questionCount,
     language: session.language,
     startedAt: session.startedAt.getTime(),
-    expiresAt: session.expiresAt ? session.expiresAt.getTime() : null,
     completedAt: session.completedAt ? session.completedAt.getTime() : null,
     correctCount: session.correctCount ?? null,
     wrongCount: session.wrongCount ?? null,
     totalTimeMs: session.totalTimeMs ?? null,
-    wallClockMs: session.wallClockMs ?? null,
-    averageTimeMs: session.averageTimeMs ?? null,
     percentage: session.percentage ?? null,
-    week: CONFIG.QUIZ.CURRENT_WEEK,
-    week_meta: CONFIG.QUIZ.CURRENT_WEEK_META,
+    week: weekMeta.id,
+    weekMeta,
+  };
+};
+
+export const toSessionSummary = (session) => toSessionMeta(session);
+
+const toSessionHistoryEntry = (session) => {
+  if (!session) return null;
+  const weekMeta = getActivePlatformWeek(session.completedAt || session.startedAt || new Date());
+  return {
+    sessionId: session.id,
+    questionCount: session.questionCount,
+    completedAt: session.completedAt ? session.completedAt.getTime() : null,
+    correctCount: session.correctCount ?? 0,
+    wrongCount: session.wrongCount ?? 0,
+    percentage: session.percentage ?? 0,
+    totalTimeMs: session.totalTimeMs ?? 0,
+    week: weekMeta.id,
+    weekMeta,
   };
 };
 
 export const toSessionPlayPayload = (session) => ({
-  ...toSessionSummary(session),
+  ...toSessionMeta(session),
   questions: (session.questions || [])
     .slice()
     .sort((a, b) => a.order - b.order)
     .map((q) => toPlayQuestion(q, session.language)),
-  explanations: Object.fromEntries(
-    (session.questions || [])
-      .slice()
-      .sort((a, b) => a.order - b.order)
-      .map((q) => [q.bankQueId, toPlayExplanation(q, session.language)])
-  ),
 });
 
 export const toSessionResult = (session) => {
@@ -350,31 +440,54 @@ export class QuizSessionModel {
   static async findInProgressMetaForUser(userId, tx = prisma) {
     return tx.quizSession.findFirst({
       where: { userId, status: 'in_progress' },
-      select: { id: true, expiresAt: true },
+      select: { id: true },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  static async listForUser(userId, { page = 1, pageSize = 20 } = {}) {
+  static async listForUser(userId) {
     const where = { userId, status: 'submitted' };
-    const [total, rows] = await Promise.all([
-      prisma.quizSession.count({ where }),
-      prisma.quizSession.findMany({
-        where,
-        orderBy: { completedAt: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-    ]);
+    const rows = await prisma.quizSession.findMany({
+      where,
+      orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }],
+    });
+
+    const seenWeeks = new Set();
+    const items = [];
+
+    for (const session of rows) {
+      const weekMeta = getActivePlatformWeek(session.completedAt || session.startedAt || new Date());
+      if (seenWeeks.has(weekMeta.id)) continue;
+      seenWeeks.add(weekMeta.id);
+      items.push(toSessionHistoryEntry(session));
+    }
+
     return {
-      total,
-      page,
-      page_size: pageSize,
-      items: rows.map(toSessionSummary),
+      participatedWeeks: items.map((item) => item.week),
+      currentWeek: CONFIG.QUIZ.CURRENT_WEEK,
+      quizSessions: items,
     };
   }
 
-  static async createWithQuestions({ userId, language, expiresAt, bankRows, tx = prisma }) {
+  static async findCurrentWeekForUser(userId) {
+    const rows = await prisma.quizSession.findMany({
+      where: {
+        userId,
+        status: { in: ['in_progress', 'submitted', 'abandoned'] },
+      },
+      orderBy: [{ createdAt: 'desc' }, { completedAt: 'desc' }],
+    });
+
+    return (
+      rows.find(
+        (session) =>
+          getActivePlatformWeek(session.completedAt || session.startedAt || new Date()).id ===
+          CONFIG.QUIZ.CURRENT_WEEK
+      ) || null
+    );
+  }
+
+  static async createWithQuestions({ userId, language, bankRows, tx = prisma }) {
     const startedAt = new Date();
     return tx.quizSession.create({
       data: {
@@ -382,7 +495,6 @@ export class QuizSessionModel {
         language,
         questionCount: bankRows.length,
         startedAt,
-        expiresAt,
         status: 'in_progress',
         questions: {
           create: bankRows.map((q, index) => ({
@@ -415,10 +527,11 @@ export class QuizSessionModel {
   static async submit(sessionId, gradedRows, totals, leaderboardContext = null) {
     return prisma.$transaction(async (tx) => {
       const completedAt = new Date();
+      const finalStatus = totals.abandoned ? 'abandoned' : 'submitted';
       const claimed = await tx.quizSession.updateMany({
         where: { id: sessionId, status: 'in_progress' },
         data: {
-          status: 'submitted',
+          status: finalStatus,
           completedAt,
           correctCount: totals.correctCount,
           wrongCount: totals.wrongCount,
@@ -456,7 +569,12 @@ export class QuizSessionModel {
         await tx.$executeRawUnsafe(exposureUpsert.sql, ...exposureUpsert.params);
       }
 
-      if (leaderboardContext?.userId && leaderboardContext?.taluka && leaderboardContext?.role) {
+      if (
+        finalStatus === 'submitted' &&
+        leaderboardContext?.userId &&
+        leaderboardContext?.taluka &&
+        leaderboardContext?.role
+      ) {
         const week = getActivePlatformWeek(completedAt).id;
         const aggregateUpsert = buildLeaderboardAggregateUpsert({
           week,
@@ -493,14 +611,6 @@ export class QuizSessionModel {
         where: { id: sessionId },
         include: { questions: { orderBy: { order: 'asc' } } },
       });
-    });
-  }
-
-  static async markExpired(sessionId) {
-    return prisma.quizSession.update({
-      where: { id: sessionId },
-      data: { status: 'expired' },
-      include: { questions: { orderBy: { order: 'asc' } } },
     });
   }
 

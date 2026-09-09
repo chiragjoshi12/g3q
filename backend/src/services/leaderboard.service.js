@@ -3,43 +3,113 @@ import { CONFIG } from '../config/index.js';
 import { AppError, ERROR_CODE } from '../utils/appError.js';
 import { UserModel } from '../models/UserModel.js';
 import { ROLE } from '../config/roles.js';
-import {
-  BETA_CITIZEN_LEADERBOARD,
-  BETA_COLLEGE_LEADERBOARD,
-  BETA_LEADERBOARD_TALUKA,
-  BETA_SCHOOL_LEADERBOARD,
-} from '../data/betaLeaderboard.js';
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
+const DEFAULT_LANG = 'gu';
+const LOCATION_CACHE_TTL_MS = 5 * 60 * 1000;
 
-const toEntry = (row, rank, meId) => ({
+let locationCache = null;
+
+function normalizeNameKey(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function normalizeLang(lang) {
+  return ['gu', 'en', 'hi'].includes(String(lang || '').trim()) ? String(lang).trim() : DEFAULT_LANG;
+}
+
+function localizedName(row, lang) {
+  const safeLang = normalizeLang(lang);
+  if (safeLang === 'en') return row?.nameEn || row?.nameGu || row?.nameHi || null;
+  if (safeLang === 'hi') return row?.nameHi || row?.nameGu || row?.nameEn || null;
+  return row?.nameGu || row?.nameEn || row?.nameHi || null;
+}
+
+async function getLocationCache() {
+  const now = Date.now();
+  if (locationCache && now - locationCache.at < LOCATION_CACHE_TTL_MS) {
+    return locationCache;
+  }
+
+  const [districts, talukas] = await Promise.all([
+    prisma.district.findMany({
+      select: { id: true, nameEn: true, nameGu: true, nameHi: true },
+    }),
+    prisma.taluka.findMany({
+      select: { id: true, districtId: true, nameEn: true, nameGu: true, nameHi: true },
+    }),
+  ]);
+
+  const districtsByAnyName = new Map();
+  const talukasByAnyName = new Map();
+  const talukasById = new Map();
+
+  for (const district of districts) {
+    for (const name of [district.nameEn, district.nameGu, district.nameHi]) {
+      const key = normalizeNameKey(name);
+      if (key) districtsByAnyName.set(key, district);
+    }
+  }
+
+  for (const taluka of talukas) {
+    talukasById.set(taluka.id, taluka);
+    for (const name of [taluka.nameEn, taluka.nameGu, taluka.nameHi]) {
+      const key = normalizeNameKey(name);
+      if (key) talukasByAnyName.set(key, taluka);
+    }
+  }
+
+  locationCache = {
+    at: now,
+    districtsByAnyName,
+    talukasByAnyName,
+    talukasById,
+  };
+  return locationCache;
+}
+
+const toEntry = (row, rank, meId, { role = null } = {}) => ({
   rank,
   userId: row.user_id,
   name: row.name,
   institute: row.institute || '',
   schoolId: row.school_id || null,
-  grade: row.grade || '',
+  grade: role === ROLE.CITIZEN ? null : row.grade || null,
   taluka: row.taluka || null,
   district: row.district || null,
   bestPercentage: Number(row.best_percentage) || 0,
-  totalCorrect: Number(row.total_correct) || 0,
-  totalWrong: Number(row.total_wrong) || 0,
   totalTimeMs: Number(row.total_time_ms) || 0,
-  sessionsCompleted: Number(row.sessions_completed) || 0,
   you: row.user_id === meId,
 });
 
-const schoolLabel = (scopeName, week) =>
-  `${scopeName || 'રાજ્ય'} - ${week} મું અઠવાડિયું`;
+const schoolLabel = (scopeName, week, lang = DEFAULT_LANG) => {
+  const safeLang = normalizeLang(lang);
+  if (safeLang === 'en') return `${scopeName || 'State'} - Week ${week}`;
+  if (safeLang === 'hi') return `${scopeName || 'राज्य'} - सप्ताह ${week}`;
+  return `${scopeName || 'રાજ્ય'} - ${week} મું અઠવાડિયું`;
+};
 
-function baseFilters({ taluka, role, schoolId, institute }) {
+function talukaNamesForFilter(scopeTaluka) {
+  if (!scopeTaluka) return [];
+  return [...new Set([scopeTaluka.nameEn, scopeTaluka.nameGu, scopeTaluka.nameHi].filter(Boolean))];
+}
+
+function toTalukaResponse(scopeTaluka) {
+  if (!scopeTaluka) return null;
+  return {
+    id: scopeTaluka.id,
+    name: localizedName(scopeTaluka, scopeTaluka.lang || DEFAULT_LANG),
+  };
+}
+
+function baseFilters({ talukaNames, role, schoolId, institute }) {
   const where = ['la.week = ?'];
   const params = [CONFIG.QUIZ.CURRENT_WEEK];
 
-  if (taluka) {
-    where.push('LOWER(la.taluka) = LOWER(?)');
-    params.push(taluka);
+  if (talukaNames?.length) {
+    where.push(`(${talukaNames.map(() => 'LOWER(la.taluka) = LOWER(?)').join(' OR ')})`);
+    params.push(...talukaNames);
   }
 
   if (role === ROLE.STUDENT) {
@@ -60,8 +130,8 @@ function baseFilters({ taluka, role, schoolId, institute }) {
   return { whereSql: where.join(' AND '), params };
 }
 
-async function rankedUsers({ taluka, role, schoolId, institute, limit, meId }) {
-  const { whereSql, params } = baseFilters({ taluka, role, schoolId, institute });
+async function rankedUsers({ talukaNames, role, schoolId, institute, limit, meId, lang }) {
+  const { whereSql, params } = baseFilters({ talukaNames, role, schoolId, institute });
   const sql = `
     SELECT
       la.user_id AS user_id,
@@ -72,10 +142,7 @@ async function rankedUsers({ taluka, role, schoolId, institute, limit, meId }) {
       u.taluka,
       u.district,
       la.best_percentage,
-      la.total_correct,
-      la.total_wrong,
-      la.total_time_ms,
-      la.sessions_completed
+      la.total_time_ms
     FROM leaderboard_aggregates la
     INNER JOIN users u
       ON u.id = la.user_id
@@ -89,12 +156,25 @@ async function rankedUsers({ taluka, role, schoolId, institute, limit, meId }) {
   `;
 
   const rows = await prisma.$queryRawUnsafe(sql, ...params, limit);
-  return rows.map((row, i) => toEntry(row, i + 1, meId));
+  const cache = await getLocationCache();
+  return rows.map((row, i) =>
+    toEntry(
+      {
+        ...row,
+        taluka: localizedName(cache.talukasByAnyName.get(normalizeNameKey(row.taluka)), lang) || row.taluka || null,
+        district:
+          localizedName(cache.districtsByAnyName.get(normalizeNameKey(row.district)), lang) || row.district || null,
+      },
+      i + 1,
+      meId,
+      { role }
+    )
+  );
 }
 
-async function findMyRank({ taluka, role, schoolId, institute, meId }) {
+async function findMyRank({ talukaNames, role, schoolId, institute, meId, lang }) {
   if (!meId) return null;
-  const { whereSql, params } = baseFilters({ taluka, role, schoolId, institute });
+  const { whereSql, params } = baseFilters({ talukaNames, role, schoolId, institute });
 
   const meSql = `
     SELECT
@@ -107,9 +187,7 @@ async function findMyRank({ taluka, role, schoolId, institute, meId }) {
       u.district,
       la.best_percentage,
       la.total_correct,
-      la.total_wrong,
-      la.total_time_ms,
-      la.sessions_completed
+      la.total_time_ms
     FROM leaderboard_aggregates la
     INNER JOIN users u
       ON u.id = la.user_id
@@ -152,26 +230,23 @@ async function findMyRank({ taluka, role, schoolId, institute, meId }) {
     mine.total_time_ms,
     mine.user_id
   );
-  return toEntry(mine, Number(countRows[0]?.better_count || 0) + 1, meId);
+  const cache = await getLocationCache();
+  return toEntry(
+    {
+      ...mine,
+      taluka: localizedName(cache.talukasByAnyName.get(normalizeNameKey(mine.taluka)), lang) || mine.taluka || null,
+      district:
+        localizedName(cache.districtsByAnyName.get(normalizeNameKey(mine.district)), lang) || mine.district || null,
+    },
+    Number(countRows[0]?.better_count || 0) + 1,
+    meId,
+    { role }
+  );
 }
 
 function clampLimit(limit) {
   const n = Number(limit) || DEFAULT_LIMIT;
   return Math.min(MAX_LIMIT, Math.max(1, Math.floor(n)));
-}
-
-function fixedCategory(scope, items, taluka, limit) {
-  const cap = clampLimit(limit);
-  return {
-    scope,
-    taluka,
-    week: CONFIG.QUIZ.CURRENT_WEEK,
-    weekMeta: CONFIG.QUIZ.CURRENT_WEEK_META,
-    label: schoolLabel(taluka, CONFIG.QUIZ.CURRENT_WEEK),
-    total: Math.min(items.length, cap),
-    items: items.slice(0, cap),
-    me: null,
-  };
 }
 
 async function resolveScopedUser(userId) {
@@ -186,57 +261,69 @@ async function topRunningTaluka() {
   });
 }
 
-async function resolveTaluka({ userId, taluka }) {
-  const provided = String(taluka || '').trim();
-  if (provided) return provided;
-  const me = await resolveScopedUser(userId);
-  const mine = String(me?.taluka || '').trim();
-  if (mine) return mine;
-  const top = await topRunningTaluka();
-  return String(top?.taluka || '').trim() || null;
+async function findTalukaByAnyName(name) {
+  const key = normalizeNameKey(name);
+  if (!key) return null;
+  const cache = await getLocationCache();
+  return cache.talukasByAnyName.get(key) || null;
 }
 
-async function talukaLeaderboardByRole({ role, userId, taluka, limit, schoolId = null, institute = null }) {
-  const scopeTaluka = await resolveTaluka({ userId, taluka });
+async function resolveTaluka({ userId, talukaId }) {
+  const providedId = Number(talukaId);
+  if (Number.isInteger(providedId) && providedId > 0) {
+    const cache = await getLocationCache();
+    const taluka = cache.talukasById.get(providedId) || null;
+    if (!taluka) {
+      throw new AppError(ERROR_CODE.NOT_FOUND, 'Taluka not found.');
+    }
+    return taluka;
+  }
+  const me = await resolveScopedUser(userId);
+  const mine = await findTalukaByAnyName(me?.taluka);
+  if (mine) return mine;
+  const top = await topRunningTaluka();
+  return findTalukaByAnyName(top?.taluka);
+}
+
+async function talukaLeaderboardByRole({ role, userId, talukaId, limit, schoolId = null, institute = null, lang }) {
+  const scopeTaluka = await resolveTaluka({ userId, talukaId });
   if (!scopeTaluka) {
     throw new AppError(ERROR_CODE.NOT_FOUND, 'No taluka leaderboard data found.');
   }
 
   const cap = clampLimit(limit);
+  const talukaNames = talukaNamesForFilter(scopeTaluka);
   const [items, meEntry] = await Promise.all([
-    rankedUsers({ taluka: scopeTaluka, role, schoolId, institute, limit: cap, meId: userId }),
-    findMyRank({ taluka: scopeTaluka, role, schoolId, institute, meId: userId }),
+    rankedUsers({ talukaNames, role, schoolId, institute, limit: cap, meId: userId, lang }),
+    findMyRank({ talukaNames, role, schoolId, institute, meId: userId, lang }),
   ]);
 
   return {
-    taluka: scopeTaluka,
-    week: CONFIG.QUIZ.CURRENT_WEEK,
-    weekMeta: CONFIG.QUIZ.CURRENT_WEEK_META,
-    label: schoolLabel(scopeTaluka, CONFIG.QUIZ.CURRENT_WEEK),
+    label: schoolLabel(localizedName(scopeTaluka, lang), CONFIG.QUIZ.CURRENT_WEEK, lang),
     total: items.length,
     items,
     me: meEntry,
   };
 }
 
-async function scopedTalukaCategory({ scope, role, userId, taluka, limit }) {
+async function scopedTalukaCategory({ scope, role, userId, talukaId, limit, lang }) {
   return {
     scope,
-    ...(await talukaLeaderboardByRole({ role, userId, taluka, limit })),
+    ...(await talukaLeaderboardByRole({ role, userId, talukaId, limit, lang })),
   };
 }
 
 export const leaderboardService = {
-  async school({ userId, schoolId, institute, taluka, limit }) {
-    const scopeTaluka = String(taluka || '').trim();
-    if (scopeTaluka || (!schoolId && !institute)) {
+  async school({ userId, schoolId, institute, talukaId, limit, lang }) {
+    if (talukaId || (!schoolId && !institute)) {
       return {
         scope: 'school',
         ...(await talukaLeaderboardByRole({
           role: ROLE.STUDENT,
           userId,
-          taluka,
+          talukaId,
           limit,
+          lang,
         })),
       };
     }
@@ -254,32 +341,26 @@ export const leaderboardService = {
       );
     }
 
-    let whereSql;
-    let params;
-    if (scopeSchoolId) {
-      whereSql = 'u.school_id = ?';
-      params = [scopeSchoolId];
-    } else {
-      whereSql = 'u.institute = ?';
-      params = [scopeInstitute];
-    }
-
     const cap = clampLimit(limit);
+    const scopeTaluka = await findTalukaByAnyName(me?.taluka);
+    const talukaNames = talukaNamesForFilter(scopeTaluka);
     const [items, meEntry] = await Promise.all([
       rankedUsers({
-        taluka: me.taluka || null,
+        talukaNames,
         role: ROLE.STUDENT,
         schoolId: scopeSchoolId,
         institute: scopeInstitute,
         limit: cap,
         meId: userId,
+        lang,
       }),
       findMyRank({
-        taluka: me.taluka || null,
+        talukaNames,
         role: ROLE.STUDENT,
         schoolId: scopeSchoolId,
         institute: scopeInstitute,
         meId: userId,
+        lang,
       }),
     ]);
 
@@ -287,28 +368,30 @@ export const leaderboardService = {
       scope: 'school',
       schoolId: scopeSchoolId,
       institute: scopeInstitute,
-      taluka: me.taluka || null,
-      week: CONFIG.QUIZ.CURRENT_WEEK,
-      label: schoolLabel(me.taluka || me.district || scopeInstitute, CONFIG.QUIZ.CURRENT_WEEK),
+      label: schoolLabel(
+        localizedName(scopeTaluka, lang) || me.taluka || me.district || scopeInstitute,
+        CONFIG.QUIZ.CURRENT_WEEK,
+        lang
+      ),
       total: items.length,
       items,
       me: meEntry,
     };
   },
 
-  async taluka({ userId, taluka, limit }) {
+  async taluka({ userId, talukaId, limit, lang }) {
     return {
       scope: 'taluka',
-      ...(await talukaLeaderboardByRole({ role: null, userId, taluka, limit })),
+      ...(await talukaLeaderboardByRole({ role: null, userId, talukaId, limit, lang })),
     };
   },
 
-  async globalByRole({ userId, role, taluka, limit }) {
-    return scopedTalukaCategory({ scope: role, role, userId, taluka, limit });
+  async globalByRole({ userId, role, talukaId, limit, lang }) {
+    return scopedTalukaCategory({ scope: role, role, userId, talukaId, limit, lang });
   },
 
-  async overview({ userId, taluka, limit }) {
-    const scopeTaluka = await resolveTaluka({ userId, taluka });
+  async overview({ userId, talukaId, limit, lang }) {
+    const scopeTaluka = await resolveTaluka({ userId, talukaId });
     if (!scopeTaluka) {
       throw new AppError(ERROR_CODE.NOT_FOUND, 'No taluka leaderboard data found.');
     }
@@ -318,27 +401,30 @@ export const leaderboardService = {
         scope: 'school',
         role: ROLE.STUDENT,
         userId,
-        taluka: scopeTaluka,
+        talukaId: scopeTaluka.id,
         limit,
+        lang,
       }),
       scopedTalukaCategory({
         scope: ROLE.COLLEGE,
         role: ROLE.COLLEGE,
         userId,
-        taluka: scopeTaluka,
+        talukaId: scopeTaluka.id,
         limit,
+        lang,
       }),
       scopedTalukaCategory({
         scope: ROLE.CITIZEN,
         role: ROLE.CITIZEN,
         userId,
-        taluka: scopeTaluka,
+        talukaId: scopeTaluka.id,
         limit,
+        lang,
       }),
     ]);
 
     return {
-      taluka: scopeTaluka,
+      taluka: toTalukaResponse({ ...scopeTaluka, lang }),
       week: CONFIG.QUIZ.CURRENT_WEEK,
       weekMeta: CONFIG.QUIZ.CURRENT_WEEK_META,
       school,
@@ -347,26 +433,11 @@ export const leaderboardService = {
     };
   },
 
-  async betaOverview({ userId, taluka, limit }) {
-    const me = await resolveScopedUser(userId);
-    const scopeTaluka =
-      String(taluka || '').trim() || String(me?.taluka || '').trim() || BETA_LEADERBOARD_TALUKA;
-
-    return {
-      taluka: scopeTaluka,
-      week: CONFIG.QUIZ.CURRENT_WEEK,
-      weekMeta: CONFIG.QUIZ.CURRENT_WEEK_META,
-      school: fixedCategory('school', BETA_SCHOOL_LEADERBOARD, scopeTaluka, limit),
-      college: fixedCategory(ROLE.COLLEGE, BETA_COLLEGE_LEADERBOARD, scopeTaluka, limit),
-      citizen: fixedCategory(ROLE.CITIZEN, BETA_CITIZEN_LEADERBOARD, scopeTaluka, limit),
-    };
+  async college({ userId, talukaId, limit, lang }) {
+    return this.globalByRole({ userId, role: ROLE.COLLEGE, talukaId, limit, lang });
   },
 
-  async college({ userId, taluka, limit }) {
-    return this.globalByRole({ userId, role: ROLE.COLLEGE, taluka, limit });
-  },
-
-  async citizen({ userId, taluka, limit }) {
-    return this.globalByRole({ userId, role: ROLE.CITIZEN, taluka, limit });
+  async citizen({ userId, talukaId, limit, lang }) {
+    return this.globalByRole({ userId, role: ROLE.CITIZEN, talukaId, limit, lang });
   },
 };

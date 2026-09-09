@@ -1,6 +1,5 @@
 import { asyncHandler } from '../middlewares/error.middleware.js';
 import { sessionService } from '../services/session.service.js';
-import { listSessionsQuerySchema } from '../validators/session.validator.js';
 
 export const startSession = asyncHandler(async (req, res) => {
   const result = await sessionService.start({
@@ -20,12 +19,14 @@ export const getSession = asyncHandler(async (req, res) => {
 });
 
 export const submitSession = asyncHandler(async (req, res) => {
+  // `abandoned` lets the server persist a left-midway attempt separately from a completed one.
   const result = await sessionService.submit({
     userId: req.user.id,
     sessionId: req.params.sessionId,
     answers: req.body.answers,
     timings: req.body.timings,
     startedAt: req.body.startedAt,
+    abandoned: req.body.abandoned,
   });
   return res.status(200).json(result);
 });
@@ -39,12 +40,12 @@ export const getSessionResult = asyncHandler(async (req, res) => {
 });
 
 export const listMySessions = asyncHandler(async (req, res) => {
-  const query = listSessionsQuerySchema.parse(req.query);
-  const result = await sessionService.listMine({
-    userId: req.user.id,
-    page: query.page,
-    pageSize: query.page_size,
-  });
+  const result = await sessionService.listMine({ userId: req.user.id });
+  return res.status(200).json(result);
+});
+
+export const myCurrentSession = asyncHandler(async (req, res) => {
+  const result = await sessionService.currentMine({ userId: req.user.id });
   return res.status(200).json(result);
 });
 
