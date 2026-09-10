@@ -59,8 +59,8 @@ export function CredentialStep({
               <BrandIcon src={item.icon} alt="" className="h-[4.85rem] w-auto max-w-full" />
               <span
                 className={cn(
-                  "mt-[-2px] text-center text-[12px] leading-tight text-[#111]",
-                  active ? "font-bold" : "font-semibold"
+                  "mt-[-2px] text-center text-[14px] leading-tight text-[#111]",
+                  active ? "font-bold" : ""
                 )}
               >
                 {item.label}

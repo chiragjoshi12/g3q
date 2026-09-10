@@ -183,7 +183,7 @@ export const httpSource = {
   getLeaderboardOverview: ({ limit, talukaId, lang } = {}) => {
     const params = new URLSearchParams();
     if (limit) params.set("limit", String(limit));
-    if (talukaId) params.set("taluka", String(talukaId));
+    if (talukaId != null && talukaId !== "") params.set("taluka", String(talukaId));
     if (lang) params.set("lang", lang);
     const qs = params.toString();
     return request(`/leaderboard${qs ? `?${qs}` : ""}`);
@@ -194,7 +194,7 @@ export const httpSource = {
     if (limit) params.set("limit", String(limit));
     if (schoolId) params.set("school_id", schoolId);
     if (institute) params.set("institute", institute);
-    if (talukaId) params.set("taluka", String(talukaId));
+    if (talukaId != null && talukaId !== "") params.set("taluka", String(talukaId));
     if (lang) params.set("lang", lang);
     const qs = params.toString();
     return request(`/leaderboard/school${qs ? `?${qs}` : ""}`);
@@ -203,7 +203,7 @@ export const httpSource = {
   getCollegeLeaderboard: ({ limit, talukaId, lang } = {}) => {
     const params = new URLSearchParams();
     if (limit) params.set("limit", String(limit));
-    if (talukaId) params.set("taluka", String(talukaId));
+    if (talukaId != null && talukaId !== "") params.set("taluka", String(talukaId));
     if (lang) params.set("lang", lang);
     const qs = params.toString();
     return request(`/leaderboard/college${qs ? `?${qs}` : ""}`);
@@ -212,7 +212,7 @@ export const httpSource = {
   getCitizenLeaderboard: ({ limit, talukaId, lang } = {}) => {
     const params = new URLSearchParams();
     if (limit) params.set("limit", String(limit));
-    if (talukaId) params.set("taluka", String(talukaId));
+    if (talukaId != null && talukaId !== "") params.set("taluka", String(talukaId));
     if (lang) params.set("lang", lang);
     const qs = params.toString();
     return request(`/leaderboard/citizen${qs ? `?${qs}` : ""}`);
@@ -221,7 +221,7 @@ export const httpSource = {
   getTalukaLeaderboard: ({ limit, talukaId, lang } = {}) => {
     const params = new URLSearchParams();
     if (limit) params.set("limit", String(limit));
-    if (talukaId) params.set("taluka", String(talukaId));
+    if (talukaId != null && talukaId !== "") params.set("taluka", String(talukaId));
     if (lang) params.set("lang", lang);
     const qs = params.toString();
     return request(`/leaderboard/taluka${qs ? `?${qs}` : ""}`);

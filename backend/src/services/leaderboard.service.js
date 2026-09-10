@@ -254,10 +254,17 @@ async function resolveScopedUser(userId) {
   return UserModel.findById(userId);
 }
 
-async function topRunningTaluka() {
-  return prisma.leaderboardTalukaStat.findFirst({
+async function topRunningTalukaRows() {
+  const currentWeekRows = await prisma.leaderboardTalukaStat.findMany({
     where: { week: CONFIG.QUIZ.CURRENT_WEEK },
     orderBy: [{ submittedSessions: 'desc' }, { taluka: 'asc' }],
+    take: 25,
+  });
+  if (currentWeekRows.length) return currentWeekRows;
+
+  return prisma.leaderboardTalukaStat.findMany({
+    orderBy: [{ submittedSessions: 'desc' }, { week: 'desc' }, { taluka: 'asc' }],
+    take: 25,
   });
 }
 
@@ -266,6 +273,11 @@ async function findTalukaByAnyName(name) {
   if (!key) return null;
   const cache = await getLocationCache();
   return cache.talukasByAnyName.get(key) || null;
+}
+
+async function defaultTaluka() {
+  const cache = await getLocationCache();
+  return [...cache.talukasById.values()].sort((a, b) => a.id - b.id)[0] || null;
 }
 
 async function resolveTaluka({ userId, talukaId }) {
@@ -278,11 +290,18 @@ async function resolveTaluka({ userId, talukaId }) {
     }
     return taluka;
   }
+
   const me = await resolveScopedUser(userId);
   const mine = await findTalukaByAnyName(me?.taluka);
   if (mine) return mine;
-  const top = await topRunningTaluka();
-  return findTalukaByAnyName(top?.taluka);
+
+  const topRows = await topRunningTalukaRows();
+  for (const row of topRows) {
+    const matched = await findTalukaByAnyName(row?.taluka);
+    if (matched) return matched;
+  }
+
+  return defaultTaluka();
 }
 
 async function talukaLeaderboardByRole({ role, userId, talukaId, limit, schoolId = null, institute = null, lang }) {

@@ -95,3 +95,10 @@ client/ios/
 # VS Code test
 .vscode-test
 /data
+
+# Locust load test artifacts
+loadtest/
+loadtest/.venv/
+loadtest/users.json
+loadtest/report-*
+loadtest/__pycache__/

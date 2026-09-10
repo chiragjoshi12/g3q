@@ -22,7 +22,7 @@ export function ChoiceOption({
       onClick={onToggle}
       aria-pressed={selected}
       className={cn(
-        "flex min-h-[3.85rem] w-full items-center justify-start rounded-[1.35rem] bg-white px-5 py-4 text-center font-canva text-[0.98rem] leading-snug text-[#111] transition-[transform,box-shadow,border-color] duration-200 ease-emphasized sm:min-h-[4.25rem] sm:text-[1.05rem]",
+        "flex min-h-[4.5rem] w-full items-center justify-start rounded-[1.35rem] bg-white px-5 py-4 text-center font-canva text-[0.98rem] leading-snug text-[#111] transition-[transform,box-shadow,border-color] duration-200 ease-emphasized sm:min-h-[4.25rem] sm:text-[1.05rem]",
         !disabled && "active:scale-[0.985]",
         selected
           ? "border-[2px] border-[#2d689d]"

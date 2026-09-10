@@ -26,9 +26,12 @@ export function LanguageSelectionScreen() {
       className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F7F7F7] lg:bg-transparent"
     >
       <main className="mx-auto flex h-full w-full max-w-[26.5rem] flex-col bg-white px-4 pt-10 pb-8 md:max-w-none lg:hidden">
-        <h1 className="text-center font-sans text-[24px] font-bold tracking-tight text-black">
+        <h1 className="mt-1 text-center text-[22px] font-bold tracking-tight text-black">
           {t("selectLanguage")}
         </h1>
+        <p className="mt-1 text-center text-[18px] font-medium tracking-tight text-black">
+          ભાષા પસંદ કરો
+        </p>
 
         <div className="mt-10 flex flex-1 flex-col gap-5">
           {LANGUAGE_OPTIONS.map((option) => {
@@ -40,14 +43,14 @@ export function LanguageSelectionScreen() {
                 onClick={() => setSelected(option.id)}
                 aria-pressed={active}
                 className={cn(
-                  "flex items-center gap-6 rounded-[2rem] bg-gradient-to-r px-4 py-[-5px] text-left transition-transform active:scale-[0.99]",
+                  "flex items-center gap-7 rounded-[2rem] bg-gradient-to-r px-4 py-[-5px] text-left transition-transform active:scale-[0.99]",
                   option.cardGradient
                 )}
               >
-                <span className="ml-[-16px] grid size-25 shrink-0 place-items-center rounded-[1.75rem] text-[3.25rem] font-medium text-white shadow-sm">
+                <span className="ml-[-16px] grid h-25 w-23 shrink-0 place-items-center rounded-[1.75rem] text-[32px] font-medium text-white">
                   <span
                     className={cn(
-                      "grid size-full place-items-center rounded-[1.75rem]",
+                      "grid size-full place-items-center rounded-[1.5rem]",
                       option.iconBg
                     )}
                   >
@@ -64,7 +67,7 @@ export function LanguageSelectionScreen() {
                 </span>
                 <span className="ml-auto grid size-14 shrink-0 place-items-center">
                   {active ? (
-                    <span className="grid size-10 place-items-center rounded-full bg-black text-white">
+                    <span className="grid size-8 place-items-center rounded-full bg-black text-white">
                       <svg viewBox="0 0 24 24" className="size-6" fill="none" aria-hidden>
                         <path
                           d="M6 12.5 10 16.5 18 8.5"

@@ -92,7 +92,6 @@ These are the important live backend settings. Do not store secret values in doc
 - `DATABASE_URL=<set in Azure App Service>`
 - `JWT_SECRET=<set in Azure App Service>`
 - `GEMINI_API_KEY=<set in Azure App Service>`
-- `AI_ENHANCEMENT_ENABLED=false` unless explicitly enabled
 - `CORS_ALLOW_ALL=true`
 
 ## Useful Azure CLI Commands

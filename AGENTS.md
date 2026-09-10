@@ -19,6 +19,14 @@ Do not nest a `frontend/` folder under `admin/`. The Next.js admin app lives at 
 
 There is a single root `.gitignore`. Do not add per-app `.gitignore` files for these four projects. Admin keeps only `admin/.env.example`; local secrets go in gitignored `.env.local`.
 
+## Deployments & CLI Access Policy
+
+- **`backend/`**: Deployed on Azure Portal (Azure App Service). Accessible via Azure CLI (`az`) if allowed (see [`docs/g3q-azure.md`](file:///Users/chiragjoshi/Documents/GitHub-chirguz/g3q/docs/g3q-azure.md)).
+- **`client/`**, **`admin/`**, **`analytics/`**: Deployed on Vercel and configured with Vercel CLI (`vercel`).
+- **CLI Access & Permission Rules**: Refer to [`docs/access.md`](file:///Users/chiragjoshi/Documents/GitHub-chirguz/g3q/docs/access.md). Agents can access Vercel, Azure, and GitHub through CLI (`vercel`, `az`, `gh`), but **MUST ALWAYS ask for explicit user permission before processing or executing anything** on these platforms.
+- **Capacitor Mobile Builds**: Refer to [`docs/capacitor-build.md`](file:///Users/chiragjoshi/Documents/GitHub-chirguz/g3q/docs/capacitor-build.md) for Android APK and iOS iPhone build commands and output artifact locations.
+
+
 ## Tech stack
 
 ### `backend/`

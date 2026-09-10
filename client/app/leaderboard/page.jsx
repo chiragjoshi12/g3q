@@ -9,15 +9,15 @@ import {
 } from "@/components/landing/LeaderboardList";
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/StateViews";
-import { LandingActionNav } from "@/components/landing/LandingActionNav";
 import { DesktopAppShell } from "@/components/layout/DesktopAppShell";
 import { appConfig, DATA_SOURCE } from "@/config/app.config";
-import { FEATURED_QUIZ_ID, ROUTES, setPostAuthPath } from "@/config/routes";
+import { ROUTES } from "@/config/routes";
 import {
   CITIZEN_LEADERBOARD,
   COLLEGE_LEADERBOARD,
   SCHOOL_LEADERBOARD,
 } from "@/data/leaderboard";
+import { profileController } from "@/controllers/profile.controller";
 import { useAsyncData } from "@/hooks/useAsyncData";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { getDataSource } from "@/lib/data/sources";
@@ -33,6 +33,21 @@ const BOARDS = {
 };
 const LEADERBOARD_LIMIT = 10;
 
+async function resolveTalukaIdForLeaderboard(user, isAuthenticated) {
+  const fromSession = Number(user?.talukaId);
+  if (Number.isInteger(fromSession) && fromSession > 0) return fromSession;
+  if (!isAuthenticated) return null;
+
+  const me = await profileController.loadMe();
+  if (me) {
+    useAuthStore.setState((state) => ({
+      user: state.user ? { ...state.user, ...me } : me,
+    }));
+  }
+  const fromMe = Number(me?.talukaId);
+  return Number.isInteger(fromMe) && fromMe > 0 ? fromMe : null;
+}
+
 export default function LeaderboardPage() {
   const router = useRouter();
   const { language, t } = useI18n();
@@ -45,8 +60,6 @@ export default function LeaderboardPage() {
     college: t("noPlaysYetDescription"),
     citizen: t("noPlaysYetDescription"),
   };
-  const requestedTalukaId = user?.talukaId || null;
-  const fallbackTalukaId = requestedTalukaId || null;
 
   const liveLeaderboard = hydrated && appConfig.dataSource === DATA_SOURCE.REST;
 
@@ -58,13 +71,14 @@ export default function LeaderboardPage() {
   } = useAsyncData(
     async () => {
       if (!liveLeaderboard) return null;
+      const talukaId = await resolveTalukaIdForLeaderboard(user, isAuthenticated);
       return getDataSource().getLeaderboardOverview({
         limit: LEADERBOARD_LIMIT,
-        talukaId: fallbackTalukaId || undefined,
+        ...(talukaId ? { talukaId } : {}),
         lang: language,
       });
     },
-    [liveLeaderboard, isAuthenticated, user?.taluka, fallbackTalukaId, language],
+    [liveLeaderboard, isAuthenticated, user?.talukaId, user?.taluka, language],
     liveLeaderboard
   );
   const activeBoard = liveLeaderboard ? data?.[tab] ?? null : null;
@@ -77,15 +91,6 @@ export default function LeaderboardPage() {
       : []
     : (BOARDS[tab] ?? SCHOOL_LEADERBOARD).slice(0, LEADERBOARD_LIMIT);
   const showEmptyState = liveLeaderboard && status === "ready" && rows.length === 0;
-
-  const go = (path) => {
-    if (hydrated && isAuthenticated) {
-      router.push(path);
-      return;
-    }
-    setPostAuthPath(path);
-    router.push(ROUTES.auth);
-  };
 
   return (
     <DesktopAppShell className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F5F6F8]">
@@ -107,7 +112,7 @@ export default function LeaderboardPage() {
               router.push(hydrated && isAuthenticated ? ROUTES.home : ROUTES.welcome);
             }}
             aria-label={t("close")}
-            className="absolute left-4 grid size-10 place-items-center rounded-full bg-white transition-transform active:scale-95 lg:hidden"
+            className="absolute left-4 grid size-10 place-items-center rounded-full bg-[#f5f5f5] transition-transform active:scale-95 lg:hidden"
           >
             <BrandIcon src={BRAND_ICONS.back} alt="" className="size-3.5" />
           </button>
@@ -117,7 +122,7 @@ export default function LeaderboardPage() {
         </header>
 
         <main className="no-scrollbar relative z-0 min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <div className="px-4 pb-28 pt-5 lg:mx-auto lg:w-full lg:max-w-[56rem] lg:px-10 lg:pt-4 lg:pb-16 xl:max-w-[64rem] xl:px-14">
+          <div className="px-4 pb-8 pt-5 lg:mx-auto lg:w-full lg:max-w-[56rem] lg:px-10 lg:pt-4 lg:pb-16 xl:max-w-[64rem] xl:px-14">
             <div className="flex justify-center">
               <span className="inline-flex max-w-full items-center rounded-full bg-[#2d689d] px-5 py-2.5 text-center font-canva text-[16px] font-[800] leading-snug text-white">
                 {formatTalukaWeekPill(talukaLabel, week, language)}
@@ -162,14 +167,6 @@ export default function LeaderboardPage() {
             ) : null}
           </div>
         </main>
-
-        <LandingActionNav
-          floating
-          className="lg:hidden"
-          onPractice={() => router.push(ROUTES.quiz(FEATURED_QUIZ_ID, { practice: true }))}
-          onPlayQuiz={() => go(ROUTES.home)}
-          onG3qAi={() => router.push(ROUTES.g3qAi)}
-        />
       </div>
     </DesktopAppShell>
   );
