@@ -369,38 +369,42 @@ const buildExposureUpsert = (rows, completedAt) => {
   };
 };
 
-/** One UPDATE with CASE expressions instead of N Prisma row updates. */
+/** Escape a value as a MySQL string literal (ids / JSON text). */
+const sqlStringLiteral = (value) =>
+  `'${String(value).replace(/\\/g, '\\\\').replace(/'/g, "''")}'`;
+
+/**
+ * One UPDATE with CASE expressions instead of N Prisma row updates.
+ * JSON answers are inlined as CAST('...' AS JSON) — binding JSON through
+ * prepared `?` params fails on Azure MySQL (3140/3141 Invalid JSON text).
+ */
 const buildQuestionAnswersBulkUpdate = (gradedRows) => {
   if (!gradedRows.length) return null;
 
-  const ids = gradedRows.map((row) => row.id);
   const optionCases = [];
   const answerCases = [];
   const correctCases = [];
   const timeCases = [];
-  const params = [];
 
   for (const row of gradedRows) {
-    optionCases.push('WHEN ? THEN ?');
-    params.push(row.id, row.selectedOption ?? null);
-
-    // CAST required: CASE returns a string otherwise, and MySQL rejects assigning
-    // that string into the JSON column (error 3140 "Invalid JSON text").
-    answerCases.push('WHEN ? THEN CAST(? AS JSON)');
-    params.push(
-      row.id,
-      row.selectedAnswer == null ? null : JSON.stringify(row.selectedAnswer)
+    const idLit = sqlStringLiteral(row.id);
+    optionCases.push(
+      `WHEN ${idLit} THEN ${
+        row.selectedOption == null ? 'NULL' : sqlStringLiteral(row.selectedOption)
+      }`
     );
-
-    correctCases.push('WHEN ? THEN ?');
-    params.push(row.id, row.isCorrect ? 1 : 0);
-
-    timeCases.push('WHEN ? THEN ?');
-    params.push(row.id, Number(row.timeSpentMs) || 0);
+    answerCases.push(
+      `WHEN ${idLit} THEN ${
+        row.selectedAnswer == null
+          ? 'NULL'
+          : `CAST(${sqlStringLiteral(JSON.stringify(row.selectedAnswer))} AS JSON)`
+      }`
+    );
+    correctCases.push(`WHEN ${idLit} THEN ${row.isCorrect ? 1 : 0}`);
+    timeCases.push(`WHEN ${idLit} THEN ${Number(row.timeSpentMs) || 0}`);
   }
 
-  const idPlaceholders = ids.map(() => '?').join(', ');
-  params.push(...ids);
+  const idList = gradedRows.map((row) => sqlStringLiteral(row.id)).join(', ');
 
   return {
     sql: `
@@ -410,9 +414,9 @@ const buildQuestionAnswersBulkUpdate = (gradedRows) => {
         selected_answer = CASE id ${answerCases.join(' ')} END,
         is_correct = CASE id ${correctCases.join(' ')} END,
         time_spent_ms = CASE id ${timeCases.join(' ')} END
-      WHERE id IN (${idPlaceholders})
+      WHERE id IN (${idList})
     `,
-    params,
+    params: [],
   };
 };
 
