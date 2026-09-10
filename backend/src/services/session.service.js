@@ -515,11 +515,13 @@ export const sessionService = {
   },
 
   async submit({ userId, sessionId, answers, timings, startedAt, abandoned = false }) {
-    const session = await QuizSessionModel.findById(sessionId);
+    const [session, user] = await Promise.all([
+      QuizSessionModel.findById(sessionId),
+      UserModel.findByIdForLeaderboard(userId),
+    ]);
     if (!session || session.userId !== userId) {
       throw new AppError(ERROR_CODE.NOT_FOUND, 'Session not found.');
     }
-    const user = await UserModel.findByIdForLeaderboard(userId);
     if (!user) throw new AppError(ERROR_CODE.UNAUTHORIZED);
 
     if (session.status === 'submitted' || session.status === 'abandoned') {
@@ -568,7 +570,7 @@ export const sessionService = {
     const totalQuestions = gradedRows.length;
 
     const updated = await QuizSessionModel.submit(
-      sessionId,
+      session,
       gradedRows,
       {
         correctCount,

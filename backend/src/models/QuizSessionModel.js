@@ -472,6 +472,84 @@ const buildLeaderboardAggregateUpsert = ({
   ],
 });
 
+const buildLeaderboardTalukaStatUpsert = ({ week, taluka, district, completedAt }) => ({
+  sql: `
+    INSERT INTO leaderboard_taluka_stats (
+      week,
+      taluka,
+      district,
+      submitted_sessions,
+      created_at,
+      updated_at
+    )
+    VALUES (?, ?, ?, 1, ?, ?)
+    ON DUPLICATE KEY UPDATE
+      district = COALESCE(VALUES(district), district),
+      submitted_sessions = submitted_sessions + 1,
+      updated_at = VALUES(updated_at)
+  `,
+  params: [week, taluka, district, completedAt, completedAt],
+});
+
+/** Merge graded answers onto the already-loaded session for the API response. */
+export const applyGradedRowsToSession = (session, gradedRows, totals, completedAt, finalStatus) => {
+  const byId = new Map(gradedRows.map((row) => [row.id, row]));
+  return {
+    ...session,
+    status: finalStatus,
+    completedAt,
+    correctCount: totals.correctCount,
+    wrongCount: totals.wrongCount,
+    totalTimeMs: totals.totalTimeMs,
+    wallClockMs: totals.wallClockMs,
+    averageTimeMs: totals.averageTimeMs,
+    percentage: totals.percentage,
+    questions: (session.questions || []).map((question) => {
+      const graded = byId.get(question.id);
+      if (!graded) return question;
+      return {
+        ...question,
+        selectedOption: graded.selectedOption,
+        selectedAnswer: graded.selectedAnswer,
+        isCorrect: graded.isCorrect,
+        timeSpentMs: graded.timeSpentMs,
+      };
+    }),
+  };
+};
+
+const updateLeaderboardAfterSubmit = async (leaderboardContext, totals, completedAt) => {
+  if (
+    !leaderboardContext?.userId ||
+    !leaderboardContext?.taluka ||
+    !leaderboardContext?.role
+  ) {
+    return;
+  }
+
+  const week = getActivePlatformWeek(completedAt).id;
+  const aggregateUpsert = buildLeaderboardAggregateUpsert({
+    week,
+    role: leaderboardContext.role,
+    taluka: leaderboardContext.taluka,
+    district: leaderboardContext.district || null,
+    userId: leaderboardContext.userId,
+    totals,
+    completedAt,
+  });
+  const talukaUpsert = buildLeaderboardTalukaStatUpsert({
+    week,
+    taluka: leaderboardContext.taluka,
+    district: leaderboardContext.district || null,
+    completedAt,
+  });
+
+  await Promise.all([
+    prisma.$executeRawUnsafe(aggregateUpsert.sql, ...aggregateUpsert.params),
+    prisma.$executeRawUnsafe(talukaUpsert.sql, ...talukaUpsert.params),
+  ]);
+};
+
 export class QuizSessionModel {
   static async findById(id) {
     return prisma.quizSession.findUnique({
@@ -599,85 +677,67 @@ export class QuizSessionModel {
     return session;
   }
 
-  static async submit(sessionId, gradedRows, totals, leaderboardContext = null) {
-    return prisma.$transaction(async (tx) => {
-      const completedAt = new Date();
-      const finalStatus = totals.abandoned ? 'abandoned' : 'submitted';
-      const claimed = await tx.quizSession.updateMany({
-        where: { id: sessionId, status: 'in_progress' },
-        data: {
-          status: finalStatus,
-          completedAt,
-          correctCount: totals.correctCount,
-          wrongCount: totals.wrongCount,
-          totalTimeMs: totals.totalTimeMs,
-          wallClockMs: totals.wallClockMs,
-          averageTimeMs: totals.averageTimeMs,
-          percentage: totals.percentage,
-        },
-      });
+  /**
+   * Critical path: claim session + persist answers + exposures (short TX).
+   * Leaderboard writes run after commit so a 5s interactive TX timeout cannot
+   * roll back an already-finished quiz under load.
+   */
+  static async submit(session, gradedRows, totals, leaderboardContext = null) {
+    const sessionId = session.id;
+    const completedAt = new Date();
+    const finalStatus = totals.abandoned ? 'abandoned' : 'submitted';
 
-      if (!claimed.count) {
-        return tx.quizSession.findUnique({
-          where: { id: sessionId },
-          include: { questions: { orderBy: { order: 'asc' } } },
-        });
-      }
-
-      const answersBulk = buildQuestionAnswersBulkUpdate(gradedRows);
-      if (answersBulk) {
-        await tx.$executeRawUnsafe(answersBulk.sql, ...answersBulk.params);
-      }
-
-      const attemptedRows = gradedRows.filter((row) => row.attempted);
-      const exposureUpsert = buildExposureUpsert(attemptedRows, completedAt);
-      if (exposureUpsert) {
-        await tx.$executeRawUnsafe(exposureUpsert.sql, ...exposureUpsert.params);
-      }
-
-      if (
-        finalStatus === 'submitted' &&
-        leaderboardContext?.userId &&
-        leaderboardContext?.taluka &&
-        leaderboardContext?.role
-      ) {
-        const week = getActivePlatformWeek(completedAt).id;
-        const aggregateUpsert = buildLeaderboardAggregateUpsert({
-          week,
-          role: leaderboardContext.role,
-          taluka: leaderboardContext.taluka,
-          district: leaderboardContext.district || null,
-          userId: leaderboardContext.userId,
-          totals,
-          completedAt,
-        });
-        await tx.$executeRawUnsafe(aggregateUpsert.sql, ...aggregateUpsert.params);
-
-        await tx.leaderboardTalukaStat.upsert({
-          where: {
-            week_taluka: {
-              week,
-              taluka: leaderboardContext.taluka,
-            },
-          },
-          update: {
-            district: leaderboardContext.district || undefined,
-            submittedSessions: { increment: 1 },
-          },
-          create: {
-            week,
-            taluka: leaderboardContext.taluka,
-            district: leaderboardContext.district || null,
-            submittedSessions: 1,
+    const claimed = await prisma.$transaction(
+      async (tx) => {
+        const claim = await tx.quizSession.updateMany({
+          where: { id: sessionId, status: 'in_progress' },
+          data: {
+            status: finalStatus,
+            completedAt,
+            correctCount: totals.correctCount,
+            wrongCount: totals.wrongCount,
+            totalTimeMs: totals.totalTimeMs,
+            wallClockMs: totals.wallClockMs,
+            averageTimeMs: totals.averageTimeMs,
+            percentage: totals.percentage,
           },
         });
-      }
 
-      return tx.quizSession.findUnique({
-        where: { id: sessionId },
-        include: { questions: { orderBy: { order: 'asc' } } },
-      });
-    });
+        if (!claim.count) return false;
+
+        const answersBulk = buildQuestionAnswersBulkUpdate(gradedRows);
+        if (answersBulk) {
+          await tx.$executeRawUnsafe(answersBulk.sql, ...answersBulk.params);
+        }
+
+        const attemptedRows = gradedRows.filter((row) => row.attempted);
+        const exposureUpsert = buildExposureUpsert(attemptedRows, completedAt);
+        if (exposureUpsert) {
+          await tx.$executeRawUnsafe(exposureUpsert.sql, ...exposureUpsert.params);
+        }
+
+        return true;
+      },
+      { maxWait: 5_000, timeout: 10_000 }
+    );
+
+    if (!claimed) {
+      return QuizSessionModel.findById(sessionId);
+    }
+
+    if (finalStatus === 'submitted') {
+      try {
+        await updateLeaderboardAfterSubmit(leaderboardContext, totals, completedAt);
+      } catch (error) {
+        console.error('[submit] leaderboard update failed after commit', {
+          sessionId,
+          userId: leaderboardContext?.userId,
+          message: error?.message,
+        });
+      }
+    }
+
+    return applyGradedRowsToSession(session, gradedRows, totals, completedAt, finalStatus);
   }
 
   static async userStats(userId) {
