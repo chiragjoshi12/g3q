@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import { CONFIG } from './config/index.js';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware.js';
+import { apiEnvelopeMiddleware } from './utils/apiResponse.js';
 
 import authRoutes from './routes/auth.routes.js';
 import quizRoutes from './routes/quiz.routes.js';
@@ -35,10 +36,11 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '3mb' }));
+app.use(express.urlencoded({ extended: true, limit: '3mb' }));
 app.use(cookieParser());
 app.use(morgan('tiny'));
+app.use(apiEnvelopeMiddleware);
 //middlewares
 
 app.get('/', (req, res) => {

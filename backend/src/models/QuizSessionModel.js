@@ -487,41 +487,61 @@ export class QuizSessionModel {
     );
   }
 
-  static async createWithQuestions({ userId, language, bankRows, tx = prisma }) {
-    const startedAt = new Date();
+  static questionCreateManyRows(sessionId, bankRows) {
+    return bankRows.map((q, index) => ({
+      sessionId,
+      order: index + 1,
+      type: q.type || QUESTION_TYPE.SINGLE_CHOICE,
+      bankQueId: q.queId,
+      points: 1,
+      departmentGu: q.departmentGu,
+      departmentEn: q.departmentEn,
+      questionGu: q.questionGu,
+      questionEn: q.questionEn,
+      optionAGu: q.optionAGu,
+      optionBGu: q.optionBGu,
+      optionCGu: q.optionCGu,
+      optionDGu: q.optionDGu,
+      optionAEn: q.optionAEn,
+      optionBEn: q.optionBEn,
+      optionCEn: q.optionCEn,
+      optionDEn: q.optionDEn,
+      correctOption: q.correctOption ? String(q.correctOption).toUpperCase() : 'A',
+      content: parseJson(q.content) ?? null,
+      answer: parseJson(q.answer) ?? null,
+    }));
+  }
+
+  /** Session row only (no questions). Caller bulk-inserts questions after commit. */
+  static async createSessionShell({ userId, language, questionCount, tx = prisma }) {
     return tx.quizSession.create({
       data: {
         userId,
         language,
-        questionCount: bankRows.length,
-        startedAt,
+        questionCount,
+        startedAt: new Date(),
         status: 'in_progress',
-        questions: {
-          create: bankRows.map((q, index) => ({
-            order: index + 1,
-            type: q.type || QUESTION_TYPE.SINGLE_CHOICE,
-            bankQueId: q.queId,
-            points: 1,
-            departmentGu: q.departmentGu,
-            departmentEn: q.departmentEn,
-            questionGu: q.questionGu,
-            questionEn: q.questionEn,
-            optionAGu: q.optionAGu,
-            optionBGu: q.optionBGu,
-            optionCGu: q.optionCGu,
-            optionDGu: q.optionDGu,
-            optionAEn: q.optionAEn,
-            optionBEn: q.optionBEn,
-            optionCEn: q.optionCEn,
-            optionDEn: q.optionDEn,
-            correctOption: q.correctOption ? String(q.correctOption).toUpperCase() : 'A',
-            content: parseJson(q.content) ?? null,
-            answer: parseJson(q.answer) ?? null,
-          })),
-        },
       },
-      include: { questions: { orderBy: { order: 'asc' } } },
     });
+  }
+
+  static async insertQuestions(sessionId, bankRows, tx = prisma) {
+    if (!bankRows.length) return;
+    await tx.quizSessionQuestion.createMany({
+      data: QuizSessionModel.questionCreateManyRows(sessionId, bankRows),
+    });
+  }
+
+  /** One session INSERT + one createMany. No include re-read. */
+  static async createWithQuestions({ userId, language, bankRows, tx = prisma }) {
+    const session = await QuizSessionModel.createSessionShell({
+      userId,
+      language,
+      questionCount: bankRows.length,
+      tx,
+    });
+    await QuizSessionModel.insertQuestions(session.id, bankRows, tx);
+    return session;
   }
 
   static async submit(sessionId, gradedRows, totals, leaderboardContext = null) {

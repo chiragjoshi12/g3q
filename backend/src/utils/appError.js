@@ -26,14 +26,14 @@ const STATUS_BY_CODE = {
 };
 
 export const ERROR_MESSAGE = {
-  [ERROR_CODE.NOT_FOUND]: 'વિગત મળી નથી.',
-  [ERROR_CODE.INVALID_CREDENTIAL]: 'આ કોડ સાથે કોઈ ખાતું મળ્યું નથી.',
-  [ERROR_CODE.INVALID_PHONE]: 'મોબાઇલ નંબર 10 અંકનો હોવો જોઈએ.',
-  [ERROR_CODE.INVALID_OTP]: 'OTP ખોટો છે. ફરી પ્રયાસ કરો.',
-  [ERROR_CODE.INVALID_REQUEST]: 'વિનંતી અમાન્ય છે.',
-  [ERROR_CODE.UNAUTHORIZED]: 'સાઇન ઇન કરવું જરૂરી છે.',
-  [ERROR_CODE.FORBIDDEN]: 'આ કાર્ય માટે પરવાનગી નથી.',
-  [ERROR_CODE.UNKNOWN]: 'કંઈક ખોટું થયું. ફરી પ્રયાસ કરો.',
+  [ERROR_CODE.NOT_FOUND]: 'The requested resource was not found.',
+  [ERROR_CODE.INVALID_CREDENTIAL]: 'No account was found for this code.',
+  [ERROR_CODE.INVALID_PHONE]: 'Mobile number must be 10 digits.',
+  [ERROR_CODE.INVALID_OTP]: 'OTP is incorrect. Please try again.',
+  [ERROR_CODE.INVALID_REQUEST]: 'The request is invalid.',
+  [ERROR_CODE.UNAUTHORIZED]: 'Sign in is required.',
+  [ERROR_CODE.FORBIDDEN]: 'You do not have permission for this action.',
+  [ERROR_CODE.UNKNOWN]: 'Something went wrong. Please try again.',
 };
 
 export class AppError extends Error {

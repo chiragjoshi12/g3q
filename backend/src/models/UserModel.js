@@ -1,5 +1,6 @@
 import { prisma } from '../config/prisma.client.js';
 import { credentialFieldFor, ROLE } from '../config/roles.js';
+import { resolveAzureBlobUrl } from '../utils/azureStorage.js';
 
 function phoneDigits(value) {
   return String(value ?? '').replace(/\D/g, '').slice(-10);
@@ -9,20 +10,25 @@ function phoneDigits(value) {
 async function resolveTalukaId(taluka) {
   const trimmed = String(taluka ?? '').trim();
   if (!trimmed) return null;
-  const rows = await prisma.$queryRawUnsafe(
-    `
-      SELECT id
-      FROM talukas
-      WHERE LOWER(name_en) = LOWER(?)
-        OR LOWER(name_gu) = LOWER(?)
-        OR LOWER(name_hi) = LOWER(?)
-      LIMIT 1
-    `,
-    trimmed,
-    trimmed,
-    trimmed
-  );
-  return rows[0]?.id ?? null;
+  try {
+    const rows = await prisma.$queryRawUnsafe(
+      `
+        SELECT id
+        FROM talukas
+        WHERE LOWER(name_en) = LOWER(?)
+          OR LOWER(name_gu) = LOWER(?)
+          OR LOWER(name_hi) = LOWER(?)
+        LIMIT 1
+      `,
+      trimmed,
+      trimmed,
+      trimmed
+    );
+    return rows[0]?.id ?? null;
+  } catch {
+    // Geography tables may not be migrated yet in some environments.
+    return null;
+  }
 }
 
 const toRaw = async (user) => {
@@ -46,6 +52,9 @@ const toRaw = async (user) => {
     socialCategory: user.socialCategory ?? null,
     dateOfBirth: user.dateOfBirth ?? null,
     phone: user.phone ?? '',
+    profilePhoto: user.profilePhoto
+      ? resolveAzureBlobUrl(user.profilePhoto) || user.profilePhoto
+      : null,
     joinedOn: user.joinedOn ? user.joinedOn.toISOString().slice(0, 10) : null,
     udiseCode: user.udiseCode ?? undefined,
     abcId: user.abcId ?? undefined,
@@ -65,6 +74,26 @@ export class UserModel {
   static async findById(id) {
     const user = await prisma.user.findUnique({ where: { id } });
     return await toRaw(user);
+  }
+
+  /** Allocation-only fields for POST /sessions — skips taluka resolution. */
+  static async findByIdForSession(id) {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        institute: true,
+        district: true,
+        socialCategory: true,
+      },
+    });
+    if (!user) return null;
+    return {
+      id: user.id,
+      institute: user.institute ?? '',
+      district: user.district ?? '',
+      socialCategory: user.socialCategory ?? null,
+    };
   }
 
   static async findByPhone(role, phone) {
@@ -102,6 +131,14 @@ export class UserModel {
         taluka: String(taluka).trim(),
         institute: 'નાગરિક સહભાગી',
       },
+    });
+    return await toRaw(user);
+  }
+
+  static async updateProfilePhoto(id, profilePhoto) {
+    const user = await prisma.user.update({
+      where: { id },
+      data: { profilePhoto: String(profilePhoto).trim() },
     });
     return await toRaw(user);
   }

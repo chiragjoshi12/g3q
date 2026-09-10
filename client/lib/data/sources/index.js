@@ -10,6 +10,7 @@ import { httpSource } from "@/lib/data/sources/http.source";
  *   requestOtp({ role, credential, phone })      -> { requestId, maskedPhone, resendSeconds }
  *   verifyOtp({ requestId, otp, role, ... })     -> { user, token } | { needsProfile }
  *   registerCitizen({ requestId, name, district, taluka }) -> { user, token }
+ *   betaLogin({ firstName, lastName, district, taluka, phone }) -> { user, token }
  *   getLandingSummary()                          -> { totalPlays, weeklyPlays, featuredQuizId }
  *   getMe()                                      -> User
  *   listQuizzes()                             -> Quiz[]

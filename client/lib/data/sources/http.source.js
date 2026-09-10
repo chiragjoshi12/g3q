@@ -9,7 +9,7 @@ const GET_RESPONSE_TTL_MS = 800;
 function cacheTtlMsForPath(path) {
   if (path.startsWith("/landing/summary")) return 30_000;
   if (path.startsWith("/leaderboard")) return 15_000;
-  if (path.startsWith("/users/me")) return 30_000;
+  if (path.startsWith("/users/me")) return 5 * 60_000;
   if (path === "/sessions") return 10_000;
   if (path === "/sessions/current") return 10_000;
   if (path.startsWith("/sessions/stats")) return 10_000;
@@ -28,6 +28,33 @@ function authHeaders() {
   const session = storage.get(STORAGE_KEYS.session, null);
   const token = session?.state?.token || session?.token || null;
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function unwrapApiPayload(payload) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (payload.success === false) {
+    throw new AppError(
+      payload.code || ERROR_CODE.UNKNOWN,
+      payload.message ||
+        (typeof ERROR_MESSAGE[ERROR_CODE.UNKNOWN] === "function"
+          ? ERROR_MESSAGE[ERROR_CODE.UNKNOWN]()
+          : ERROR_MESSAGE[ERROR_CODE.UNKNOWN]),
+      payload
+    );
+  }
+
+  if (payload.success !== true) {
+    return payload;
+  }
+
+  const { success: _success, message: _message, code: _code, ...rest } = payload;
+  if (Object.prototype.hasOwnProperty.call(rest, "data") && Object.keys(rest).length === 1) {
+    return rest.data;
+  }
+  return rest;
 }
 
 async function request(path, { method = "GET", body, signal } = {}) {
@@ -71,23 +98,26 @@ async function request(path, { method = "GET", body, signal } = {}) {
 
       const payload = await response.json().catch(() => null);
 
-      if (!response.ok) {
+      if (!response.ok || payload?.success === false) {
         throw new AppError(
           payload?.code || (response.status === 404 ? ERROR_CODE.NOT_FOUND : ERROR_CODE.UNKNOWN),
-          payload?.message || (typeof ERROR_MESSAGE[ERROR_CODE.UNKNOWN] === "function"
-            ? ERROR_MESSAGE[ERROR_CODE.UNKNOWN]()
-            : ERROR_MESSAGE[ERROR_CODE.UNKNOWN]),
+          payload?.message ||
+            (typeof ERROR_MESSAGE[ERROR_CODE.UNKNOWN] === "function"
+              ? ERROR_MESSAGE[ERROR_CODE.UNKNOWN]()
+              : ERROR_MESSAGE[ERROR_CODE.UNKNOWN]),
           payload
         );
       }
+
+      const normalized = unwrapApiPayload(payload);
       if (requestKey) {
         recentGetResponses.set(requestKey, {
           at: Date.now(),
           ttlMs: cacheTtlMsForPath(path),
-          payload,
+          payload: normalized,
         });
       }
-      return payload;
+      return normalized;
     } catch (error) {
       if (error instanceof AppError) throw error;
       throw new AppError(
@@ -112,6 +142,30 @@ async function request(path, { method = "GET", body, signal } = {}) {
   return runner;
 }
 
+export function clearHttpGetCache(pathPrefix = "") {
+  const prefix = String(pathPrefix || "");
+  for (const key of [...recentGetResponses.keys()]) {
+    try {
+      const parsed = JSON.parse(key);
+      if (!prefix || String(parsed.path || "").startsWith(prefix)) {
+        recentGetResponses.delete(key);
+      }
+    } catch {
+      recentGetResponses.delete(key);
+    }
+  }
+  for (const key of [...inflightGetRequests.keys()]) {
+    try {
+      const parsed = JSON.parse(key);
+      if (!prefix || String(parsed.path || "").startsWith(prefix)) {
+        inflightGetRequests.delete(key);
+      }
+    } catch {
+      inflightGetRequests.delete(key);
+    }
+  }
+}
+
 export const httpSource = {
   name: "rest",
 
@@ -133,9 +187,21 @@ export const httpSource = {
       body: { requestId, name, district, taluka },
     }),
 
+  betaLogin: ({ firstName, lastName, district, taluka, phone }) =>
+    request("/auth/beta/login", {
+      method: "POST",
+      body: { firstName, lastName, district, taluka, phone },
+    }),
+
   getLandingSummary: () => request("/landing/summary"),
 
   getMe: () => request("/users/me"),
+
+  uploadProfilePhoto: ({ imageBase64, contentType }) =>
+    request("/users/me/photo", {
+      method: "POST",
+      body: { imageBase64, contentType },
+    }),
 
   listQuizzes: () => request("/quizzes"),
 

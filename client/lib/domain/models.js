@@ -31,6 +31,7 @@ export function toUser(raw) {
     taluka: raw.taluka ?? "",
     talukaId: raw.talukaId != null ? Number(raw.talukaId) : null,
     phone: raw.phone ?? "",
+    profilePhoto: raw.profilePhoto || raw.profile_photo || null,
     joinedOn: raw.joinedOn ?? null,
     credential,
     credentialLabel: getCredentialRule(role)?.label ?? "",

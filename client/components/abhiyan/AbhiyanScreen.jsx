@@ -7,11 +7,11 @@ import {
   ACTION_BUTTON_CLASS,
   AppButton,
 } from "@/components/common/AppButton";
+import { BackButton } from "@/components/common/BackButton";
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { SegmentedToggle } from "@/components/common/SegmentedToggle";
 import { DesktopAppShell } from "@/components/layout/DesktopAppShell";
 import {
-  BackArrow,
   Award,
   Building2,
   CalendarDays,
@@ -60,8 +60,8 @@ export function AbhiyanScreen() {
       <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[26.5rem] flex-col bg-[#F3F3F3] md:max-w-none lg:max-w-none lg:bg-transparent">
         <header className="relative z-20 shrink-0 bg-white px-3 py-3 shadow-[0_1px_0_rgb(15_23_42/0.08)] lg:bg-transparent lg:px-10 lg:pt-8 lg:pb-2 lg:shadow-none">
           <div className="flex items-center gap-1 lg:justify-center">
-            <button
-              type="button"
+            <BackButton
+              className="lg:hidden"
               onClick={() => {
                 if (typeof window !== "undefined") {
                   try {
@@ -76,11 +76,7 @@ export function AbhiyanScreen() {
                 }
                 router.push(ROUTES.root);
               }}
-              aria-label="પાછળ જાઓ"
-              className="grid size-10 shrink-0 place-items-center rounded-full hover:bg-[#F3F3F3] active:scale-95 lg:hidden"
-            >
-              <BrandIcon src={BRAND_ICONS.back} alt="" className="size-3.5" />
-            </button>
+            />
             <BrandIcon
               src={BRAND_ICONS.logo}
               alt="G3Q 3.0"

@@ -7,7 +7,7 @@ import {
   LeaderboardCategoryTabs,
   LeaderboardDetailRow,
 } from "@/components/landing/LeaderboardList";
-import { BrandIcon } from "@/components/common/BrandIcon";
+import { BackButton } from "@/components/common/BackButton";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/StateViews";
 import { DesktopAppShell } from "@/components/layout/DesktopAppShell";
 import { appConfig, DATA_SOURCE } from "@/config/app.config";
@@ -19,7 +19,6 @@ import {
 } from "@/data/leaderboard";
 import { profileController } from "@/controllers/profile.controller";
 import { useAsyncData } from "@/hooks/useAsyncData";
-import { BRAND_ICONS } from "@/lib/brand-icons";
 import { getDataSource } from "@/lib/data/sources";
 import { useI18n } from "@/lib/i18n";
 import { formatTalukaWeekPill } from "@/lib/format-taluka";
@@ -96,8 +95,9 @@ export default function LeaderboardPage() {
     <DesktopAppShell className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F5F6F8]">
       <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[26.5rem] flex-col bg-[#F5F6F8] md:max-w-none lg:max-w-none lg:bg-transparent">
         <header className="relative z-20 flex shrink-0 items-center justify-center bg-white px-4 py-3.5 lg:bg-transparent lg:px-10 lg:pt-8 lg:pb-2">
-          <button
-            type="button"
+          <BackButton
+            className="absolute left-4 lg:hidden"
+            label={t("close")}
             onClick={() => {
               const historyIndex =
                 typeof window !== "undefined" ? window.history.state?.idx : undefined;
@@ -111,11 +111,7 @@ export default function LeaderboardPage() {
               }
               router.push(hydrated && isAuthenticated ? ROUTES.home : ROUTES.welcome);
             }}
-            aria-label={t("close")}
-            className="absolute left-4 grid size-10 place-items-center rounded-full bg-[#f5f5f5] transition-transform active:scale-95 lg:hidden"
-          >
-            <BrandIcon src={BRAND_ICONS.back} alt="" className="size-3.5" />
-          </button>
+          />
           <h1 className="translate-y-1 text-[1.35rem] font-bold tracking-tight text-[#2d689d] lg:translate-y-0 lg:text-[2rem]">
             {t("leaderboard")}
           </h1>

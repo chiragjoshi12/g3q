@@ -7,13 +7,28 @@ import { DESKTOP_OVERLAY, DESKTOP_OVERLAY_CARD } from "@/components/layout/deskt
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
+function normalizeOption(option) {
+  if (option && typeof option === "object") {
+    return {
+      value: String(option.value ?? ""),
+      label: String(option.label ?? option.value ?? ""),
+    };
+  }
+  const value = String(option ?? "");
+  return { value, label: value };
+}
+
 /**
  * Bottom sheet with a radio list. Portals into the app frame so the dim
  * stays inside the phone chrome.
+ *
+ * `options` may be strings or `{ value, label }` objects. Selection always
+ * returns the canonical `value` (stored Gujarati name for geography).
  */
 export function ChoiceSheet({ open, title, options, value, onSelect, onClose }) {
   const { t } = useI18n();
   const frame = typeof document === "undefined" ? null : document.querySelector("[data-app-frame]");
+  const normalized = (options || []).map(normalizeOption);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -55,15 +70,15 @@ export function ChoiceSheet({ open, title, options, value, onSelect, onClose }) 
           aria-labelledby="choice-sheet-title"
           className="no-scrollbar mt-3 min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-4"
         >
-          {options.map((option) => {
-            const selected = option === value;
+          {normalized.map((option) => {
+            const selected = option.value === value;
             return (
               <button
-                key={option}
+                key={option.value}
                 type="button"
                 role="radio"
                 aria-checked={selected}
-                onClick={() => onSelect(option)}
+                onClick={() => onSelect(option.value)}
                 className="flex w-full items-center gap-4 py-3.5 text-left transition-colors active:bg-[#FAFAFA]"
               >
                 <span
@@ -75,7 +90,7 @@ export function ChoiceSheet({ open, title, options, value, onSelect, onClose }) 
                 >
                   {selected ? <span className="size-2.5 rounded-full bg-[#111]" /> : null}
                 </span>
-                <span className="font-heading text-[1.05rem] text-[#111]">{option}</span>
+                <span className="font-heading text-[1.05rem] text-[#111]">{option.label}</span>
               </button>
             );
           })}

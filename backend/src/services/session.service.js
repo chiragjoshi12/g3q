@@ -232,7 +232,14 @@ async function attachBetaQuestionBackgrounds(bankRows) {
   };
 }
 
-async function fetchCandidateQuestions({ userId, limit, districtRaw, casteRaw, personalized, betaOnly }) {
+async function fetchCandidateLight({
+  userId,
+  limit,
+  districtRaw,
+  casteRaw,
+  personalized,
+  betaOnly,
+}) {
   const params = [userId];
   const filters = [
     "bq.review_status = 'ACCEPTED'",
@@ -240,12 +247,10 @@ async function fetchCandidateQuestions({ userId, limit, districtRaw, casteRaw, p
       (bq.correct_option IS NOT NULL AND bq.type IN ('single_choice', 'true_false', 'image_choice'))
       OR bq.answer IS NOT NULL
     )`,
-    `NOT EXISTS (
-      SELECT 1
-      FROM user_question_exposures uqe
-      WHERE uqe.user_id = ? AND uqe.bank_que_id = bq.que_id
-    )`,
-    betaOnly ? "UPPER(COALESCE(bq.scope, '')) = 'BETA'" : "UPPER(COALESCE(bq.scope, 'GENERAL')) <> 'BETA'",
+    betaOnly
+      ? "UPPER(COALESCE(bq.scope, '')) = 'BETA'"
+      : "UPPER(COALESCE(bq.scope, 'GENERAL')) <> 'BETA'",
+    'uqe.bank_que_id IS NULL',
   ];
 
   if (personalized) {
@@ -282,27 +287,51 @@ async function fetchCandidateQuestions({ userId, limit, districtRaw, casteRaw, p
       bq.beta_department_id AS betaDepartmentId,
       bq.department_gu AS departmentGu,
       bq.department_en AS departmentEn,
-      bq.question_gu AS questionGu,
-      bq.question_en AS questionEn,
       bq.type AS type,
-      bq.option_a_gu AS optionAGu,
-      bq.option_b_gu AS optionBGu,
-      bq.option_c_gu AS optionCGu,
-      bq.option_d_gu AS optionDGu,
-      bq.option_a_en AS optionAEn,
-      bq.option_b_en AS optionBEn,
-      bq.option_c_en AS optionCEn,
-      bq.option_d_en AS optionDEn,
-      bq.correct_option AS correctOption,
-      bq.content AS content,
-      bq.answer AS answer,
       bq.district AS district,
       bq.caste_category AS casteCategory
     FROM bank_questions bq
+    LEFT JOIN user_question_exposures uqe
+      ON uqe.user_id = ? AND uqe.bank_que_id = bq.que_id
     WHERE ${filters.join(' AND ')}
     LIMIT ?
   `;
   return prisma.$queryRawUnsafe(sql, ...params);
+}
+
+async function hydrateBankQuestions(queIds) {
+  if (!queIds.length) return [];
+  const placeholders = queIds.map(() => '?').join(',');
+  const rows = await prisma.$queryRawUnsafe(
+    `
+      SELECT
+        bq.que_id AS queId,
+        bq.beta_department_id AS betaDepartmentId,
+        bq.department_gu AS departmentGu,
+        bq.department_en AS departmentEn,
+        bq.question_gu AS questionGu,
+        bq.question_en AS questionEn,
+        bq.type AS type,
+        bq.option_a_gu AS optionAGu,
+        bq.option_b_gu AS optionBGu,
+        bq.option_c_gu AS optionCGu,
+        bq.option_d_gu AS optionDGu,
+        bq.option_a_en AS optionAEn,
+        bq.option_b_en AS optionBEn,
+        bq.option_c_en AS optionCEn,
+        bq.option_d_en AS optionDEn,
+        bq.correct_option AS correctOption,
+        bq.content AS content,
+        bq.answer AS answer,
+        bq.district AS district,
+        bq.caste_category AS casteCategory
+      FROM bank_questions bq
+      WHERE bq.que_id IN (${placeholders})
+    `,
+    ...queIds
+  );
+  const byId = new Map(rows.map((row) => [row.queId, row]));
+  return queIds.map((id) => byId.get(id)).filter(Boolean);
 }
 
 /**
@@ -313,7 +342,7 @@ async function fetchCandidateQuestions({ userId, limit, districtRaw, casteRaw, p
  */
 async function allocateBankQuestions(user, count) {
   if (isBetaUser(user)) {
-    const betaPool = await fetchCandidateQuestions({
+    const betaPool = await fetchCandidateLight({
       userId: user.id,
       limit: Math.max(count * 20, 500),
       districtRaw: null,
@@ -329,37 +358,39 @@ async function allocateBankQuestions(user, count) {
       );
     }
 
-    return mixBetaQuestions(betaPool, count);
+    const pickedLight = mixBetaQuestions(betaPool, count);
+    return hydrateBankQuestions(pickedLight.map((q) => q.queId));
   }
 
   const district = (user.district || '').trim().toLowerCase();
   const caste = (user.socialCategory || '').trim().toUpperCase();
   const districtRaw = (user.district || '').trim();
   const casteRaw = (user.socialCategory || '').trim();
+  const needPersonalized = Boolean(districtRaw || (casteRaw && caste !== 'GENERAL'));
 
-  let preferred = [];
-  if (districtRaw || (casteRaw && caste !== 'GENERAL')) {
-    const tagged = await fetchCandidateQuestions({
+  const [tagged, generalPool] = await Promise.all([
+    needPersonalized
+      ? fetchCandidateLight({
+          userId: user.id,
+          limit: Math.max(CONFIG.QUIZ.PERSONALIZED_MAX * 20, 60),
+          districtRaw,
+          casteRaw,
+          personalized: true,
+          betaOnly: false,
+        })
+      : Promise.resolve([]),
+    fetchCandidateLight({
       userId: user.id,
-      limit: Math.max(CONFIG.QUIZ.PERSONALIZED_MAX * 20, 60),
+      limit: Math.max(count * 8, 120),
       districtRaw,
       casteRaw,
-      personalized: true,
+      personalized: false,
       betaOnly: false,
-    });
-    preferred = tagged.filter((q) => isProfileMatch(q, district, caste));
-  }
+    }),
+  ]);
 
+  let preferred = tagged.filter((q) => isProfileMatch(q, district, caste));
   const preferredById = new Map(preferred.map((q) => [q.queId, q]));
-  const generalPool = await fetchCandidateQuestions({
-    userId: user.id,
-    limit: Math.max(count * 8, 120),
-    districtRaw,
-    casteRaw,
-    personalized: false,
-    betaOnly: false,
-  });
-
   const general = [];
   for (const q of generalPool) {
     if (isProfileMatch(q, district, caste)) preferredById.set(q.queId, q);
@@ -386,7 +417,6 @@ async function allocateBankQuestions(user, count) {
   let generalPick = generalShuffled.slice(0, remaining);
   remaining = count - personalPick.length - generalPick.length;
 
-  // Fallback: if general is short, use leftover personalised Qs beyond the quota.
   if (remaining > 0) {
     const leftoverPersonal = preferredShuffled.slice(personalPick.length);
     generalPick = [...generalPick, ...leftoverPersonal.slice(0, remaining)];
@@ -401,23 +431,22 @@ async function allocateBankQuestions(user, count) {
     );
   }
 
-  return picked;
+  return hydrateBankQuestions(picked.map((q) => q.queId));
 }
 
 export const sessionService = {
   async start({ userId, count, language }) {
-    const user = await UserModel.findById(userId);
+    const user = await UserModel.findByIdForSession(userId);
     if (!user) throw new AppError(ERROR_CODE.UNAUTHORIZED);
     const requestedLanguage = normalizeSessionLanguage(language);
 
     const existingMeta = await QuizSessionModel.findInProgressMetaForUser(userId);
     if (existingMeta) {
-      let existing = await QuizSessionModel.findById(existingMeta.id);
+      let existing = await prisma.quizSession.findUnique({ where: { id: existingMeta.id } });
       if (existing && existing.language !== requestedLanguage) {
         existing = await prisma.quizSession.update({
           where: { id: existing.id },
           data: { language: requestedLanguage },
-          include: { questions: { orderBy: { order: 'asc' } } },
         });
       }
       return toSessionMeta(existing);
@@ -428,38 +457,48 @@ export const sessionService = {
     const bankRows = await allocateBankQuestions(user, questionCount);
 
     let rowsForSession = bankRows;
-
     if (isBetaUser(user)) {
       const betaBackgrounds = await attachBetaQuestionBackgrounds(rowsForSession);
       rowsForSession = betaBackgrounds.bankRows;
     }
 
-    const session = await prisma.$transaction(async (tx) => {
+    // Short lock: claim the "no in-progress session" slot and insert the shell only.
+    const claim = await prisma.$transaction(async (tx) => {
       await tx.$queryRawUnsafe('SELECT id FROM users WHERE id = ? FOR UPDATE', userId);
       const latestMeta = await QuizSessionModel.findInProgressMetaForUser(userId, tx);
       if (latestMeta) {
-        const activeSession = await tx.quizSession.findUnique({
-          where: { id: latestMeta.id },
-          include: { questions: { orderBy: { order: 'asc' } } },
-        });
-        if (activeSession && activeSession.language !== lang) {
-          return tx.quizSession.update({
-            where: { id: activeSession.id },
-            data: { language: lang },
-            include: { questions: { orderBy: { order: 'asc' } } },
-          });
-        }
-        return activeSession;
+        return { kind: 'existing', id: latestMeta.id };
       }
-      return QuizSessionModel.createWithQuestions({
+      const session = await QuizSessionModel.createSessionShell({
         userId,
         language: lang,
-        bankRows: rowsForSession,
+        questionCount: rowsForSession.length,
         tx,
       });
+      return { kind: 'created', session };
     });
 
-    return toSessionMeta(session);
+    if (claim.kind === 'existing') {
+      let existing = await prisma.quizSession.findUnique({ where: { id: claim.id } });
+      if (existing && existing.language !== lang) {
+        existing = await prisma.quizSession.update({
+          where: { id: existing.id },
+          data: { language: lang },
+        });
+      }
+      return toSessionMeta(existing);
+    }
+
+    try {
+      await QuizSessionModel.insertQuestions(claim.session.id, rowsForSession);
+    } catch (error) {
+      await prisma.quizSession
+        .delete({ where: { id: claim.session.id } })
+        .catch(() => {});
+      throw error;
+    }
+
+    return toSessionMeta(claim.session);
   },
 
   async get({ userId, sessionId }) {

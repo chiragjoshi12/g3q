@@ -1,7 +1,6 @@
 "use client";
 
-import { BackArrow } from "@/components/icons";
-
+import { BackButton } from "@/components/common/BackButton";
 import { ContentWidth } from "@/components/layout/ContentWidth";
 import { cn } from "@/lib/utils";
 
@@ -32,17 +31,10 @@ export function TopAppBar({
     >
       <ContentWidth className="flex items-center gap-2 px-3 py-3 sm:px-6 lg:px-8">
         {onBack ? (
-          <button
-            type="button"
+          <BackButton
             onClick={onBack}
-            aria-label="પાછળ જાઓ"
-            className={cn(
-              "grid size-10 shrink-0 place-items-center rounded-full transition-colors active:scale-95",
-              onPrimary ? "hover:bg-white/15" : "hover:bg-muted"
-            )}
-          >
-            <BackArrow className="size-7" />
-          </button>
+            className={onPrimary ? "bg-white/20" : undefined}
+          />
         ) : (
           <span className="w-2" />
         )}

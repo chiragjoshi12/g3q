@@ -20,6 +20,15 @@ export const DATA_SOURCE = {
   REST: "rest",
 };
 
+/** Env true/false (also accepts 1/0, yes/no, on/off). */
+const parseBool = (value, fallback = false) => {
+  if (value == null || String(value).trim() === "") return fallback;
+  const v = String(value).trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(v)) return true;
+  if (["0", "false", "no", "off"].includes(v)) return false;
+  return fallback;
+};
+
 export const appConfig = {
   name: "ગુજરાત ક્વિઝ",
   dataSource: process.env.NEXT_PUBLIC_DATA_SOURCE || DATA_SOURCE.REST,
@@ -27,6 +36,14 @@ export const appConfig = {
   api: {
     baseUrl: resolveApiBaseUrl(),
     timeoutMs: 15000,
+  },
+
+  /**
+   * Single switch for beta auth flow (registration page + /auth/beta/login).
+   * Mirrors backend IS_BETA_TIME. Flip NEXT_PUBLIC_IS_BETA_TIME=false for normal OTP login.
+   */
+  beta: {
+    enabled: parseBool(process.env.NEXT_PUBLIC_IS_BETA_TIME, false),
   },
 
   /**

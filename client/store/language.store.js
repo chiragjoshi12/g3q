@@ -15,6 +15,7 @@ export const useLanguageStore = create()(
         storage.set(STORAGE_KEYS.languagePreference, language);
         set({ language, hasChosenLanguage: true });
       },
+      clearLanguageChoice: () => set({ hasChosenLanguage: false }),
     }),
     {
       name: STORAGE_KEYS.language,

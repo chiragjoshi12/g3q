@@ -1,7 +1,19 @@
+import jwt from 'jsonwebtoken';
 import { verifyToken } from '../utils/jwt.js';
 import { AppError, ERROR_CODE } from '../utils/appError.js';
 import { ADMIN_ACCESS_SCOPE, ADMIN_TOKEN_KIND, ADMIN_ROLE } from '../config/admin.roles.js';
 import { AdminUserModel } from '../models/AdminUserModel.js';
+
+function authFailure(error) {
+  if (error instanceof AppError) return error;
+  if (error instanceof jwt.TokenExpiredError) {
+    return new AppError(ERROR_CODE.UNAUTHORIZED, 'Admin session has expired. Please sign in again.');
+  }
+  if (error instanceof jwt.JsonWebTokenError) {
+    return new AppError(ERROR_CODE.UNAUTHORIZED, 'Invalid admin access token. Please sign in again.');
+  }
+  return new AppError(ERROR_CODE.UNAUTHORIZED, 'Admin authentication failed. Please sign in again.');
+}
 
 /**
  * Requires a bearer JWT minted by admin login (`kind: 'admin'`).
@@ -13,12 +25,15 @@ export const requireAdminAuth = async (req, res, next) => {
     const [scheme, token] = header.split(' ');
 
     if (scheme !== 'Bearer' || !token) {
-      throw new AppError(ERROR_CODE.UNAUTHORIZED);
+      throw new AppError(
+        ERROR_CODE.UNAUTHORIZED,
+        'Missing or invalid Authorization bearer token.'
+      );
     }
 
     const payload = verifyToken(token);
     if (payload.kind !== ADMIN_TOKEN_KIND || !payload.id) {
-      throw new AppError(ERROR_CODE.UNAUTHORIZED);
+      throw new AppError(ERROR_CODE.UNAUTHORIZED, 'This token is not valid for the admin console.');
     }
 
     const user = await AdminUserModel.findById(payload.id);
@@ -34,8 +49,7 @@ export const requireAdminAuth = async (req, res, next) => {
     };
     next();
   } catch (error) {
-    if (error instanceof AppError) return next(error);
-    next(new AppError(ERROR_CODE.UNAUTHORIZED));
+    next(authFailure(error));
   }
 };
 
@@ -67,6 +81,6 @@ export const requireAnalyticsAuth = async (req, res, next) => {
 
     next();
   } catch (error) {
-    next(error instanceof AppError ? error : new AppError(ERROR_CODE.UNAUTHORIZED));
+    next(authFailure(error));
   }
 };

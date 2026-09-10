@@ -13,7 +13,7 @@ export function QuestionTypeGrid({ onSelect, wide = false }) {
     { id: "match", label: t("matchThePair"), icon: BRAND_ICONS.queTypeMatch },
     { id: "truefalse", label: t("trueFalse"), icon: BRAND_ICONS.queTypeTrueFalse },
     { id: "sequence", label: t("sequence"), icon: BRAND_ICONS.queTypeSequence },
-    { id: "image", label: t("imageQuestion"), icon: BRAND_ICONS.queTypeImage },
+    // { id: "image", label: t("imageQuestion"), icon: BRAND_ICONS.queTypeImage },
   ];
   return (
     <section className={wide ? "mt-8" : "mt-5"}>

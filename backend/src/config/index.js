@@ -54,6 +54,14 @@ export const CONFIG = {
     DEV_BYPASS_CODE: process.env.OTP_DEV_BYPASS_CODE || '1234',
   },
 
+  /**
+   * Single switch for beta auth flow (no OTP registration page + /auth/beta/login).
+   * Set IS_BETA_TIME=false to restore normal OTP login.
+   */
+  BETA: {
+    ENABLED: parseBool(process.env.IS_BETA_TIME, false),
+  },
+
   // Bank-backed quiz sessions (allocate from ACCEPTED bank_questions).
   QUIZ: {
     QUESTION_COUNT: parseInt(process.env.QUIZ_SESSION_QUESTION_COUNT) || 15,
@@ -78,5 +86,8 @@ export const CONFIG = {
     ACCOUNT_NAME: process.env.AZURE_STORAGE_ACCOUNT_NAME || '',
     ACCOUNT_KEY: process.env.AZURE_STORAGE_ACCOUNT_KEY || '',
     CONTAINER: process.env.AZURE_STORAGE_CONTAINER || 'g3q',
+    // Optional public origin override, e.g. https://g3qstorage.blob.core.windows.net
+    // When empty, URLs use https://{ACCOUNT_NAME}.blob.core.windows.net
+    PUBLIC_BASE_URL: String(process.env.AZURE_STORAGE_PUBLIC_BASE_URL || '').trim().replace(/\/+$/, ''),
   },
 };

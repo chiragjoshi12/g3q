@@ -1,6 +1,7 @@
 "use client";
 
 import { ACTION_BUTTON_CLASS } from "@/components/common/AppButton";
+import { BackButton } from "@/components/common/BackButton";
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { useI18n } from "@/lib/i18n";
 import { BRAND_ICONS } from "@/lib/brand-icons";
@@ -32,22 +33,36 @@ export function AuthLink({ children, className, ...props }) {
 
 /**
  * White bar used on every login step: compact G3Q mark + navy title.
+ * Optional `onBack` shows a back control (e.g. return to language selection).
  */
-export function AuthBrandHeader() {
+export function AuthBrandHeader({ onBack }) {
   const { appName } = useI18n();
 
   return (
-    <header className="relative z-20 shrink-0 bg-white px-4 py-2.5 lg:px-8 lg:py-5">
-      <BrandIcon
-        src={BRAND_ICONS.logo}
-        alt="G3Q 3.0"
-        priority
-        className="size-11 shrink-0 lg:size-14"
-      />
+    <header className="relative z-20 flex shrink-0 items-center bg-white px-4 py-2.5 lg:px-8 lg:py-5">
+      {onBack ? (
+        <BackButton onClick={onBack} className="relative z-10" />
+      ) : (
+        <BrandIcon
+          src={BRAND_ICONS.logo}
+          alt="G3Q 3.0"
+          priority
+          className="size-10 shrink-0"
+        />
+      )}
 
       <h1 className="absolute inset-0 flex items-center justify-center font-heading text-[1.35rem] leading-none font-bold tracking-tight text-[#2C6698] lg:text-[1.75rem]">
         {appName}
       </h1>
+
+      {onBack ? (
+        <BrandIcon
+          src={BRAND_ICONS.logo}
+          alt="G3Q 3.0"
+          priority
+          className="pointer-events-none absolute top-1/2 right-4 size-10 -translate-y-1/2 lg:right-8"
+        />
+      ) : null}
     </header>
   );
 }

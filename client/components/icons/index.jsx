@@ -133,7 +133,7 @@ export function LineArrowRight({ className, ...props }) {
   );
 }
 
-/** App back chevron from `public/icons/Back Button Icon.png`. */
+/** App back chevron from `public/icons/Back Button Icon.png`. Prefer `BackButton`. */
 export function BackArrow({ className }) {
-  return <BrandIcon src={BRAND_ICONS.back} alt="" className={className} />;
+  return <BrandIcon src={BRAND_ICONS.back} alt="" className={className || "size-3.5"} />;
 }

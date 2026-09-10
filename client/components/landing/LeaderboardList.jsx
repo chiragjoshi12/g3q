@@ -1,20 +1,17 @@
 "use client";
 
-"use client";
-
 import Image from "next/image";
 
 import { BrandGlyph, BrandIcon } from "@/components/common/BrandIcon";
-import { LineArrowRight } from "@/components/icons";
+import { LineArrowRight, User } from "@/components/icons";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-const DEFAULT_AVATAR = BRAND_ICONS.profilePhoto;
 const CITIZEN_INSTITUTE = "નાગરિક સહભાગી";
 
 function Avatar({ name, avatar, className }) {
-  const src = avatar || DEFAULT_AVATAR;
+  const src = String(avatar || "").trim();
   const initial = name?.trim()?.[0] ?? "?";
 
   return (
@@ -27,8 +24,12 @@ function Avatar({ name, avatar, className }) {
       {src ? (
         <Image src={src} alt="" fill sizes="52px" className="object-cover" />
       ) : (
-        <span className="grid size-full place-items-center text-base font-bold text-[#2d689d]">
-          {initial}
+        <span className="grid size-full place-items-center text-[#2d689d]">
+          {initial && initial !== "?" ? (
+            <span className="text-base font-bold">{initial}</span>
+          ) : (
+            <User className="size-5" strokeWidth={2} />
+          )}
         </span>
       )}
     </span>

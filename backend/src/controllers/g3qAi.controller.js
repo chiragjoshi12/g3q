@@ -44,6 +44,7 @@ export const chat = async (req, res, next) => {
       if (!res.writableEnded) {
         writeSse(res, {
           type: 'error',
+          success: false,
           code: error instanceof AppError ? error.code : ERROR_CODE.UNKNOWN,
           message,
           partial: sentChunk,

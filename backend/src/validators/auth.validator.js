@@ -41,3 +41,11 @@ export const registerCitizenSchema = z.object({
   district: z.string().trim().min(1).max(128),
   taluka: z.string().trim().min(1).max(128),
 });
+
+export const betaLoginSchema = z.object({
+  firstName: z.string().trim().min(1).max(128),
+  lastName: z.string().trim().min(1).max(128),
+  district: z.string().trim().min(1).max(128),
+  taluka: z.string().trim().min(1).max(128),
+  phone: phoneSchema,
+});

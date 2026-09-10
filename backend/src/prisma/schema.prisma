@@ -661,6 +661,7 @@ model BankQuestion {
   @@index([district])
   @@index([casteCategory])
   @@index([reviewStatus])
+  @@index([reviewStatus, scope])
   @@index([reviewStatus, correctOption, district])
   @@index([reviewStatus, correctOption, casteCategory])
   @@map("bank_questions")

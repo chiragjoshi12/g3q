@@ -257,19 +257,30 @@ export async function api<T>(
   if (res.status === 401 && auth) {
     clearAuth();
     if (typeof window !== "undefined") window.location.href = "/login";
-    throw new Error("Unauthorized");
+    throw new Error(
+      typeof data?.message === "string" ? data.message : "Unauthorized"
+    );
   }
-  if (!res.ok) {
+  if (!res.ok || data?.success === false) {
     const detail =
-      typeof data.detail === "string"
-        ? data.detail
-        : Array.isArray(data.detail)
-          ? data.detail.map((d: { msg?: string }) => d.msg).join(", ")
-          : typeof data.message === "string"
-            ? data.message
+      typeof data.message === "string"
+        ? data.message
+        : typeof data.detail === "string"
+          ? data.detail
+          : Array.isArray(data.detail)
+            ? data.detail.map((d: { msg?: string }) => d.msg).join(", ")
             : "Request failed";
     throw new Error(detail);
   }
+
+  if (data && typeof data === "object" && data.success === true) {
+    const { success: _s, message: _m, code: _c, ...rest } = data as Record<string, unknown>;
+    if (Object.prototype.hasOwnProperty.call(rest, "data") && Object.keys(rest).length === 1) {
+      return rest.data as T;
+    }
+    return rest as T;
+  }
+
   return data as T;
 }
 

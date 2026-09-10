@@ -205,6 +205,33 @@ export const jsonSource = {
     return { user: clone(user), token: `static.${user.id}.token` };
   },
 
+  async betaLogin({ firstName, lastName, district, taluka, phone }) {
+    await delay();
+    const user = {
+      id: `beta_${Date.now()}`,
+      role: ROLE.STUDENT,
+      name: [String(firstName || "").trim(), String(lastName || "").trim()].filter(Boolean).join(" "),
+      district: String(district || "").trim(),
+      taluka: String(taluka || "").trim(),
+      phone: digits(phone),
+      institute: "Beta User",
+      grade: "",
+      joinedOn: today(),
+    };
+    extraStudents.push(user);
+    return { user: clone(user), token: `static.${user.id}.token`, beta: true };
+  },
+
+  async getMe() {
+    await delay();
+    throw new AppError(ERROR_CODE.UNAUTHORIZED, "Login required.");
+  },
+
+  async uploadProfilePhoto() {
+    await delay();
+    throw new AppError(ERROR_CODE.UNKNOWN, "Profile photo upload requires REST mode.");
+  },
+
   async listQuizzes() {
     return clone(quizzesJson);
   },

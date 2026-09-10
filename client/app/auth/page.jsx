@@ -4,27 +4,32 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { AuthBrandHeader } from "@/components/auth/AuthBrandHeader";
+import { BetaLoginStep } from "@/components/auth/BetaLoginStep";
 import { CitizenProfileStep } from "@/components/auth/CitizenProfileStep";
 import { CredentialStep } from "@/components/auth/CredentialStep";
 import { IdentityStep } from "@/components/auth/IdentityStep";
 import { OtpStep } from "@/components/auth/OtpStep";
 import { WelcomeStep } from "@/components/auth/WelcomeStep";
 import { DesktopAppShell } from "@/components/layout/DesktopAppShell";
+import { appConfig } from "@/config/app.config";
 import { consumePostAuthPath, markLoginToast, ROUTES } from "@/config/routes";
 import { useStoreHydrated } from "@/hooks/useStoreHydrated";
 import { isCitizen } from "@/lib/domain/roles";
 import { AUTH_STEP, useAuthStore } from "@/store/auth.store";
+import { useLanguageStore } from "@/store/language.store";
 
 /**
  * Login flow container. All state lives in the auth store; this component only
  * routes between steps and hands callbacks down.
  *
+ * Beta (appConfig.beta.enabled): registration form → /auth/beta/login → welcome.
  * School / college: CTS or ABC → identity + phone → OTP → session.
  * Citizen: mobile → OTP → name / district / taluka → session.
  */
 export default function AuthPage() {
   const router = useRouter();
   const hydrated = useStoreHydrated(useAuthStore);
+  const betaEnabled = appConfig.beta.enabled;
 
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const step = useAuthStore((state) => state.step);
@@ -34,6 +39,8 @@ export default function AuthPage() {
   const identity = useAuthStore((state) => state.identity);
   const phone = useAuthStore((state) => state.phone);
   const otp = useAuthStore((state) => state.otp);
+  const profileFirstName = useAuthStore((state) => state.profileFirstName);
+  const profileLastName = useAuthStore((state) => state.profileLastName);
   const profileName = useAuthStore((state) => state.profileName);
   const profileDistrict = useAuthStore((state) => state.profileDistrict);
   const profileTaluka = useAuthStore((state) => state.profileTaluka);
@@ -44,6 +51,8 @@ export default function AuthPage() {
   const setCredential = useAuthStore((state) => state.setCredential);
   const setPhone = useAuthStore((state) => state.setPhone);
   const setOtp = useAuthStore((state) => state.setOtp);
+  const setProfileFirstName = useAuthStore((state) => state.setProfileFirstName);
+  const setProfileLastName = useAuthStore((state) => state.setProfileLastName);
   const setProfileName = useAuthStore((state) => state.setProfileName);
   const setProfileDistrict = useAuthStore((state) => state.setProfileDistrict);
   const setProfileTaluka = useAuthStore((state) => state.setProfileTaluka);
@@ -51,6 +60,7 @@ export default function AuthPage() {
   const requestOtp = useAuthStore((state) => state.requestOtp);
   const verifyOtp = useAuthStore((state) => state.verifyOtp);
   const completeCitizenProfile = useAuthStore((state) => state.completeCitizenProfile);
+  const betaLogin = useAuthStore((state) => state.betaLogin);
   const completeLogin = useAuthStore((state) => state.completeLogin);
   const backToCredential = useAuthStore((state) => state.backToCredential);
   const backToIdentity = useAuthStore((state) => state.backToIdentity);
@@ -81,13 +91,40 @@ export default function AuthPage() {
     >
       <div className="flex h-full min-h-0 w-full flex-1 lg:items-center lg:justify-center lg:px-10 lg:py-8">
       <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[26.5rem] flex-col bg-[#F3F3F3] md:max-w-none lg:h-[min(58rem,92dvh)] lg:w-[min(42rem,90vw)] lg:max-w-[42rem] lg:overflow-hidden lg:rounded-[1.85rem] lg:bg-white lg:shadow-[0_24px_80px_rgb(15_23_42/0.12)]">
-        <AuthBrandHeader />
+        <AuthBrandHeader
+          onBack={
+            visibleStep === AUTH_STEP.CREDENTIAL
+              ? () => {
+                  useLanguageStore.getState().clearLanguageChoice();
+                  router.replace(ROUTES.root);
+                }
+              : undefined
+          }
+        />
         <main
           className={`no-scrollbar relative min-h-0 flex-1 overscroll-contain px-5 py-8 lg:px-12 lg:py-10 ${
             step === AUTH_STEP.WELCOME ? "overflow-hidden" : "overflow-y-auto"
           }`}
         >
-          {visibleStep === AUTH_STEP.CREDENTIAL ? (
+          {betaEnabled && visibleStep === AUTH_STEP.CREDENTIAL ? (
+            <BetaLoginStep
+              firstName={profileFirstName}
+              lastName={profileLastName}
+              district={profileDistrict}
+              taluka={profileTaluka}
+              phone={credential}
+              error={error}
+              loading={loading}
+              onFirstNameChange={setProfileFirstName}
+              onLastNameChange={setProfileLastName}
+              onDistrictChange={setProfileDistrict}
+              onTalukaChange={setProfileTaluka}
+              onPhoneChange={setCredential}
+              onSubmit={betaLogin}
+            />
+          ) : null}
+
+          {!betaEnabled && visibleStep === AUTH_STEP.CREDENTIAL ? (
             <CredentialStep
               role={role}
               credential={credential}
@@ -99,7 +136,7 @@ export default function AuthPage() {
             />
           ) : null}
 
-          {visibleStep === AUTH_STEP.IDENTITY ? (
+          {!betaEnabled && visibleStep === AUTH_STEP.IDENTITY ? (
             <IdentityStep
               identity={identity}
               phone={phone}
@@ -111,7 +148,7 @@ export default function AuthPage() {
             />
           ) : null}
 
-          {visibleStep === AUTH_STEP.OTP ? (
+          {!betaEnabled && visibleStep === AUTH_STEP.OTP ? (
             <OtpStep
               otp={otp}
               error={error}
@@ -122,7 +159,7 @@ export default function AuthPage() {
             />
           ) : null}
 
-          {visibleStep === AUTH_STEP.PROFILE ? (
+          {!betaEnabled && visibleStep === AUTH_STEP.PROFILE ? (
             <CitizenProfileStep
               name={profileName}
               district={profileDistrict}
