@@ -99,3 +99,12 @@ export function formatWeekLabel(week, language = LANGUAGE.GUJARATI) {
   const ordinal = WEEK_ORDINALS[n] ?? `${Number.isFinite(n) && n > 0 ? n : 1} મું`;
   return `${ordinal} અઠવાડિયું`;
 }
+
+/** Compact week chip — matches leaderboard header ("8 મું વીક"). */
+export function formatWeekChipLabel(week, language = LANGUAGE.GUJARATI) {
+  const n = Number(week);
+  const safe = Number.isFinite(n) && n > 0 ? n : 1;
+  if (language === LANGUAGE.ENGLISH) return `Week ${safe}`;
+  if (language === LANGUAGE.HINDI) return `सप्ताह ${safe}`;
+  return `${safe} મું વીક`;
+}

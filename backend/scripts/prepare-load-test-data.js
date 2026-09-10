@@ -1,4 +1,5 @@
 import { prisma } from '../src/config/prisma.client.js';
+import { resolveUserGeography } from '../src/services/geography.service.js';
 
 const STUDENT_COUNT = Number(process.env.LOAD_TEST_STUDENTS || 1200);
 const COLLEGE_COUNT = Number(process.env.LOAD_TEST_COLLEGES || 800);
@@ -36,58 +37,75 @@ const COLLEGE_GRADES = ['બી.એ. - સેમેસ્ટર 2', 'બી.ક�
 const pick = (list, index) => list[index % list.length];
 const phoneFor = (seed) => `808${String(1000000 + seed).slice(-7)}`;
 
-function buildStudents(count) {
-  return Array.from({ length: count }, (_, index) => {
+const geoCache = new Map();
+
+async function resolveGeo(district, taluka) {
+  const key = `${district}::${taluka}`;
+  if (geoCache.has(key)) return geoCache.get(key);
+  const geo = await resolveUserGeography({ district, taluka });
+  const value = { districtId: geo.districtId, talukaId: geo.talukaId };
+  geoCache.set(key, value);
+  return value;
+}
+
+async function buildStudents(count) {
+  const rows = [];
+  for (let index = 0; index < count; index += 1) {
     const school = pick(STUDENT_SCHOOLS, index);
-    return {
+    const geo = await resolveGeo(school.district, school.taluka);
+    rows.push({
       id: `load_stu_${String(index + 1).padStart(5, '0')}`,
       role: 'student',
       name: `Load Student ${index + 1}`,
       institute: school.institute,
       schoolId: school.schoolId,
       grade: pick(STUDENT_GRADES, index),
-      district: school.district,
-      taluka: school.taluka,
+      districtId: geo.districtId,
+      talukaId: geo.talukaId,
       socialCategory: pick(SOCIAL_CATEGORIES, index),
       udiseCode: `24${String(810000000 + index).padStart(9, '0')}`,
       phone: phoneFor(index),
-      joinedOn: new Date(),
-    };
-  });
+    });
+  }
+  return rows;
 }
 
-function buildColleges(count) {
-  return Array.from({ length: count }, (_, index) => {
+async function buildColleges(count) {
+  const rows = [];
+  for (let index = 0; index < count; index += 1) {
     const college = pick(COLLEGES, index);
-    return {
+    const geo = await resolveGeo(college.district, college.taluka);
+    rows.push({
       id: `load_col_${String(index + 1).padStart(5, '0')}`,
       role: 'college',
       name: `Load College ${index + 1}`,
       institute: college.institute,
       grade: pick(COLLEGE_GRADES, index),
-      district: college.district,
-      taluka: college.taluka,
+      districtId: geo.districtId,
+      talukaId: geo.talukaId,
       abcId: `9${String(91000000000 + index).padStart(11, '0')}`,
       phone: phoneFor(index + 200000),
-      joinedOn: new Date(),
-    };
-  });
+    });
+  }
+  return rows;
 }
 
-function buildCitizens(count) {
-  return Array.from({ length: count }, (_, index) => {
+async function buildCitizens(count) {
+  const rows = [];
+  for (let index = 0; index < count; index += 1) {
     const area = pick(CITIZEN_AREAS, index);
-    return {
+    const geo = await resolveGeo(area.district, area.taluka);
+    rows.push({
       id: `load_cit_${String(index + 1).padStart(5, '0')}`,
       role: 'citizen',
       name: `Load Citizen ${index + 1}`,
       institute: 'નાગરિક સહભાગી',
-      district: area.district,
-      taluka: area.taluka,
+      districtId: geo.districtId,
+      talukaId: geo.talukaId,
       phone: phoneFor(index + 400000),
-      joinedOn: new Date(),
-    };
-  });
+    });
+  }
+  return rows;
 }
 
 function buildQuestions(count) {
@@ -152,9 +170,9 @@ async function createQuestions(questions) {
 
 async function main() {
   const users = [
-    ...buildStudents(STUDENT_COUNT),
-    ...buildColleges(COLLEGE_COUNT),
-    ...buildCitizens(CITIZEN_COUNT),
+    ...(await buildStudents(STUDENT_COUNT)),
+    ...(await buildColleges(COLLEGE_COUNT)),
+    ...(await buildCitizens(CITIZEN_COUNT)),
   ];
   const questions = buildQuestions(QUESTION_COUNT);
 

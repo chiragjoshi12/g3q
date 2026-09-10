@@ -1,5 +1,6 @@
 import { prisma } from '../config/prisma.client.js';
 import { ROLE } from '../config/roles.js';
+import { resolveUserGeography, localizedName } from '../services/geography.service.js';
 
 function phoneDigits(value) {
   return String(value ?? '').replace(/\D/g, '').slice(-10);
@@ -14,13 +15,20 @@ function buildFullName(firstName, lastName) {
 }
 
 export class BetaUserModel {
-  static async upsertLoginProfile({ firstName, lastName, district, taluka, phone }) {
+  static async upsertLoginProfile({
+    firstName,
+    lastName,
+    district,
+    taluka,
+    districtId,
+    talukaId,
+    phone,
+  }) {
     const first = trimText(firstName);
     const last = trimText(lastName);
     const fullName = buildFullName(first, last);
     const phoneNumber = phoneDigits(phone);
-    const districtName = trimText(district);
-    const talukaName = trimText(taluka);
+    const geo = await resolveUserGeography({ districtId, talukaId, district, taluka });
 
     return prisma.$transaction(async (tx) => {
       const existing = await tx.betaUser.findFirst({
@@ -34,8 +42,8 @@ export class BetaUserModel {
             role: ROLE.STUDENT,
             name: fullName,
             surname: last || null,
-            district: districtName,
-            taluka: talukaName,
+            districtId: geo.districtId,
+            talukaId: geo.talukaId,
             phone: phoneNumber,
             institute: 'Beta User',
           },
@@ -47,8 +55,8 @@ export class BetaUserModel {
             firstName: first,
             lastName: last || null,
             fullName,
-            district: districtName,
-            taluka: talukaName,
+            district: localizedName(geo.districtRow, 'gu') || geo.district,
+            taluka: localizedName(geo.talukaRow, 'gu') || geo.taluka,
             phone: phoneNumber,
           },
         });
@@ -61,11 +69,10 @@ export class BetaUserModel {
           role: ROLE.STUDENT,
           name: fullName,
           surname: last || null,
-          district: districtName,
-          taluka: talukaName,
+          districtId: geo.districtId,
+          talukaId: geo.talukaId,
           phone: phoneNumber,
           institute: 'Beta User',
-          joinedOn: new Date(),
         },
       });
 
@@ -74,8 +81,8 @@ export class BetaUserModel {
           firstName: first,
           lastName: last || null,
           fullName,
-          district: districtName,
-          taluka: talukaName,
+          district: localizedName(geo.districtRow, 'gu') || geo.district,
+          taluka: localizedName(geo.talukaRow, 'gu') || geo.taluka,
           phone: phoneNumber,
           linkedUserId: user.id,
         },

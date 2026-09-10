@@ -181,19 +181,33 @@ export const httpSource = {
       body: { requestId, otp, role, credential },
     }),
 
-  registerCitizen: ({ requestId, name, district, taluka }) =>
+  registerCitizen: ({ requestId, name, district, taluka, districtId, talukaId }) =>
     request("/auth/citizen/register", {
       method: "POST",
-      body: { requestId, name, district, taluka },
+      body: { requestId, name, district, taluka, districtId, talukaId },
     }),
 
-  betaLogin: ({ firstName, lastName, district, taluka, phone }) =>
+  betaLogin: ({ firstName, lastName, district, taluka, districtId, talukaId, phone }) =>
     request("/auth/beta/login", {
       method: "POST",
-      body: { firstName, lastName, district, taluka, phone },
+      body: { firstName, lastName, district, taluka, districtId, talukaId, phone },
     }),
 
+  getGeographyDistricts: ({ lang } = {}) => {
+    const params = new URLSearchParams();
+    if (lang) params.set("lang", lang);
+    const qs = params.toString();
+    return request(`/geography/districts${qs ? `?${qs}` : ""}`);
+  },
+
   getLandingSummary: () => request("/landing/summary"),
+
+  getGeographyDistricts: ({ lang } = {}) => {
+    const params = new URLSearchParams();
+    if (lang) params.set("lang", lang);
+    const qs = params.toString();
+    return request(`/geography/districts${qs ? `?${qs}` : ""}`);
+  },
 
   getMe: () => request("/users/me"),
 
@@ -246,48 +260,53 @@ export const httpSource = {
 
   clearMyAttempts: () => request("/users/me/attempts", { method: "DELETE" }),
 
-  getLeaderboardOverview: ({ limit, talukaId, lang } = {}) => {
+  getLeaderboardOverview: ({ limit, talukaId, week, lang } = {}) => {
     const params = new URLSearchParams();
     if (limit) params.set("limit", String(limit));
     if (talukaId != null && talukaId !== "") params.set("taluka", String(talukaId));
+    if (week != null && week !== "") params.set("week", String(week));
     if (lang) params.set("lang", lang);
     const qs = params.toString();
     return request(`/leaderboard${qs ? `?${qs}` : ""}`);
   },
 
-  getSchoolLeaderboard: ({ limit, schoolId, institute, talukaId, lang } = {}) => {
+  getSchoolLeaderboard: ({ limit, schoolId, institute, talukaId, week, lang } = {}) => {
     const params = new URLSearchParams();
     if (limit) params.set("limit", String(limit));
     if (schoolId) params.set("school_id", schoolId);
     if (institute) params.set("institute", institute);
     if (talukaId != null && talukaId !== "") params.set("taluka", String(talukaId));
+    if (week != null && week !== "") params.set("week", String(week));
     if (lang) params.set("lang", lang);
     const qs = params.toString();
     return request(`/leaderboard/school${qs ? `?${qs}` : ""}`);
   },
 
-  getCollegeLeaderboard: ({ limit, talukaId, lang } = {}) => {
+  getCollegeLeaderboard: ({ limit, talukaId, week, lang } = {}) => {
     const params = new URLSearchParams();
     if (limit) params.set("limit", String(limit));
     if (talukaId != null && talukaId !== "") params.set("taluka", String(talukaId));
+    if (week != null && week !== "") params.set("week", String(week));
     if (lang) params.set("lang", lang);
     const qs = params.toString();
     return request(`/leaderboard/college${qs ? `?${qs}` : ""}`);
   },
 
-  getCitizenLeaderboard: ({ limit, talukaId, lang } = {}) => {
+  getCitizenLeaderboard: ({ limit, talukaId, week, lang } = {}) => {
     const params = new URLSearchParams();
     if (limit) params.set("limit", String(limit));
     if (talukaId != null && talukaId !== "") params.set("taluka", String(talukaId));
+    if (week != null && week !== "") params.set("week", String(week));
     if (lang) params.set("lang", lang);
     const qs = params.toString();
     return request(`/leaderboard/citizen${qs ? `?${qs}` : ""}`);
   },
 
-  getTalukaLeaderboard: ({ limit, talukaId, lang } = {}) => {
+  getTalukaLeaderboard: ({ limit, talukaId, week, lang } = {}) => {
     const params = new URLSearchParams();
     if (limit) params.set("limit", String(limit));
     if (talukaId != null && talukaId !== "") params.set("taluka", String(talukaId));
+    if (week != null && week !== "") params.set("week", String(week));
     if (lang) params.set("lang", lang);
     const qs = params.toString();
     return request(`/leaderboard/taluka${qs ? `?${qs}` : ""}`);

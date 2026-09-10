@@ -1491,3 +1491,41 @@ export function findDistrict(districtName) {
     ) || null
   );
 }
+
+/** Find parent district for a taluka name stored in any language. */
+export function findDistrictForTaluka(talukaName) {
+  const key = String(talukaName || "").trim();
+  if (!key) return null;
+  for (const district of GUJARAT_DISTRICTS) {
+    const hit = (district.talukas || []).find(
+      (item) =>
+        item === key ||
+        item.nameGu === key ||
+        item.nameEn === key ||
+        item.nameHi === key
+    );
+    if (hit) return district;
+  }
+  return null;
+}
+
+/** Canonical Gujarati name for a district/taluka value in any language. */
+export function canonicalPlaceName(name, { districtName } = {}) {
+  const raw = String(name || "").trim();
+  if (!raw) return "";
+  if (!districtName) {
+    const district = findDistrict(raw);
+    if (district) return district.nameGu;
+  }
+  const parent = findDistrict(districtName) || findDistrictForTaluka(raw);
+  const taluka = (parent?.talukas || []).find(
+    (item) => item.nameGu === raw || item.nameEn === raw || item.nameHi === raw || item === raw
+  );
+  if (taluka) return typeof taluka === "string" ? taluka : taluka.nameGu;
+  const fallbackDistrict = findDistrictForTaluka(raw);
+  const fallbackTaluka = (fallbackDistrict?.talukas || []).find(
+    (item) => item.nameGu === raw || item.nameEn === raw || item.nameHi === raw
+  );
+  if (fallbackTaluka) return fallbackTaluka.nameGu;
+  return raw;
+}

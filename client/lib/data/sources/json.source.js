@@ -165,7 +165,7 @@ export const jsonSource = {
     return { user: clone(user), token: `static.${user.id}.token` };
   },
 
-  async registerCitizen({ requestId, name, district, taluka }) {
+  async registerCitizen({ requestId, name, district, taluka, districtId, talukaId }) {
     await delay();
     const pending = otpRequests.get(requestId);
     if (!pending?.verified || pending.role !== ROLE.CITIZEN) {
@@ -184,6 +184,8 @@ export const jsonSource = {
       user.name = name;
       user.district = district;
       user.taluka = taluka;
+      user.districtId = districtId ?? null;
+      user.talukaId = talukaId ?? null;
       user.institute = "નાગરિક સહભાગી";
       user.phone = digits(pending.phone);
     } else {
@@ -193,10 +195,11 @@ export const jsonSource = {
         name,
         district,
         taluka,
+        districtId: districtId ?? null,
+        talukaId: talukaId ?? null,
         phone: digits(pending.phone),
         institute: "નાગરિક સહભાગી",
         grade: "",
-        joinedOn: today(),
       };
       extraCitizens.push(user);
     }
@@ -205,7 +208,7 @@ export const jsonSource = {
     return { user: clone(user), token: `static.${user.id}.token` };
   },
 
-  async betaLogin({ firstName, lastName, district, taluka, phone }) {
+  async betaLogin({ firstName, lastName, district, taluka, districtId, talukaId, phone }) {
     await delay();
     const user = {
       id: `beta_${Date.now()}`,
@@ -213,10 +216,11 @@ export const jsonSource = {
       name: [String(firstName || "").trim(), String(lastName || "").trim()].filter(Boolean).join(" "),
       district: String(district || "").trim(),
       taluka: String(taluka || "").trim(),
+      districtId: districtId ?? null,
+      talukaId: talukaId ?? null,
       phone: digits(phone),
       institute: "Beta User",
       grade: "",
-      joinedOn: today(),
     };
     extraStudents.push(user);
     return { user: clone(user), token: `static.${user.id}.token`, beta: true };

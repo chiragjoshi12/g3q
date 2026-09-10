@@ -28,22 +28,26 @@ export const authRepository = {
     return { user: toUser(result.user), token: result.token, needsProfile: false };
   },
 
-  async registerCitizen({ requestId, name, district, taluka }) {
+  async registerCitizen({ requestId, name, district, taluka, districtId, talukaId }) {
     const { user, token } = await getDataSource().registerCitizen({
       requestId,
       name,
       district,
       taluka,
+      districtId,
+      talukaId,
     });
     return { user: toUser(user), token };
   },
 
-  async betaLogin({ firstName, lastName, district, taluka, phone }) {
+  async betaLogin({ firstName, lastName, district, taluka, districtId, talukaId, phone }) {
     const { user, token } = await getDataSource().betaLogin({
       firstName,
       lastName,
       district,
       taluka,
+      districtId,
+      talukaId,
       phone,
     });
     return { user: toUser(user), token };

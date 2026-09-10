@@ -20,13 +20,28 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 });
 
 export const registerCitizen = asyncHandler(async (req, res) => {
-  const { requestId, name, district, taluka } = req.body;
-  const result = await authService.registerCitizen({ requestId, name, district, taluka });
+  const { requestId, name, district, taluka, districtId, talukaId } = req.body;
+  const result = await authService.registerCitizen({
+    requestId,
+    name,
+    district,
+    taluka,
+    districtId,
+    talukaId,
+  });
   return res.status(200).json(result);
 });
 
 export const betaLogin = asyncHandler(async (req, res) => {
-  const { firstName, lastName, district, taluka, phone } = req.body;
-  const result = await authService.betaLogin({ firstName, lastName, district, taluka, phone });
+  const { firstName, lastName, district, taluka, districtId, talukaId, phone } = req.body;
+  const result = await authService.betaLogin({
+    firstName,
+    lastName,
+    district,
+    taluka,
+    districtId,
+    talukaId,
+    phone,
+  });
   return res.status(200).json(result);
 });

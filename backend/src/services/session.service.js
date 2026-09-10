@@ -344,7 +344,7 @@ async function allocateBankQuestions(user, count) {
   if (isBetaUser(user)) {
     const betaPool = await fetchCandidateLight({
       userId: user.id,
-      limit: Math.max(count * 20, 500),
+      limit: Math.max(count * 10, 40),
       districtRaw: null,
       casteRaw: null,
       personalized: false,
@@ -519,7 +519,7 @@ export const sessionService = {
     if (!session || session.userId !== userId) {
       throw new AppError(ERROR_CODE.NOT_FOUND, 'Session not found.');
     }
-    const user = await UserModel.findById(userId);
+    const user = await UserModel.findByIdForLeaderboard(userId);
     if (!user) throw new AppError(ERROR_CODE.UNAUTHORIZED);
 
     if (session.status === 'submitted' || session.status === 'abandoned') {

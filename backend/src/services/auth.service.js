@@ -26,8 +26,8 @@ function hasCitizenProfile(user) {
   return Boolean(
     user &&
       String(user.name || '').trim() &&
-      String(user.district || '').trim() &&
-      String(user.taluka || '').trim()
+      (user.districtId != null || String(user.district || '').trim()) &&
+      (user.talukaId != null || String(user.taluka || '').trim())
   );
 }
 
@@ -173,8 +173,8 @@ export const authService = {
     return { user, token };
   },
 
-  async registerCitizen({ requestId, name, district, taluka }) {
-    const profileError = validateCitizenProfile({ name, district, taluka });
+  async registerCitizen({ requestId, name, district, taluka, districtId, talukaId }) {
+    const profileError = validateCitizenProfile({ name, district, taluka, districtId, talukaId });
     if (profileError) throw new AppError(ERROR_CODE.INVALID_REQUEST, profileError);
 
     const pending = await OtpModel.findVerifiedByRequestId(requestId);
@@ -189,14 +189,15 @@ export const authService = {
       ? await UserModel.findById(pending.userId)
       : await UserModel.findByPhone(ROLE.CITIZEN, pending.phone);
 
+    const geoInput = { district, taluka, districtId, talukaId };
+
     if (user) {
-      user = await UserModel.updateCitizenProfile(user.id, { name, district, taluka });
+      user = await UserModel.updateCitizenProfile(user.id, { name, ...geoInput });
     } else {
       user = await UserModel.createCitizen({
         name,
-        district,
-        taluka,
         phone: pending.phone,
+        ...geoInput,
       });
     }
 
@@ -205,7 +206,7 @@ export const authService = {
     return { user, token };
   },
 
-  async betaLogin({ firstName, lastName, district, taluka, phone }) {
+  async betaLogin({ firstName, lastName, district, taluka, districtId, talukaId, phone }) {
     if (!CONFIG.BETA.ENABLED) {
       throw new AppError(ERROR_CODE.INVALID_REQUEST, 'Beta login is not enabled.');
     }
@@ -214,7 +215,13 @@ export const authService = {
       .filter(Boolean)
       .join(' ')
       .trim();
-    const profileError = validateCitizenProfile({ name: fullName, district, taluka });
+    const profileError = validateCitizenProfile({
+      name: fullName,
+      district,
+      taluka,
+      districtId,
+      talukaId,
+    });
     if (profileError) throw new AppError(ERROR_CODE.INVALID_REQUEST, profileError);
 
     const phoneError = validatePhone(phone);
@@ -225,6 +232,8 @@ export const authService = {
       lastName,
       district,
       taluka,
+      districtId,
+      talukaId,
       phone,
     });
 

@@ -7,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { prisma } from '../src/config/prisma.client.js';
+import { resolveUserGeography } from '../src/services/geography.service.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -44,7 +45,6 @@ function mapStudent(row) {
     dateOfBirth: emptyToNull(row.date_of_birth),
     phone,
     udiseCode: String(row.udise_code).trim(),
-    joinedOn: new Date(),
   };
 }
 
@@ -61,6 +61,17 @@ async function main() {
   let upserted = 0;
   for (const row of rows) {
     const data = mapStudent(row);
+    const geo = await resolveUserGeography({
+      district: data.district,
+      taluka: data.taluka,
+    });
+    const { district, taluka, ...rest } = data;
+    const payload = {
+      ...rest,
+      districtId: geo.districtId,
+      talukaId: geo.talukaId,
+    };
+
     const existing = await prisma.user.findUnique({
       where: { udiseCode: data.udiseCode },
     });
@@ -69,24 +80,24 @@ async function main() {
       await prisma.user.update({
         where: { id: existing.id },
         data: {
-          name: data.name,
-          surname: data.surname,
-          gender: data.gender,
-          fatherName: data.fatherName,
-          motherName: data.motherName,
-          institute: data.institute,
-          schoolId: data.schoolId,
-          grade: data.grade,
-          district: data.district,
-          taluka: data.taluka,
-          village: data.village,
-          socialCategory: data.socialCategory,
-          dateOfBirth: data.dateOfBirth,
-          phone: data.phone,
+          name: payload.name,
+          surname: payload.surname,
+          gender: payload.gender,
+          fatherName: payload.fatherName,
+          motherName: payload.motherName,
+          institute: payload.institute,
+          schoolId: payload.schoolId,
+          grade: payload.grade,
+          districtId: payload.districtId,
+          talukaId: payload.talukaId,
+          village: payload.village,
+          socialCategory: payload.socialCategory,
+          dateOfBirth: payload.dateOfBirth,
+          phone: payload.phone,
         },
       });
     } else {
-      await prisma.user.create({ data });
+      await prisma.user.create({ data: payload });
     }
     upserted += 1;
   }
@@ -95,8 +106,8 @@ async function main() {
 }
 
 main()
-  .catch((err) => {
-    console.error(err);
+  .catch((error) => {
+    console.error(error);
     process.exitCode = 1;
   })
   .finally(async () => {

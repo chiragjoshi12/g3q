@@ -49,8 +49,8 @@ model User {
   institute       String?
   schoolId        String?   @map("school_id") @db.VarChar(32)
   grade           String?
-  district        String?
-  taluka          String?   @db.VarChar(128)
+  districtId      Int?      @map("district_id")
+  talukaId        Int?      @map("taluka_id")
   village         String?   @db.VarChar(128)
   profilePhoto    String?   @map("profile_photo") @db.VarChar(512)
   socialCategory  String?   @map("social_category") @db.VarChar(32)
@@ -58,9 +58,11 @@ model User {
   phone           String?
   udiseCode       String?   @unique @map("udise_code")
   abcId           String?   @unique @map("abc_id")
-  joinedOn        DateTime? @map("joined_on")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  district District? @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  taluka   Taluka?   @relation(fields: [talukaId], references: [id], onDelete: SetNull)
 
   otpRequests OtpRequest[]
   attempts    Attempt[]
@@ -72,7 +74,8 @@ model User {
   leaderboardAggregates LeaderboardAggregate[]
 
   @@index([schoolId])
-  @@index([taluka])
+  @@index([districtId])
+  @@index([talukaId])
   @@index([institute])
   @@index([phone])
   @@index([role, phone])
@@ -156,6 +159,7 @@ model LeaderboardAggregate {
 
   @@unique([week, role, taluka, userId])
   @@index([week, taluka, role])
+  @@index([week, role, taluka, bestPercentage, totalCorrect, totalTimeMs])
   @@index([userId, week])
   @@map("leaderboard_aggregates")
 }
@@ -183,6 +187,7 @@ model District {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   talukas Taluka[]
+  users   User[]
 
   @@map("districts")
 }
@@ -197,6 +202,7 @@ model Taluka {
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   district District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  users    User[]
 
   @@unique([districtId, nameEn])
   @@unique([districtId, nameGu])

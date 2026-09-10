@@ -29,10 +29,10 @@ export function toUser(raw) {
       "",
     district: raw.district ?? "",
     taluka: raw.taluka ?? "",
+    districtId: raw.districtId != null ? Number(raw.districtId) : null,
     talukaId: raw.talukaId != null ? Number(raw.talukaId) : null,
     phone: raw.phone ?? "",
     profilePhoto: raw.profilePhoto || raw.profile_photo || null,
-    joinedOn: raw.joinedOn ?? null,
     credential,
     credentialLabel: getCredentialRule(role)?.label ?? "",
   };

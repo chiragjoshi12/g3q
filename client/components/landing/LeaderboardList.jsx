@@ -104,7 +104,7 @@ export function LeaderboardCategoryTabs({ value, onChange }) {
     <div
       role="tablist"
       aria-label={t("rankCategory")}
-      className="flex w-full items-end justify-center gap-x-20 px-1"
+      className="flex w-full items-end justify-between gap-2 px-2"
     >
       {items.map((item) => {
         const active = item.id === value;
@@ -117,7 +117,7 @@ export function LeaderboardCategoryTabs({ value, onChange }) {
             aria-selected={active}
             onClick={() => onChange(item.id)}
             className={cn(
-              "relative pb-2 font-canva text-[16px] leading-snug",
+              "relative flex-1 pb-2.5 text-center font-canva text-[16px] leading-snug",
               active
                 ? "font-[800] text-[#2d689d]"
                 : "font-normal text-black"
@@ -127,7 +127,7 @@ export function LeaderboardCategoryTabs({ value, onChange }) {
             {active ? (
               <span
                 aria-hidden
-                className="absolute left-[-8px] right-[-8px] bottom-0 h-[1.8px] rounded-full bg-[#2d689d]"
+                className="absolute inset-x-2 bottom-0 h-[2px] rounded-full bg-[#2d689d]"
               />
             ) : null}
           </button>

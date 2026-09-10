@@ -7,6 +7,35 @@ const phoneSchema = z.string().trim().regex(/^[6-9]\d{9}$/, {
   message: 'phone must be a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9',
 });
 
+const optionalPositiveInt = z.preprocess((value) => {
+  if (value == null || value === '') return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : value;
+}, z.number().int().positive().optional());
+
+const optionalName = z.preprocess((value) => {
+  if (value == null) return undefined;
+  const trimmed = String(value).trim();
+  return trimmed ? trimmed : undefined;
+}, z.string().min(1).max(128).optional());
+
+function refineGeography(data, ctx) {
+  if (data.districtId == null && !data.district) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['districtId'],
+      message: 'districtId or district is required',
+    });
+  }
+  if (data.talukaId == null && !data.taluka) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['talukaId'],
+      message: 'talukaId or taluka is required',
+    });
+  }
+}
+
 export const identityLookupSchema = z.object({
   role: rosterRoleSchema,
   credential: z.string().min(1),
@@ -35,17 +64,25 @@ export const verifyOtpSchema = z.object({
   credential: z.string().optional().default(''),
 });
 
-export const registerCitizenSchema = z.object({
-  requestId: z.string().min(1),
-  name: z.string().trim().min(1).max(128),
-  district: z.string().trim().min(1).max(128),
-  taluka: z.string().trim().min(1).max(128),
-});
+export const registerCitizenSchema = z
+  .object({
+    requestId: z.string().min(1),
+    name: z.string().trim().min(1).max(128),
+    districtId: optionalPositiveInt,
+    talukaId: optionalPositiveInt,
+    district: optionalName,
+    taluka: optionalName,
+  })
+  .superRefine(refineGeography);
 
-export const betaLoginSchema = z.object({
-  firstName: z.string().trim().min(1).max(128),
-  lastName: z.string().trim().min(1).max(128),
-  district: z.string().trim().min(1).max(128),
-  taluka: z.string().trim().min(1).max(128),
-  phone: phoneSchema,
-});
+export const betaLoginSchema = z
+  .object({
+    firstName: z.string().trim().min(1).max(128),
+    lastName: z.string().trim().min(1).max(128),
+    districtId: optionalPositiveInt,
+    talukaId: optionalPositiveInt,
+    district: optionalName,
+    taluka: optionalName,
+    phone: phoneSchema,
+  })
+  .superRefine(refineGeography);

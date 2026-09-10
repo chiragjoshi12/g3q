@@ -13,6 +13,7 @@ export const schoolLeaderboard = asyncHandler(async (req, res) => {
     schoolId: query.school_id,
     institute: query.institute,
     talukaId: query.taluka,
+    week: query.week,
     lang: query.lang,
     limit: query.limit,
   });
@@ -24,6 +25,7 @@ export const leaderboardOverview = asyncHandler(async (req, res) => {
   const result = await leaderboardService.overview({
     userId: req.user?.id ?? null,
     talukaId: query.taluka,
+    week: query.week,
     lang: query.lang,
     limit: query.limit,
   });
@@ -35,6 +37,7 @@ export const talukaLeaderboard = asyncHandler(async (req, res) => {
   const result = await leaderboardService.taluka({
     userId: req.user?.id ?? null,
     talukaId: query.taluka,
+    week: query.week,
     lang: query.lang,
     limit: query.limit,
   });
@@ -46,6 +49,7 @@ export const collegeLeaderboard = asyncHandler(async (req, res) => {
   const result = await leaderboardService.college({
     userId: req.user?.id ?? null,
     talukaId: query.taluka,
+    week: query.week,
     lang: query.lang,
     limit: query.limit,
   });
@@ -57,6 +61,7 @@ export const citizenLeaderboard = asyncHandler(async (req, res) => {
   const result = await leaderboardService.citizen({
     userId: req.user?.id ?? null,
     talukaId: query.taluka,
+    week: query.week,
     lang: query.lang,
     limit: query.limit,
   });

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { BrandGlyph, BrandIcon } from "@/components/common/BrandIcon";
 import { ErrorState } from "@/components/common/StateViews";
 import { BannerSlider } from "@/components/landing/BannerSlider";
-import { LandingActionNavWide } from "@/components/landing/LandingActionNav";
 import { LeaderboardPreviewCard } from "@/components/landing/LeaderboardList";
 import { AppShell } from "@/components/layout/AppShell";
 import { BrandHeader } from "@/components/layout/BrandHeader";
@@ -90,7 +89,6 @@ export function WelcomeScreen() {
   const navHandlers = {
     onPractice: () => router.push(ROUTES.quiz(practiceQuizId, { practice: true })),
     onPlayQuiz: () => go(ROUTES.home),
-    onG3qAi: () => router.push(ROUTES.g3qAi),
   };
 
   return (
@@ -213,7 +211,7 @@ export function WelcomeScreen() {
           </div>
         </header>
 
-        <main className="no-scrollbar relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain pb-36">
+        <main className="no-scrollbar relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain pb-28">
           <section className="mx-auto grid w-full max-w-[80rem] grid-cols-2 items-center gap-12 px-12 pt-2 xl:gap-16 xl:px-20">
             <div className="min-w-0 overflow-hidden rounded-[1.75rem] bg-[#ddd] shadow-[0_18px_40px_rgb(15_23_42/0.10)]">
               <BannerSlider
@@ -266,9 +264,34 @@ export function WelcomeScreen() {
               )}
             </div>
           </section>
+
+          <section className="mx-auto grid w-full max-w-[80rem] grid-cols-2 gap-4 px-12 py-8 xl:px-20">
+            <LandingQuickActionCard
+              iconSrc={BRAND_ICONS.navPractice}
+              title={t("practice")}
+              subtitle={practiceSubtitle(language)}
+              onClick={navHandlers.onPractice}
+            />
+            <LandingQuickActionCard
+              iconSrc={BRAND_ICONS.leaderboard}
+              title={t("leaderboard")}
+              subtitle={
+                language === "gu"
+                  ? `${talukaLabel} તાલુકો - ${week} મું અઠવાડિયું`
+                  : language === "hi"
+                    ? `${talukaLabel} तालुका - सप्ताह ${week}`
+                    : `${talukaLabel} Taluka - Week ${week}`
+              }
+              onClick={() => router.push(ROUTES.leaderboard)}
+            />
+          </section>
         </main>
 
-        <LandingActionNavWide {...navHandlers} />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-12 pb-8 pt-4">
+          <div className="pointer-events-auto relative flex justify-center">
+            <PlayQuizButton label={t("playQuiz")} onClick={navHandlers.onPlayQuiz} />
+          </div>
+        </div>
       </div>
     </AppShell>
   );

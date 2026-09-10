@@ -1,5 +1,6 @@
 import { prisma } from '../src/config/prisma.client.js';
 import { QuizSessionModel } from '../src/models/QuizSessionModel.js';
+import { resolveUserGeography } from '../src/services/geography.service.js';
 
 const QUESTION_COUNT = 15;
 
@@ -89,6 +90,17 @@ function pick(list, index) {
   return list[index % list.length];
 }
 
+const geoCache = new Map();
+
+async function resolveGeo(district, taluka) {
+  const key = `${district}::${taluka}`;
+  if (geoCache.has(key)) return geoCache.get(key);
+  const geo = await resolveUserGeography({ district, taluka });
+  const value = { districtId: geo.districtId, talukaId: geo.talukaId };
+  geoCache.set(key, value);
+  return value;
+}
+
 function shuffle(list) {
   const copy = [...list];
   for (let i = copy.length - 1; i > 0; i -= 1) {
@@ -125,7 +137,6 @@ function buildStudents(count = 30) {
       socialCategory: pick(SOCIAL_CATEGORIES, index),
       udiseCode: `24${String(700000000 + index).padStart(9, '0')}`,
       phone: buildPhone(index),
-      joinedOn: new Date(Date.now() - range(30, 240) * 24 * 60 * 60 * 1000),
     };
   });
 }
@@ -143,7 +154,6 @@ function buildColleges(count = 16) {
       taluka: college.taluka,
       abcId: `8${String(10000000000 + index).padStart(11, '0')}`,
       phone: buildPhone(index + 100),
-      joinedOn: new Date(Date.now() - range(20, 200) * 24 * 60 * 60 * 1000),
     };
   });
 }
@@ -159,9 +169,22 @@ function buildCitizens(count = 65) {
       district: area.district,
       taluka: area.taluka,
       phone: buildPhone(index + 200),
-      joinedOn: new Date(Date.now() - range(5, 120) * 24 * 60 * 60 * 1000),
     };
   });
+}
+
+async function withResolvedGeography(users) {
+  const rows = [];
+  for (const user of users) {
+    const geo = await resolveGeo(user.district, user.taluka);
+    const { district, taluka, ...rest } = user;
+    rows.push({
+      ...rest,
+      districtId: geo.districtId,
+      talukaId: geo.talukaId,
+    });
+  }
+  return rows;
 }
 
 async function resetDemoUsers() {
@@ -185,13 +208,12 @@ async function upsertUsers(users) {
         institute: user.institute,
         schoolId: user.schoolId ?? null,
         grade: user.grade ?? null,
-        district: user.district ?? null,
-        taluka: user.taluka ?? null,
+        districtId: user.districtId ?? null,
+        talukaId: user.talukaId ?? null,
         socialCategory: user.socialCategory ?? null,
         udiseCode: user.udiseCode ?? null,
         abcId: user.abcId ?? null,
         phone: user.phone,
-        joinedOn: user.joinedOn,
       },
       create: user,
     });
@@ -347,7 +369,11 @@ async function main() {
     throw new Error(`Need at least ${QUESTION_COUNT} bank questions with answers, found ${bankQuestions.length}.`);
   }
 
-  const users = [...buildStudents(), ...buildColleges(), ...buildCitizens()];
+  const users = await withResolvedGeography([
+    ...buildStudents(),
+    ...buildColleges(),
+    ...buildCitizens(),
+  ]);
 
   await resetDemoUsers();
   await upsertUsers(users);

@@ -7,9 +7,11 @@ import { LineArrowRight, LogOut, User } from "@/components/icons";
 
 import { ConfirmSheet } from "@/components/common/ConfirmSheet";
 import { HelplineSheet } from "@/components/common/HelplineSheet";
+import { LanguageSheet } from "@/components/common/LanguageSheet";
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { AuroraWash } from "@/components/layout/AuroraWash";
 import { BrandHeader } from "@/components/layout/BrandHeader";
+import { LANGUAGE_INFO } from "@/config/languages";
 import { appConfig, DATA_SOURCE } from "@/config/app.config";
 import { ROUTES } from "@/config/routes";
 import { profileController } from "@/controllers/profile.controller";
@@ -26,13 +28,14 @@ const COLUMN = "mx-auto w-full max-w-[26.5rem] md:max-w-[32rem]";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const sessionUser = useAuthStore((state) => state.user);
   const patchUser = useAuthStore((state) => state.patchUser);
   const logout = useAuthStore((state) => state.logout);
   const resetSession = useQuizStore((state) => state.resetSession);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [helplineOpen, setHelplineOpen] = useState(false);
+  const [languageOpen, setLanguageOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const fileInputRef = useRef(null);
@@ -40,6 +43,7 @@ export default function ProfilePage() {
 
   const user = sessionUser;
   const photoSrc = resolveProfilePhotoSrc(user);
+  const languageMeta = LANGUAGE_INFO[language] || LANGUAGE_INFO.gu;
 
   useEffect(() => {
     if (syncedMeRef.current) return undefined;
@@ -217,6 +221,21 @@ export default function ProfilePage() {
               onClick={() => router.push(ROUTES.abhiyan)}
             />
             <MenuRow
+              icon={
+                <span
+                  className={cn(
+                    "grid size-full place-items-center rounded-full text-[1.05rem] font-semibold text-white",
+                    languageMeta.iconBg
+                  )}
+                >
+                  {languageMeta.glyph}
+                </span>
+              }
+              iconBg="bg-transparent"
+              label={t("language")}
+              onClick={() => setLanguageOpen(true)}
+            />
+            <MenuRow
               iconSrc={BRAND_ICONS.helpline}
               iconBg="bg-[#e5ebf8]"
               label={t("helpline")}
@@ -236,11 +255,12 @@ export default function ProfilePage() {
         onConfirm={handleLogout}
       />
       <HelplineSheet open={helplineOpen} onClose={() => setHelplineOpen(false)} />
+      <LanguageSheet open={languageOpen} onClose={() => setLanguageOpen(false)} />
     </>
   );
 }
 
-function MenuRow({ iconSrc, iconBg, label, onClick, last = false }) {
+function MenuRow({ iconSrc, icon, iconBg, label, onClick, last = false }) {
   return (
     <button
       type="button"
@@ -250,8 +270,8 @@ function MenuRow({ iconSrc, iconBg, label, onClick, last = false }) {
         !last && "border-b border-[#F3F4F6]"
       )}
     >
-      <span className={cn("grid size-12 shrink-0 place-items-center rounded-full", iconBg)}>
-        <BrandIcon src={iconSrc} alt="" className="size-6" />
+      <span className={cn("grid size-12 shrink-0 place-items-center overflow-hidden rounded-full", iconBg)}>
+        {icon ? icon : <BrandIcon src={iconSrc} alt="" className="size-6" />}
       </span>
       <span className="min-w-0 flex-1 font-heading text-[1.05rem] font-semibold text-[#111]">
         {label}

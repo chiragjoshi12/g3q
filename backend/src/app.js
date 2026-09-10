@@ -16,6 +16,7 @@ import sessionRoutes from './routes/session.routes.js';
 import leaderboardRoutes from './routes/leaderboard.routes.js';
 import g3qAiRoutes from './routes/g3qAi.routes.js';
 import landingRoutes from './routes/landing.routes.js';
+import geographyRoutes from './routes/geography.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
 
 const app = express();
@@ -56,6 +57,7 @@ app.get('/api/v1/health', (req, res) => {
 // it at this server's origin + /api and the REST data source works as-is.
 app.use('/api/auth', authRoutes);
 app.use('/api/landing', landingRoutes);
+app.use('/api/geography', geographyRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/quizzes', quizRoutes);

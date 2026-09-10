@@ -79,20 +79,36 @@ export function validatePhone(value) {
   return null;
 }
 
-export function validateCitizenProfile({ name, district, taluka }) {
+export function validateCitizenProfile({ name, district, taluka, districtId, talukaId }) {
   const fullName = String(name || "").trim();
   if (!fullName) return translateCurrent("yourFullName");
   if (fullName.length < 2) return translateCurrent("yourFullName");
-  if (!String(district || "").trim()) return translateCurrent("district");
-  if (!String(taluka || "").trim()) return translateCurrent("taluka");
+  const hasDistrict = districtId != null || String(district || "").trim();
+  const hasTaluka = talukaId != null || String(taluka || "").trim();
+  if (!hasDistrict) return translateCurrent("district");
+  if (!hasTaluka) return translateCurrent("taluka");
   return null;
 }
 
-export function validateBetaLoginProfile({ firstName, lastName, district, taluka, phone }) {
+export function validateBetaLoginProfile({
+  firstName,
+  lastName,
+  district,
+  taluka,
+  districtId,
+  talukaId,
+  phone,
+}) {
   const joinedName = [String(firstName || "").trim(), String(lastName || "").trim()]
     .filter(Boolean)
     .join(" ");
-  const nameError = validateCitizenProfile({ name: joinedName, district, taluka });
+  const nameError = validateCitizenProfile({
+    name: joinedName,
+    district,
+    taluka,
+    districtId,
+    talukaId,
+  });
   if (nameError) return nameError;
   return validatePhone(phone);
 }

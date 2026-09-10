@@ -63,12 +63,14 @@ export function validatePhone(value) {
   return null;
 }
 
-export function validateCitizenProfile({ name, district, taluka }) {
+export function validateCitizenProfile({ name, district, taluka, districtId, talukaId }) {
   const fullName = String(name ?? '').trim();
   if (!fullName) return 'પૂરું નામ દાખલ કરો.';
   if (fullName.length < 2) return 'પૂરું નામ ઓછામાં ઓછા 2 અક્ષરનું હોવું જોઈએ.';
-  if (!String(district ?? '').trim()) return 'જિલ્લો દાખલ કરો.';
-  if (!String(taluka ?? '').trim()) return 'તાલુકો દાખલ કરો.';
+  const hasDistrict = districtId != null || String(district ?? '').trim();
+  const hasTaluka = talukaId != null || String(taluka ?? '').trim();
+  if (!hasDistrict) return 'જિલ્લો દાખલ કરો.';
+  if (!hasTaluka) return 'તાલુકો દાખલ કરો.';
   return null;
 }
 

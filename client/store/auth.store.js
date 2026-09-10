@@ -34,6 +34,8 @@ const initialFlow = {
   profileName: "",
   profileDistrict: "",
   profileTaluka: "",
+  profileDistrictId: null,
+  profileTalukaId: null,
   loading: false,
   error: null,
 };
@@ -62,6 +64,8 @@ export const useAuthStore = create()(
           profileName: "",
           profileDistrict: "",
           profileTaluka: "",
+          profileDistrictId: null,
+          profileTalukaId: null,
           error: null,
           step: AUTH_STEP.CREDENTIAL,
         }),
@@ -79,9 +83,27 @@ export const useAuthStore = create()(
 
       setProfileName: (profileName) => set({ profileName, error: null }),
 
-      setProfileDistrict: (profileDistrict) => set({ profileDistrict, error: null }),
+      setProfileDistrict: (profileDistrict, profileDistrictId = null) =>
+        set({
+          profileDistrict,
+          profileDistrictId:
+            profileDistrictId != null && profileDistrictId !== ""
+              ? Number(profileDistrictId)
+              : null,
+          profileTaluka: "",
+          profileTalukaId: null,
+          error: null,
+        }),
 
-      setProfileTaluka: (profileTaluka) => set({ profileTaluka, error: null }),
+      setProfileTaluka: (profileTaluka, profileTalukaId = null) =>
+        set({
+          profileTaluka,
+          profileTalukaId:
+            profileTalukaId != null && profileTalukaId !== ""
+              ? Number(profileTalukaId)
+              : null,
+          error: null,
+        }),
 
       clearError: () => set({ error: null }),
 
@@ -163,7 +185,14 @@ export const useAuthStore = create()(
       },
 
       completeCitizenProfile: async () => {
-        const { requestId, profileName, profileDistrict, profileTaluka } = get();
+        const {
+          requestId,
+          profileName,
+          profileDistrict,
+          profileTaluka,
+          profileDistrictId,
+          profileTalukaId,
+        } = get();
         set({ loading: true, error: null });
         try {
           const { user, token } = await authController.registerCitizen({
@@ -171,6 +200,8 @@ export const useAuthStore = create()(
             name: profileName,
             district: profileDistrict,
             taluka: profileTaluka,
+            districtId: profileDistrictId,
+            talukaId: profileTalukaId,
           });
           set({
             loading: false,
@@ -188,7 +219,15 @@ export const useAuthStore = create()(
 
       /** Beta: registration form → session (no OTP). */
       betaLogin: async () => {
-        const { credential, profileFirstName, profileLastName, profileDistrict, profileTaluka } = get();
+        const {
+          credential,
+          profileFirstName,
+          profileLastName,
+          profileDistrict,
+          profileTaluka,
+          profileDistrictId,
+          profileTalukaId,
+        } = get();
         set({ loading: true, error: null });
         try {
           const { user, token } = await authController.betaLogin({
@@ -196,6 +235,8 @@ export const useAuthStore = create()(
             lastName: profileLastName,
             district: profileDistrict,
             taluka: profileTaluka,
+            districtId: profileDistrictId,
+            talukaId: profileTalukaId,
             phone: credential,
           });
           set({
@@ -239,6 +280,8 @@ export const useAuthStore = create()(
           profileName: "",
           profileDistrict: "",
           profileTaluka: "",
+          profileDistrictId: null,
+          profileTalukaId: null,
         }),
 
       /** OTP step's "change number" — back to step 2, keeping the resolved identity. */

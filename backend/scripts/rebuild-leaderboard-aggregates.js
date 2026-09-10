@@ -14,8 +14,8 @@ async function main() {
     SELECT
       s.user_id AS user_id,
       u.role AS role,
-      u.taluka AS taluka,
-      u.district AS district,
+      COALESCE(t.name_gu, t.name_en) AS taluka,
+      COALESCE(d.name_gu, d.name_en) AS district,
       MAX(s.percentage) AS best_percentage,
       COALESCE(SUM(s.correct_count), 0) AS total_correct,
       COALESCE(SUM(s.wrong_count), 0) AS total_wrong,
@@ -25,10 +25,13 @@ async function main() {
     FROM quiz_sessions s
     INNER JOIN users u
       ON u.id = s.user_id
+    LEFT JOIN talukas t
+      ON t.id = u.taluka_id
+    LEFT JOIN districts d
+      ON d.id = u.district_id
     WHERE s.status = 'submitted'
-      AND u.taluka IS NOT NULL
-      AND TRIM(u.taluka) <> ''
-    GROUP BY s.user_id, u.role, u.taluka, u.district
+      AND u.taluka_id IS NOT NULL
+    GROUP BY s.user_id, u.role, t.name_gu, t.name_en, d.name_gu, d.name_en
   `);
 
   if (aggregateRows.length) {
@@ -38,29 +41,32 @@ async function main() {
         role: row.role,
         taluka: row.taluka,
         district: row.district || null,
-        userId: row.user_id,
         bestPercentage: Number(row.best_percentage) || 0,
         totalCorrect: Number(row.total_correct) || 0,
         totalWrong: Number(row.total_wrong) || 0,
         totalTimeMs: Number(row.total_time_ms) || 0,
         sessionsCompleted: Number(row.sessions_completed) || 0,
-        lastCompletedAt: row.last_completed_at ? new Date(row.last_completed_at) : null,
+        lastCompletedAt: row.last_completed_at || null,
+        userId: row.user_id,
       })),
     });
   }
 
   const talukaRows = await prisma.$queryRawUnsafe(`
     SELECT
-      u.taluka AS taluka,
-      MAX(u.district) AS district,
+      COALESCE(t.name_gu, t.name_en) AS taluka,
+      MAX(COALESCE(d.name_gu, d.name_en)) AS district,
       COUNT(*) AS submitted_sessions
     FROM quiz_sessions s
     INNER JOIN users u
       ON u.id = s.user_id
+    LEFT JOIN talukas t
+      ON t.id = u.taluka_id
+    LEFT JOIN districts d
+      ON d.id = u.district_id
     WHERE s.status = 'submitted'
-      AND u.taluka IS NOT NULL
-      AND TRIM(u.taluka) <> ''
-    GROUP BY u.taluka
+      AND u.taluka_id IS NOT NULL
+    GROUP BY t.name_gu, t.name_en
   `);
 
   if (talukaRows.length) {
@@ -75,7 +81,7 @@ async function main() {
   }
 
   console.log(
-    `Leaderboard aggregates rebuilt: ${aggregateRows.length} user rows, ${talukaRows.length} taluka rows.`
+    `Done. aggregates=${aggregateRows.length}, talukaStats=${talukaRows.length}`
   );
 }
 

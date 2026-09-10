@@ -1,6 +1,6 @@
 import { prisma } from '../config/prisma.client.js';
 import { CONFIG } from '../config/index.js';
-import { getActivePlatformWeek } from '../config/platformWeeks.js';
+import { getActivePlatformWeek, platformWeekDateBounds } from '../config/platformWeeks.js';
 import { QUESTION_TYPE } from '../config/question-types.js';
 
 const OPTION_KEYS = ['A', 'B', 'C', 'D'];
@@ -369,6 +369,51 @@ const buildExposureUpsert = (rows, completedAt) => {
   };
 };
 
+/** One UPDATE with CASE expressions instead of N Prisma row updates. */
+const buildQuestionAnswersBulkUpdate = (gradedRows) => {
+  if (!gradedRows.length) return null;
+
+  const ids = gradedRows.map((row) => row.id);
+  const optionCases = [];
+  const answerCases = [];
+  const correctCases = [];
+  const timeCases = [];
+  const params = [];
+
+  for (const row of gradedRows) {
+    optionCases.push('WHEN ? THEN ?');
+    params.push(row.id, row.selectedOption ?? null);
+
+    answerCases.push('WHEN ? THEN ?');
+    params.push(
+      row.id,
+      row.selectedAnswer == null ? null : JSON.stringify(row.selectedAnswer)
+    );
+
+    correctCases.push('WHEN ? THEN ?');
+    params.push(row.id, row.isCorrect ? 1 : 0);
+
+    timeCases.push('WHEN ? THEN ?');
+    params.push(row.id, Number(row.timeSpentMs) || 0);
+  }
+
+  const idPlaceholders = ids.map(() => '?').join(', ');
+  params.push(...ids);
+
+  return {
+    sql: `
+      UPDATE quiz_session_questions
+      SET
+        selected_option = CASE id ${optionCases.join(' ')} END,
+        selected_answer = CASE id ${answerCases.join(' ')} END,
+        is_correct = CASE id ${correctCases.join(' ')} END,
+        time_spent_ms = CASE id ${timeCases.join(' ')} END
+      WHERE id IN (${idPlaceholders})
+    `,
+    params,
+  };
+};
+
 const buildLeaderboardAggregateUpsert = ({
   week,
   role,
@@ -470,21 +515,25 @@ export class QuizSessionModel {
   }
 
   static async findCurrentWeekForUser(userId) {
-    const rows = await prisma.quizSession.findMany({
+    const weekMeta = CONFIG.QUIZ.CURRENT_WEEK_META;
+    const { start, end } = platformWeekDateBounds(weekMeta);
+
+    return prisma.quizSession.findFirst({
       where: {
         userId,
-        status: { in: ['in_progress', 'submitted', 'abandoned'] },
+        OR: [
+          {
+            status: 'in_progress',
+            startedAt: { gte: start, lte: end },
+          },
+          {
+            status: { in: ['submitted', 'abandoned'] },
+            completedAt: { gte: start, lte: end },
+          },
+        ],
       },
-      orderBy: [{ createdAt: 'desc' }, { completedAt: 'desc' }],
+      orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }],
     });
-
-    return (
-      rows.find(
-        (session) =>
-          getActivePlatformWeek(session.completedAt || session.startedAt || new Date()).id ===
-          CONFIG.QUIZ.CURRENT_WEEK
-      ) || null
-    );
   }
 
   static questionCreateManyRows(sessionId, bankRows) {
@@ -569,19 +618,10 @@ export class QuizSessionModel {
         });
       }
 
-      await Promise.all(
-        gradedRows.map((row) =>
-          tx.quizSessionQuestion.update({
-            where: { id: row.id },
-            data: {
-              selectedOption: row.selectedOption ?? null,
-              selectedAnswer: row.selectedAnswer ?? null,
-              isCorrect: row.isCorrect,
-              timeSpentMs: row.timeSpentMs,
-            },
-          })
-        )
-      );
+      const answersBulk = buildQuestionAnswersBulkUpdate(gradedRows);
+      if (answersBulk) {
+        await tx.$executeRawUnsafe(answersBulk.sql, ...answersBulk.params);
+      }
 
       const attemptedRows = gradedRows.filter((row) => row.attempted);
       const exposureUpsert = buildExposureUpsert(attemptedRows, completedAt);

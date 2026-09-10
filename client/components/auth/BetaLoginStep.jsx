@@ -6,13 +6,9 @@ import { AlertCircle, ChevronDown } from "@/components/icons";
 import { AUTH_BUTTON_CLASS, AUTH_FIELD_CLASS } from "@/components/auth/AuthBrandHeader";
 import { ChoiceSheet } from "@/components/auth/ChoiceSheet";
 import { AppButton } from "@/components/common/AppButton";
+import { useGeographyChoices } from "@/hooks/useGeographyChoices";
 import { validatePhone } from "@/lib/domain/roles";
 import { useI18n } from "@/lib/i18n";
-import {
-  districtChoiceOptions,
-  localizePlaceName,
-  talukaChoiceOptions,
-} from "@/lib/localize-place";
 import { cn } from "@/lib/utils";
 
 const FIELD_CLASS = cn(AUTH_FIELD_CLASS, "border border-[#d9d9d9]");
@@ -22,6 +18,8 @@ export function BetaLoginStep({
   lastName,
   district,
   taluka,
+  districtId,
+  talukaId,
   phone,
   error,
   loading,
@@ -34,14 +32,18 @@ export function BetaLoginStep({
 }) {
   const { t, language } = useI18n();
   const [picker, setPicker] = useState(null);
-  const districtOptions = districtChoiceOptions(language);
-  const talukaOptions = talukaChoiceOptions(district, language);
+  const geo = useGeographyChoices(language);
+  const selectedDistrict = geo.mode === "id" ? districtId : district;
+  const selectedTaluka = geo.mode === "id" ? talukaId : taluka;
+  const districtOptions = geo.districtOptions;
+  const talukaOptions = geo.talukaOptionsFor(selectedDistrict);
   const validPhone = !validatePhone(phone);
   const ready = Boolean(
     String(firstName).trim() &&
       String(lastName).trim() &&
-      String(district).trim() &&
-      String(taluka).trim() &&
+      (geo.mode === "id"
+        ? districtId != null && talukaId != null
+        : String(district).trim() && String(taluka).trim()) &&
       String(phone).trim() &&
       validPhone
   );
@@ -103,11 +105,11 @@ export function BetaLoginStep({
             className={cn(
               FIELD_CLASS,
               "flex items-center justify-between gap-3 text-left",
-              !district && "text-[#737373]"
+              !selectedDistrict && "text-[#737373]"
             )}
           >
             <span className="min-w-0 truncate">
-              {district ? localizePlaceName(district, language) : t("selectDistrict")}
+              {selectedDistrict ? geo.labelForDistrict(selectedDistrict) : t("selectDistrict")}
             </span>
             <ChevronDown className="size-5 shrink-0 text-[#111]" />
           </button>
@@ -123,17 +125,19 @@ export function BetaLoginStep({
             aria-labelledby="beta-taluka-label"
             aria-haspopup="dialog"
             aria-expanded={picker === "taluka"}
-            disabled={!district}
+            disabled={!selectedDistrict}
             onClick={() => setPicker("taluka")}
             className={cn(
               FIELD_CLASS,
               "flex items-center justify-between gap-3 text-left",
-              (!district || !taluka) && "text-[#737373]",
-              !district && "opacity-70"
+              (!selectedDistrict || !selectedTaluka) && "text-[#737373]",
+              !selectedDistrict && "opacity-70"
             )}
           >
             <span className="min-w-0 truncate">
-              {taluka ? localizePlaceName(taluka, language, { districtName: district }) : t("selectTaluka")}
+              {selectedTaluka
+                ? geo.labelForTaluka(selectedDistrict, selectedTaluka)
+                : t("selectTaluka")}
             </span>
             <ChevronDown className="size-5 shrink-0 text-[#111]" />
           </button>
@@ -172,11 +176,12 @@ export function BetaLoginStep({
         open={picker === "district"}
         title={t("selectDistrictTitle")}
         options={districtOptions}
-        value={district}
+        value={selectedDistrict != null ? String(selectedDistrict) : ""}
         onSelect={(next) => {
-          if (next !== district) {
-            onDistrictChange(next);
-            onTalukaChange("");
+          if (geo.mode === "id") {
+            onDistrictChange(geo.nameGuForDistrict(next), Number(next));
+          } else {
+            onDistrictChange(next, null);
           }
           setPicker(null);
         }}
@@ -187,9 +192,13 @@ export function BetaLoginStep({
         open={picker === "taluka"}
         title={t("selectTalukaTitle")}
         options={talukaOptions}
-        value={taluka}
+        value={selectedTaluka != null ? String(selectedTaluka) : ""}
         onSelect={(next) => {
-          onTalukaChange(next);
+          if (geo.mode === "id") {
+            onTalukaChange(geo.nameGuForTaluka(selectedDistrict, next), Number(next));
+          } else {
+            onTalukaChange(next, null);
+          }
           setPicker(null);
         }}
         onClose={() => setPicker(null)}

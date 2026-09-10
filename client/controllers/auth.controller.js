@@ -80,8 +80,8 @@ export const authController = {
     return { user: result.user, token: result.token, needsProfile: false };
   },
 
-  async registerCitizen({ requestId, name, district, taluka }) {
-    const invalid = validateCitizenProfile({ name, district, taluka });
+  async registerCitizen({ requestId, name, district, taluka, districtId, talukaId }) {
+    const invalid = validateCitizenProfile({ name, district, taluka, districtId, talukaId });
     if (invalid) {
       throw new AppError(ERROR_CODE.INVALID_CREDENTIAL, invalid);
     }
@@ -91,8 +91,10 @@ export const authController = {
     const { user, token } = await authRepository.registerCitizen({
       requestId,
       name: String(name).trim(),
-      district: String(district).trim(),
-      taluka: String(taluka).trim(),
+      district: district != null ? String(district).trim() : undefined,
+      taluka: taluka != null ? String(taluka).trim() : undefined,
+      districtId: districtId != null ? Number(districtId) : undefined,
+      talukaId: talukaId != null ? Number(talukaId) : undefined,
     });
     if (!user) {
       throw new AppError(ERROR_CODE.UNKNOWN, ERROR_MESSAGE[ERROR_CODE.UNKNOWN]);
@@ -100,12 +102,14 @@ export const authController = {
     return { user, token };
   },
 
-  async betaLogin({ firstName, lastName, district, taluka, phone }) {
+  async betaLogin({ firstName, lastName, district, taluka, districtId, talukaId, phone }) {
     const invalid = validateBetaLoginProfile({
       firstName,
       lastName,
       district,
       taluka,
+      districtId,
+      talukaId,
       phone: String(phone || "").trim(),
     });
     if (invalid) {
@@ -114,8 +118,10 @@ export const authController = {
     const { user, token } = await authRepository.betaLogin({
       firstName: String(firstName).trim(),
       lastName: String(lastName).trim(),
-      district: String(district).trim(),
-      taluka: String(taluka).trim(),
+      district: district != null ? String(district).trim() : undefined,
+      taluka: taluka != null ? String(taluka).trim() : undefined,
+      districtId: districtId != null ? Number(districtId) : undefined,
+      talukaId: talukaId != null ? Number(talukaId) : undefined,
       phone: String(phone).trim(),
     });
     if (!user) {

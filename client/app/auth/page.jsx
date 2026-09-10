@@ -44,6 +44,8 @@ export default function AuthPage() {
   const profileName = useAuthStore((state) => state.profileName);
   const profileDistrict = useAuthStore((state) => state.profileDistrict);
   const profileTaluka = useAuthStore((state) => state.profileTaluka);
+  const profileDistrictId = useAuthStore((state) => state.profileDistrictId);
+  const profileTalukaId = useAuthStore((state) => state.profileTalukaId);
   const loading = useAuthStore((state) => state.loading);
   const error = useAuthStore((state) => state.error);
 
@@ -112,6 +114,8 @@ export default function AuthPage() {
               lastName={profileLastName}
               district={profileDistrict}
               taluka={profileTaluka}
+              districtId={profileDistrictId}
+              talukaId={profileTalukaId}
               phone={credential}
               error={error}
               loading={loading}
@@ -164,6 +168,8 @@ export default function AuthPage() {
               name={profileName}
               district={profileDistrict}
               taluka={profileTaluka}
+              districtId={profileDistrictId}
+              talukaId={profileTalukaId}
               error={error}
               loading={loading}
               onNameChange={setProfileName}

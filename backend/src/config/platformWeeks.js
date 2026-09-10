@@ -57,3 +57,16 @@ export function getActivePlatformWeek(date = new Date()) {
     PLATFORM_WEEKS[PLATFORM_WEEKS.length - 1]
   );
 }
+
+export function getPlatformWeekById(weekId) {
+  return PLATFORM_WEEKS.find((week) => week.id === Number(weekId)) ?? null;
+}
+
+/** Inclusive IST calendar bounds as Date objects for SQL filters. */
+export function platformWeekDateBounds(weekMeta) {
+  const week = weekMeta || getActivePlatformWeek();
+  return {
+    start: new Date(`${week.start_date}T00:00:00+05:30`),
+    end: new Date(`${week.end_date}T23:59:59.999+05:30`),
+  };
+}

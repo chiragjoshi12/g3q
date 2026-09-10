@@ -18,10 +18,9 @@ const users = {
       institute: 'શ્રી સરસ્વતી વિદ્યાલય, અમદાવાદ',
       schoolId: '24070608844',
       grade: 'ધોરણ 10',
-      district: 'અમદાવાદ',
-      taluka: 'DASCROI',
+      districtKey: 'Ahmedabad',
+      talukaKey: 'Daskroi',
       phone: '+91 98765 43210',
-      joinedOn: '2025-06-12',
     },
     {
       id: 'stu_2',
@@ -31,10 +30,9 @@ const users = {
       institute: 'સરકારી માધ્યમિક શાળા, મહેસાણા',
       schoolId: '24020200202',
       grade: 'ધોરણ 12',
-      district: 'મહેસાણા',
-      taluka: 'MEHSANA',
+      districtKey: 'Mehsana',
+      talukaKey: 'Mehsana',
       phone: '+91 91234 56780',
-      joinedOn: '2025-07-02',
     },
   ],
   colleges: [
@@ -45,9 +43,9 @@ const users = {
       name: 'મીરા શાહ',
       institute: 'સરકારી વિનયન કૉલેજ, ગાંધીનગર',
       grade: 'બી.એ. — સેમેસ્ટર 4',
-      district: 'ગાંધીનગર',
+      districtKey: 'Gandhinagar',
+      talukaKey: 'Gandhinagar',
       phone: '+91 99887 76655',
-      joinedOn: '2025-05-20',
     },
     {
       id: 'col_2',
@@ -56,9 +54,9 @@ const users = {
       name: 'કરણ ઠક્કર',
       institute: 'એલ. ડી. ઇજનેરી કૉલેજ, અમદાવાદ',
       grade: 'બી.ઈ. — સેમેસ્ટર 6',
-      district: 'અમદાવાદ',
+      districtKey: 'Ahmedabad',
+      talukaKey: 'Ahmedabad City',
       phone: '+91 90909 10101',
-      joinedOn: '2025-08-01',
     },
   ],
   citizens: [
@@ -67,10 +65,9 @@ const users = {
       role: 'citizen',
       name: 'અમિત દેસાઈ',
       institute: 'નાગરિક સહભાગી',
-      district: 'અમદાવાદ',
-      taluka: 'Sanand',
+      districtKey: 'Ahmedabad',
+      talukaKey: 'Sanand',
       phone: '9876543210',
-      joinedOn: '2026-09-01',
     },
   ],
 };
@@ -310,6 +307,41 @@ async function seedDistricts() {
   console.log(`Seeded ${GUJARAT_DISTRICTS.length} districts.`);
 }
 
+const SEED_TALUKAS = [
+  { districtKey: 'Ahmedabad', nameEn: 'Daskroi', nameGu: 'દસક્રોઇ', nameHi: 'दसक्रोइ' },
+  { districtKey: 'Ahmedabad', nameEn: 'Sanand', nameGu: 'સાણંદ', nameHi: 'साणंद' },
+  { districtKey: 'Ahmedabad', nameEn: 'Ahmedabad City', nameGu: 'અમદાવાદ શહેર', nameHi: 'अहमदाबाद शहर' },
+  { districtKey: 'Mehsana', nameEn: 'Mehsana', nameGu: 'મહેસાણા', nameHi: 'मेहसाणा' },
+  { districtKey: 'Gandhinagar', nameEn: 'Gandhinagar', nameGu: 'ગાંધીનગર', nameHi: 'गांधीनगर' },
+];
+
+async function seedSeedTalukas() {
+  const byEn = new Map(GUJARAT_DISTRICTS.map((d) => [d.nameEn, d]));
+  for (const row of SEED_TALUKAS) {
+    const district = byEn.get(row.districtKey);
+    if (!district) continue;
+    await prisma.taluka.upsert({
+      where: {
+        districtId_nameEn: {
+          districtId: district.id,
+          nameEn: row.nameEn,
+        },
+      },
+      update: {
+        nameGu: row.nameGu,
+        nameHi: row.nameHi,
+      },
+      create: {
+        districtId: district.id,
+        nameEn: row.nameEn,
+        nameGu: row.nameGu,
+        nameHi: row.nameHi,
+      },
+    });
+  }
+  console.log(`Seeded ${SEED_TALUKAS.length} demo talukas.`);
+}
+
 async function seedBetaDepartments() {
   for (const department of BETA_DEPARTMENTS) {
     await prisma.betaDepartment.upsert({
@@ -330,13 +362,41 @@ async function seedBetaDepartments() {
   console.log(`Seeded ${BETA_DEPARTMENTS.length} beta departments.`);
 }
 
+async function resolveSeedGeography(districtKey, talukaKey) {
+  const district = GUJARAT_DISTRICTS.find((item) => item.nameEn === districtKey);
+  if (!district) return { districtId: null, talukaId: null };
+  const taluka = await prisma.taluka.findFirst({
+    where: {
+      districtId: district.id,
+      OR: [
+        { nameEn: { equals: talukaKey } },
+        { nameGu: { equals: talukaKey } },
+        { nameHi: { equals: talukaKey } },
+      ],
+    },
+  });
+  return {
+    districtId: district.id,
+    talukaId: taluka?.id ?? null,
+  };
+}
+
 async function seedUsers() {
   const allUsers = [...users.students, ...users.colleges, ...users.citizens];
   for (const user of allUsers) {
+    const { districtKey, talukaKey, ...rest } = user;
+    const geo = await resolveSeedGeography(districtKey, talukaKey);
     await prisma.user.upsert({
       where: { id: user.id },
-      update: {},
-      create: { ...user, joinedOn: new Date(user.joinedOn) },
+      update: {
+        districtId: geo.districtId,
+        talukaId: geo.talukaId,
+      },
+      create: {
+        ...rest,
+        districtId: geo.districtId,
+        talukaId: geo.talukaId,
+      },
     });
   }
   console.log(`Seeded ${allUsers.length} users.`);
@@ -485,6 +545,7 @@ async function seedAdminAndBank() {
 
 async function main() {
   await seedDistricts();
+  await seedSeedTalukas();
   await seedBetaDepartments();
   await seedUsers();
   await seedQuizzes();
