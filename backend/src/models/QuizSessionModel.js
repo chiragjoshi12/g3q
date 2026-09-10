@@ -384,7 +384,9 @@ const buildQuestionAnswersBulkUpdate = (gradedRows) => {
     optionCases.push('WHEN ? THEN ?');
     params.push(row.id, row.selectedOption ?? null);
 
-    answerCases.push('WHEN ? THEN ?');
+    // CAST required: CASE returns a string otherwise, and MySQL rejects assigning
+    // that string into the JSON column (error 3140 "Invalid JSON text").
+    answerCases.push('WHEN ? THEN CAST(? AS JSON)');
     params.push(
       row.id,
       row.selectedAnswer == null ? null : JSON.stringify(row.selectedAnswer)
