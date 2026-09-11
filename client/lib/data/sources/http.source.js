@@ -175,16 +175,22 @@ export const httpSource = {
   requestOtp: ({ role, credential, phone }) =>
     request("/auth/otp/request", { method: "POST", body: { role, credential, phone } }),
 
-  verifyOtp: ({ requestId, otp, role, credential }) =>
+  verifyOtp: ({ id, otp, role, credential }) =>
     request("/auth/otp/verify", {
       method: "POST",
-      body: { requestId, otp, role, credential },
+      body: { id, otp, role, credential },
     }),
 
-  registerCitizen: ({ requestId, name, district, taluka, districtId, talukaId }) =>
+  registerCitizen: ({ id, name, district, taluka, districtId, talukaId }) =>
     request("/auth/citizen/register", {
       method: "POST",
-      body: { requestId, name, district, taluka, districtId, talukaId },
+      body: { id, name, district, taluka, districtId, talukaId },
+    }),
+
+  linkRoster: ({ id, role, credential }) =>
+    request("/auth/roster/link", {
+      method: "POST",
+      body: { id, role, credential },
     }),
 
   betaLogin: ({ firstName, lastName, district, taluka, districtId, talukaId, phone }) =>
@@ -217,9 +223,13 @@ export const httpSource = {
       body: { imageBase64, contentType },
     }),
 
-  listQuizzes: () => request("/quizzes"),
+  listQuizzes: async () => {
+    throw new AppError(ERROR_CODE.NOT_FOUND, "Fixed quizzes are no longer available.");
+  },
 
-  getQuizById: (quizId) => request(`/quizzes/${quizId}`),
+  getQuizById: async () => {
+    throw new AppError(ERROR_CODE.NOT_FOUND, "Fixed quizzes are no longer available.");
+  },
 
   getPracticeBundle: ({ quizId, language } = {}) => {
     const params = new URLSearchParams();
@@ -229,9 +239,13 @@ export const httpSource = {
     return request(`/quizzes/practice/bundle${qs ? `?${qs}` : ""}`);
   },
 
-  getQuestionsByQuizId: (quizId) => request(`/quizzes/${quizId}/questions`),
+  getQuestionsByQuizId: async () => {
+    throw new AppError(ERROR_CODE.NOT_FOUND, "Fixed quiz questions are no longer available.");
+  },
 
-  getExplanationsByQuizId: (quizId) => request(`/quizzes/${quizId}/explanations`),
+  getExplanationsByQuizId: async () => {
+    throw new AppError(ERROR_CODE.NOT_FOUND, "Fixed quiz explanations are no longer available.");
+  },
 
   startSession: ({ count, language } = {}) =>
     request("/sessions", {
@@ -258,7 +272,7 @@ export const httpSource = {
 
   getMySessionStats: () => request("/sessions/stats"),
 
-  clearMyAttempts: () => request("/users/me/attempts", { method: "DELETE" }),
+  clearMySessions: () => request("/sessions", { method: "DELETE" }),
 
   getLeaderboardOverview: ({ limit, talukaId, week, lang } = {}) => {
     const params = new URLSearchParams();

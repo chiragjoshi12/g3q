@@ -80,31 +80,16 @@ export function formatGujaratiDate(value, language = LANGUAGE.GUJARATI) {
   return `${date.getDate()} ${MONTHS_FULL[date.getMonth()]}, ${date.getFullYear()}`;
 }
 
-const WEEK_ORDINALS = {
-  1: "પહેલું",
-  2: "બીજું",
-  3: "ત્રીજું",
-  4: "ચોથું",
-  5: "પાંચમું",
-  6: "છઠ્ઠું",
-  7: "સાતમું",
-  8: "આઠમું",
-};
-
-/** "પહેલું અઠવાડિયું" */
+/** "Week 2" / "અઠવાડિયું 2" / "सप्ताह 2" */
 export function formatWeekLabel(week, language = LANGUAGE.GUJARATI) {
-  const n = Number(week);
-  if (language === LANGUAGE.ENGLISH) return `Week ${Number.isFinite(n) && n > 0 ? n : 1}`;
-  if (language === LANGUAGE.HINDI) return `सप्ताह ${Number.isFinite(n) && n > 0 ? n : 1}`;
-  const ordinal = WEEK_ORDINALS[n] ?? `${Number.isFinite(n) && n > 0 ? n : 1} મું`;
-  return `${ordinal} અઠવાડિયું`;
-}
-
-/** Compact week chip — matches leaderboard header ("8 મું વીક"). */
-export function formatWeekChipLabel(week, language = LANGUAGE.GUJARATI) {
   const n = Number(week);
   const safe = Number.isFinite(n) && n > 0 ? n : 1;
   if (language === LANGUAGE.ENGLISH) return `Week ${safe}`;
   if (language === LANGUAGE.HINDI) return `सप्ताह ${safe}`;
-  return `${safe} મું વીક`;
+  return `અઠવાડિયું ${safe}`;
+}
+
+/** Same wording as `formatWeekLabel` — used on compact chips. */
+export function formatWeekChipLabel(week, language = LANGUAGE.GUJARATI) {
+  return formatWeekLabel(week, language);
 }

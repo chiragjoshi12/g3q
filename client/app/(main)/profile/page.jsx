@@ -7,11 +7,10 @@ import { LineArrowRight, LogOut, User } from "@/components/icons";
 
 import { ConfirmSheet } from "@/components/common/ConfirmSheet";
 import { HelplineSheet } from "@/components/common/HelplineSheet";
-import { LanguageSheet } from "@/components/common/LanguageSheet";
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { AuroraWash } from "@/components/layout/AuroraWash";
 import { BrandHeader } from "@/components/layout/BrandHeader";
-import { LANGUAGE_INFO } from "@/config/languages";
+import { LANGUAGE_OPTIONS } from "@/config/languages";
 import { appConfig, DATA_SOURCE } from "@/config/app.config";
 import { ROUTES } from "@/config/routes";
 import { profileController } from "@/controllers/profile.controller";
@@ -22,6 +21,7 @@ import { useI18n } from "@/lib/i18n";
 import { resolveProfilePhotoSrc } from "@/lib/profile-photo";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
+import { useLanguageStore } from "@/store/language.store";
 import { useQuizStore } from "@/store/quiz.store";
 
 const COLUMN = "mx-auto w-full max-w-[26.5rem] md:max-w-[32rem]";
@@ -29,6 +29,7 @@ const COLUMN = "mx-auto w-full max-w-[26.5rem] md:max-w-[32rem]";
 export default function ProfilePage() {
   const router = useRouter();
   const { t, language } = useI18n();
+  const setLanguage = useLanguageStore((state) => state.setLanguage);
   const sessionUser = useAuthStore((state) => state.user);
   const patchUser = useAuthStore((state) => state.patchUser);
   const logout = useAuthStore((state) => state.logout);
@@ -43,7 +44,6 @@ export default function ProfilePage() {
 
   const user = sessionUser;
   const photoSrc = resolveProfilePhotoSrc(user);
-  const languageMeta = LANGUAGE_INFO[language] || LANGUAGE_INFO.gu;
 
   useEffect(() => {
     if (syncedMeRef.current) return undefined;
@@ -62,6 +62,24 @@ export default function ProfilePage() {
       cancelled = true;
     };
   }, [patchUser]);
+
+  useEffect(() => {
+    if (!languageOpen) return undefined;
+    const onPointerDown = (event) => {
+      if (!event.target.closest("[data-language-menu]")) {
+        setLanguageOpen(false);
+      }
+    };
+    const onKey = (event) => {
+      if (event.key === "Escape") setLanguageOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [languageOpen]);
 
   const handleLogout = () => {
     resetSession();
@@ -98,29 +116,33 @@ export default function ProfilePage() {
     }
   };
 
+  const languageMenu = (
+    <LanguageMenu
+      open={languageOpen}
+      onToggle={() => setLanguageOpen((open) => !open)}
+      language={language}
+      onSelect={(id) => {
+        setLanguage(id);
+        setLanguageOpen(false);
+      }}
+      label={t("language")}
+      selectLabel={t("selectLanguage")}
+    />
+  );
+
   return (
     <>
     <main className="no-scrollbar animate-screen-in relative flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#F5F7F9] pb-32 lg:bg-transparent lg:pb-16">
-      <div className="relative overflow-hidden pb-[3.75rem] lg:hidden">
-        <AuroraWash
-          src="/new-gradient-bg.png"
-          className="inset-0 h-full"
-          imageClassName="object-cover object-top"
-        />
-        <div className="relative">
-          <BrandHeader
-            plain
-            trailing={
-              <button
-                type="button"
-                onClick={() => setConfirmLogout(true)}
-                aria-label={t("logout")}
-                className="grid size-10 place-items-center rounded-full border border-[#E8ECF0] bg-white transition-transform active:scale-95"
-              >
-                <LogOut className="size-4.5 text-[#111]" strokeWidth={2} />
-              </button>
-            }
+      <div className={cn("relative pb-[3.75rem] lg:hidden", languageOpen && "z-40")}>
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <AuroraWash
+            src="/new-gradient-bg.png"
+            className="inset-0 h-full"
+            imageClassName="object-cover object-top"
           />
+        </div>
+        <div className="relative z-20">
+          <BrandHeader plain trailing={languageMenu} />
           <div className={cn(COLUMN)}>
             <div className="h-10" />
           </div>
@@ -128,17 +150,21 @@ export default function ProfilePage() {
       </div>
 
       <header className="relative z-20 hidden shrink-0 justify-end px-10 pt-8 lg:flex">
-        <button
-          type="button"
-          onClick={() => setConfirmLogout(true)}
-          aria-label={t("logout")}
-          className="grid size-11 place-items-center rounded-full border border-[#E8ECF0] bg-white shadow-[0_8px_24px_rgb(15_23_42/0.08)] transition-transform active:scale-95"
-        >
-          <LogOut className="size-4.5 text-[#111]" strokeWidth={2} />
-        </button>
+        <LanguageMenu
+          open={languageOpen}
+          onToggle={() => setLanguageOpen((open) => !open)}
+          language={language}
+          onSelect={(id) => {
+            setLanguage(id);
+            setLanguageOpen(false);
+          }}
+          label={t("language")}
+          selectLabel={t("selectLanguage")}
+          buttonClassName="size-11 shadow-[0_8px_24px_rgb(15_23_42/0.08)]"
+        />
       </header>
 
-      <div className={cn("relative -mt-[3.75rem] px-5 pb-8 sm:px-6 lg:mt-2 lg:max-w-[36rem] lg:px-0", COLUMN)}>
+      <div className={cn("relative -mt-[3.75rem] px-5 pb-8 sm:px-6 lg:mt-2 lg:max-w-[36rem] lg:px-0", COLUMN, languageOpen && "z-0")}>
         <div className="flex flex-col items-center text-center">
           <div className="relative z-10">
             <div className="grid size-[7.5rem] place-items-center overflow-hidden rounded-full bg-[#d8dde3] ring-[3px] ring-white lg:size-[8.75rem] lg:ring-[4px]">
@@ -221,25 +247,18 @@ export default function ProfilePage() {
               onClick={() => router.push(ROUTES.abhiyan)}
             />
             <MenuRow
-              icon={
-                <span
-                  className={cn(
-                    "grid size-full place-items-center rounded-full text-[1.05rem] font-semibold text-white",
-                    languageMeta.iconBg
-                  )}
-                >
-                  {languageMeta.glyph}
-                </span>
-              }
-              iconBg="bg-transparent"
-              label={t("language")}
-              onClick={() => setLanguageOpen(true)}
-            />
-            <MenuRow
               iconSrc={BRAND_ICONS.helpline}
               iconBg="bg-[#e5ebf8]"
               label={t("helpline")}
               onClick={() => setHelplineOpen(true)}
+            />
+            <MenuRow
+              icon={
+                <LogOut className="size-6 text-[#111]" strokeWidth={2} />
+              }
+              iconBg="bg-[#f3f4f6]"
+              label={t("logout")}
+              onClick={() => setConfirmLogout(true)}
               last
             />
           </nav>
@@ -255,8 +274,70 @@ export default function ProfilePage() {
         onConfirm={handleLogout}
       />
       <HelplineSheet open={helplineOpen} onClose={() => setHelplineOpen(false)} />
-      <LanguageSheet open={languageOpen} onClose={() => setLanguageOpen(false)} />
     </>
+  );
+}
+
+function LanguageMenu({
+  open,
+  onToggle,
+  language,
+  onSelect,
+  label,
+  selectLabel,
+  buttonClassName,
+}) {
+  return (
+    <div data-language-menu className="relative z-50">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-label={label}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={cn(
+          "grid size-10 place-items-center rounded-full border border-[#E8ECF0] bg-white text-[#111] transition-transform active:scale-95",
+          buttonClassName
+        )}
+      >
+        <BrandIcon src={BRAND_ICONS.language} alt="" className="size-5" />
+      </button>
+
+      {open ? (
+        <div
+          role="menu"
+          aria-label={selectLabel}
+          className="absolute top-[calc(100%+0.55rem)] right-0 z-50 w-[14.5rem] rounded-[1.35rem] bg-white p-3 shadow-[0_14px_36px_rgb(15_23_42/0.18)]"
+        >
+          {LANGUAGE_OPTIONS.map((option) => {
+            const active = language === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                role="menuitemradio"
+                aria-checked={active}
+                onClick={() => onSelect(option.id)}
+                className={cn(
+                  "flex w-full items-center gap-3.5 rounded-2xl px-3.5 py-3 text-left transition-colors",
+                  active ? "bg-[#E8E8E8]" : "hover:bg-[#F3F3F3]"
+                )}
+              >
+                <BrandIcon src={BRAND_ICONS.language} alt="" className="size-6 shrink-0" />
+                <span
+                  className={cn(
+                    "font-heading text-[16px] tracking-[0.03em] text-[#111] uppercase",
+                    active ? "font-bold" : "font-medium"
+                  )}
+                >
+                  {option.englishLabel}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

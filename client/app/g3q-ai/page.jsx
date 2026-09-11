@@ -364,13 +364,13 @@ export default function G3qAiPage() {
         </main>
 
         <div
-          className="fixed inset-x-0 bottom-0 z-20 px-3.5 pb-[max(0.7rem,env(safe-area-inset-bottom))] pt-2 transition-transform duration-300 ease-out lg:px-8"
+          className="absolute inset-x-0 bottom-0 z-20 px-3.5 pb-[max(0.7rem,env(safe-area-inset-bottom))] pt-2 transition-transform duration-300 ease-out lg:px-8"
         >
           <div
             aria-hidden
             className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-white via-[#f4e9ff]/55 to-transparent blur-xl"
           />
-          <div className="relative rounded-[2rem] bg-[#ffffff] px-5 pt-4 pb-3 lg:mx-auto lg:max-w-[44rem]">
+          <div className="relative mx-auto w-full max-w-[44rem] rounded-[2rem] bg-[#ffffff] px-5 pt-4 pb-3">
             <textarea
               ref={inputRef}
               value={draft}

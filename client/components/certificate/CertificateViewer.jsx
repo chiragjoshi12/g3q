@@ -8,7 +8,7 @@ import { downloadCertificatePng } from "@/components/certificate/draw-certificat
 import { ACTION_BUTTON_CLASS, ActionButtonRow, AppButton } from "@/components/common/AppButton";
 import { X } from "@/components/icons";
 import { certificateFileName } from "@/lib/domain/certificate";
-import { createAnalyticsEventId, trackAnalyticsEvent } from "@/lib/analytics-client";
+import { trackAnalyticsEvent } from "@/lib/analytics-client";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -28,16 +28,7 @@ export function CertificateViewer({ open, payload, onClose }) {
       const fileName = certificateFileName(payload);
       await downloadCertificatePng(payload, fileName);
       void trackAnalyticsEvent({
-        eventId: createAnalyticsEventId("cert"),
         eventType: "certificate_download",
-        source: "certificate_viewer",
-        success: true,
-        metadata: {
-          g3qId: payload.g3qId,
-          week: payload.week,
-          category: payload.categoryInline,
-          fileName,
-        },
       });
     } catch {
       setError(t("somethingWentWrong"));

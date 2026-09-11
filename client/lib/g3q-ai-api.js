@@ -26,7 +26,7 @@ function trimConversation(messages) {
  * @returns {Promise<{ reply: string, model?: string, latencyMs?: number }>}
  */
 export async function streamG3qAiChat(messages, { onChunk, signal } = {}) {
-  const identity = analyticsIdentity("g3q_ai_page");
+  const identity = analyticsIdentity();
   const trimmedMessages = trimConversation(messages);
   const res = await fetch(`${chatBaseUrl()}/g3q-ai/chat`, {
     method: "POST",

@@ -122,7 +122,7 @@ export const attemptRepository = {
 
   async clear(userId) {
     if (appConfig.dataSource === DATA_SOURCE.REST) {
-      return getDataSource().clearMyAttempts();
+      return getDataSource().clearMySessions();
     }
     if (!userId) {
       storage.set(STORAGE_KEYS.attempts, []);

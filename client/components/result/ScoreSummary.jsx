@@ -13,13 +13,13 @@ import { ChevronDown, LineArrowRight, Loader2 } from "@/components/icons";
 import { appConfig } from "@/config/app.config";
 import { ROUTES } from "@/config/routes";
 import { BRAND_ICONS } from "@/lib/brand-icons";
-import { createAnalyticsEventId, trackAnalyticsEvent } from "@/lib/analytics-client";
+import { trackAnalyticsEvent } from "@/lib/analytics-client";
 import {
   attemptEarnsCertificate,
   buildCertificatePayload,
   certificateFileName,
 } from "@/lib/domain/certificate";
-import { formatDuration } from "@/lib/domain/format";
+import { formatDuration, formatWeekLabel } from "@/lib/domain/format";
 import { scorePraise } from "@/lib/domain/scoring";
 import { useI18n } from "@/lib/i18n";
 import { formatTalukaLabel } from "@/lib/format-taluka";
@@ -146,20 +146,7 @@ export function ScoreSummary({ attempt, quiz }) {
                         runCertAction("download", async () => {
                           await downloadCertificatePng(payload, fileName);
                           void trackAnalyticsEvent({
-                            eventId: createAnalyticsEventId("cert"),
                             eventType: "certificate_download",
-                            source: "result_summary",
-                            attemptId: attempt.attemptId,
-                            quizId: attempt.quizId,
-                            role: user?.role,
-                            district: user?.district || attempt?.district,
-                            taluka: user?.taluka || attempt?.taluka,
-                            metadata: {
-                              g3qId: payload.g3qId,
-                              week: payload.week,
-                              category: payload.categoryInline,
-                              fileName,
-                            },
                           });
                         })
                       }
@@ -213,10 +200,10 @@ export function ScoreSummary({ attempt, quiz }) {
         <LineArrowRight className="size-5 shrink-0 text-black" />
         <span className="col-start-2 mt-[0.015rem] truncate text-[15px] leading-snug font-normal text-black">
           {language === "gu"
-            ? `${talukaLabel} તાલુકો - ${week} મું અઠવાડિયું`
+            ? `${talukaLabel} તાલુકો - ${formatWeekLabel(week, language)}`
             : language === "hi"
-              ? `${talukaLabel} तालुका - सप्ताह ${week}`
-              : `${talukaLabel} Taluka - Week ${week}`}
+              ? `${talukaLabel} तालुका - ${formatWeekLabel(week, language)}`
+              : `${talukaLabel} Taluka - ${formatWeekLabel(week, language)}`}
         </span>
       </button>
     </section>

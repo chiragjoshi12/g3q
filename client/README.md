@@ -50,12 +50,14 @@ api: { baseUrl: "https://api.example.gov.in/v1" }
 
 | Method | REST endpoint |
 | --- | --- |
-| `requestOtp({ role, credential })` | `POST /auth/otp/request` |
-| `verifyOtp({ requestId, otp })` | `POST /auth/otp/verify` |
-| `listQuizzes()` | `GET /quizzes` |
-| `getQuizById(id)` | `GET /quizzes/:id` |
-| `getQuestionsByQuizId(id)` | `GET /quizzes/:id/questions` |
-| `getExplanationsByQuizId(id)` | `GET /quizzes/:id/explanations` |
+| `requestOtp({ role, credential, phone })` | `POST /auth/otp/request` |
+| `verifyOtp({ requestId, otp, role, ... })` | `POST /auth/otp/verify` |
+| `getPracticeBundle({ quizId, language })` | `GET /quizzes/practice/bundle` |
+| `startSession({ count, language })` | `POST /sessions` |
+| `submitSession({ sessionId, ... })` | `POST /sessions/:id/submit` |
+| `listMySessions()` | `GET /sessions` |
+| `getMySessionStats()` | `GET /sessions/stats` |
+| `clearMySessions()` | `DELETE /sessions` |
 
 Three things make the swap a non-event:
 

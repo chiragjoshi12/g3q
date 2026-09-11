@@ -18,7 +18,7 @@ function FilterChip({ label, placeholder, onClick, className }) {
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex max-w-full items-center gap-1.5 rounded-[1rem] border border-[#D0D5DD] px-3 py-2.5 text-left transition-colors active:bg-[#FAFAFA]",
+        "mt-2 inline-flex w-fit max-w-full flex-nowrap items-center gap-1 rounded-[1rem] border-[0.5px] border-[#737373] px-5 py-2 text-left transition-colors active:bg-[#FAFAFA]",
         className
       )}
     >
@@ -43,11 +43,11 @@ function LocationSelectRow({ label, placeholder, onClick, disabled = false }) {
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "flex w-full items-center justify-between gap-3 rounded-[1.75rem] border border-[#D0D5DD] bg-white px-5 py-4 text-left transition-colors active:bg-[#FAFAFA] disabled:opacity-55",
+        "flex w-full h-[60px] items-center justify-between gap-3 rounded-[1.3rem] border border-[#d9d9d9] bg-white px-5 py-4 text-left transition-colors active:bg-[#FAFAFA] disabled:opacity-55",
         empty ? "text-[#737373]" : "text-[#111]"
       )}
     >
-      <span className="truncate text-[1.05rem] font-medium leading-snug">
+      <span className="truncate text-[16px] font-medium leading-snug text-[#111]">
         {label || placeholder}
       </span>
       <ChevronDown className="size-5 shrink-0 text-[#98A2B3]" strokeWidth={2.25} />
@@ -73,9 +73,11 @@ export function LeaderboardLocationSheet({
   onDistrictChange,
   onTalukaChange,
   onClose,
+  dismissible = true,
 }) {
   const { language, t } = useI18n();
   const [picker, setPicker] = useState(null);
+  const [districtFirstHint, setDistrictFirstHint] = useState(false);
   const frame = typeof document === "undefined" ? null : document.querySelector("[data-app-frame]");
 
   const selectedDistrict = useMemo(
@@ -107,31 +109,40 @@ export function LeaderboardLocationSheet({
   );
 
   useEffect(() => {
-    if (!open) setPicker(null);
+    if (!open) {
+      setPicker(null);
+      setDistrictFirstHint(false);
+    }
   }, [open]);
 
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (event) => {
-      if (event.key === "Escape") {
-        if (picker) setPicker(null);
-        else onClose?.();
+      if (event.key !== "Escape") return;
+      if (picker) {
+        setPicker(null);
+        return;
       }
+      if (dismissible) onClose?.();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose, picker]);
+  }, [open, onClose, picker, dismissible]);
 
   if (!open || !frame) return null;
 
   return createPortal(
     <div className={DESKTOP_OVERLAY}>
-      <button
-        type="button"
-        aria-label={t("close")}
-        onClick={onClose}
-        className="absolute inset-0 bg-black/35"
-      />
+      {dismissible ? (
+        <button
+          type="button"
+          aria-label={t("close")}
+          onClick={onClose}
+          className="absolute inset-0 bg-black/35"
+        />
+      ) : (
+        <div className="absolute inset-0 bg-black/35" />
+      )}
       <div
         role="dialog"
         aria-modal="true"
@@ -144,22 +155,38 @@ export function LeaderboardLocationSheet({
       >
         <h3
           id="leaderboard-location-title"
-          className="text-center text-[1.15rem] font-bold leading-snug text-[#2d689d]"
+          className="text-center text-[16px] leading-snug text-[#000000]"
         >
           {t("leaderboardLocationHint")}
         </h3>
 
         <div className="mt-8 flex flex-col gap-4">
-          <LocationSelectRow
-            label={placeLabel(selectedDistrict, language)}
-            placeholder={t("selectDistrictTitle")}
-            onClick={() => setPicker("district")}
-          />
+          <div>
+            <LocationSelectRow
+              label={placeLabel(selectedDistrict, language)}
+              placeholder={t("selectDistrictTitle")}
+              onClick={() => {
+                setDistrictFirstHint(false);
+                setPicker("district");
+              }}
+            />
+            {districtFirstHint ? (
+              <p className="mt-1.5 px-1 text-[12px] font-medium leading-snug text-[#DC2626]">
+                {t("selectDistrictFirst")}
+              </p>
+            ) : null}
+          </div>
           <LocationSelectRow
             label={placeLabel(selectedTaluka, language)}
             placeholder={t("selectTalukaTitle")}
-            disabled={!districtId}
-            onClick={() => setPicker("taluka")}
+            onClick={() => {
+              if (!districtId) {
+                setDistrictFirstHint(true);
+                return;
+              }
+              setDistrictFirstHint(false);
+              setPicker("taluka");
+            }}
           />
         </div>
       </div>
@@ -171,6 +198,7 @@ export function LeaderboardLocationSheet({
         value={districtId != null ? String(districtId) : ""}
         onSelect={(next) => {
           onDistrictChange?.(Number(next));
+          setDistrictFirstHint(false);
           setPicker(null);
         }}
         onClose={() => setPicker(null)}
@@ -211,22 +239,46 @@ export function LeaderboardWeekChip({ week, onClick, className }) {
 export function LeaderboardFilterBar({
   districtLabel,
   talukaLabel,
-  onOpenLocation,
+  onDistrictClick,
+  onTalukaClick,
   className,
 }) {
   const { t } = useI18n();
+  const [districtFirstHint, setDistrictFirstHint] = useState(false);
+  const hasDistrict = Boolean(districtLabel);
+
+  useEffect(() => {
+    if (hasDistrict) setDistrictFirstHint(false);
+  }, [hasDistrict]);
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-3", className)}>
-      <FilterChip
-        label={districtLabel || ""}
-        placeholder={t("district")}
-        onClick={onOpenLocation}
-      />
+    <div className={cn("flex flex-wrap items-start gap-3 lg:translate-x-4", className)}>
+      <div className="min-w-0">
+        <FilterChip
+          label={districtLabel || ""}
+          placeholder={t("district")}
+          onClick={() => {
+            setDistrictFirstHint(false);
+            onDistrictClick?.();
+          }}
+        />
+        {districtFirstHint ? (
+          <p className="mt-1.5 max-w-[12rem] px-1 text-[12px] font-medium leading-snug text-[#DC2626]">
+            {t("selectDistrictFirst")}
+          </p>
+        ) : null}
+      </div>
       <FilterChip
         label={talukaLabel || ""}
         placeholder={t("taluka")}
-        onClick={onOpenLocation}
+        onClick={() => {
+          if (!hasDistrict) {
+            setDistrictFirstHint(true);
+            return;
+          }
+          setDistrictFirstHint(false);
+          onTalukaClick?.();
+        }}
       />
     </div>
   );

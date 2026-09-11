@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/AdminShell";
 import { QuestionReviewModal } from "@/components/QuestionReviewModal";
 import { ReviewStatusBadge } from "@/components/QuestionDetail";
@@ -12,7 +12,6 @@ import {
   getToken,
   WorkCommentItem,
   WorkDashboard,
-  WorkDayCount,
   WorkReviewer,
 } from "@/lib/api";
 
@@ -23,17 +22,6 @@ const STATUS_LABEL: Record<string, string> = {
   inactive: "Inactive",
   withdrawn: "Taken back",
 };
-
-function formatDay(ymd: string) {
-  const d = new Date(`${ymd}T12:00:00+05:30`);
-  return d.toLocaleDateString("en-IN", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "Asia/Kolkata",
-  });
-}
 
 function statusClass(status: string) {
   if (status === "done") return "status-badge accepted";
@@ -51,38 +39,6 @@ function ProgressBar({ value }: { value: number }) {
   );
 }
 
-function ActivityTable({ days }: { days: WorkDayCount[] }) {
-  const rows = [...days].reverse();
-  return (
-    <div className="table-wrap activity-table">
-      <table className="q-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Assigned</th>
-            <th>Reviewed</th>
-            <th>Remaining</th>
-            <th>Accepted</th>
-            <th>Rejected</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((day) => (
-            <tr key={day.date} className="no-click">
-              <td>{formatDay(day.date)}</td>
-              <td>{day.assigned}</td>
-              <td>{day.reviewed}</td>
-              <td>{day.remaining ?? Math.max(0, day.assigned - day.reviewed)}</td>
-              <td>{day.accepted}</td>
-              <td>{day.rejected}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 export default function DashboardPage() {
   const [data, setData] = useState<WorkDashboard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -92,7 +48,6 @@ export default function DashboardPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [counts, setCounts] = useState<Record<number, string>>({});
   const [savingKey, setSavingKey] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const isMaster = role === "master";
 
@@ -120,11 +75,12 @@ export default function DashboardPage() {
   const totals = useMemo(() => {
     return reviewers.reduce(
       (acc, r) => {
-        acc.reviewed += r.reviewed;
         acc.assigned += r.assigned_total;
+        acc.reviewed += r.reviewed;
+        acc.remaining += r.remaining;
         return acc;
       },
-      { reviewed: 0, assigned: 0 }
+      { assigned: 0, reviewed: 0, remaining: 0 }
     );
   }, [reviewers]);
 
@@ -164,12 +120,12 @@ export default function DashboardPage() {
     }
   }
 
-  async function unassign(r: WorkReviewer, count: number, batchId?: number) {
+  async function unassign(r: WorkReviewer, count: number) {
     if (!Number.isInteger(count) || count < 1) {
       setError("Enter a valid question count.");
       return;
     }
-    setSavingKey(batchId ? `batch-${batchId}` : `unassign-${r.admin_id}`);
+    setSavingKey(`unassign-${r.admin_id}`);
     setError(null);
     setOk(null);
     try {
@@ -177,11 +133,7 @@ export default function DashboardPage() {
         allocation: { released: number; requested: number };
       }>("/api/v1/admin/work/unassign", {
         method: "POST",
-        body: JSON.stringify({
-          admin_id: r.admin_id,
-          count,
-          ...(batchId ? { batch_id: batchId } : {}),
-        }),
+        body: JSON.stringify({ admin_id: r.admin_id, count }),
       });
       const released = result.allocation?.released ?? 0;
       if (released === 0) {
@@ -213,7 +165,7 @@ export default function DashboardPage() {
         <>
           {data.warnings?.length
             ? data.warnings.map((w) => (
-                <p key={w} className="work-warning">
+                <p key={w} className="form-warning">
                   {w}
                 </p>
               ))
@@ -225,8 +177,8 @@ export default function DashboardPage() {
                 <div>
                   <h2>Allocate questions to reviewers</h2>
                   <p>
-                    Assign a batch of pending questions to any sub-admin. There is no daily
-                    limit — they keep the queue until it is reviewed.
+                    Assign any number of pending questions. Reviewers keep their queue until
+                    they finish — assign more anytime.
                   </p>
                 </div>
               </section>
@@ -265,129 +217,63 @@ export default function DashboardPage() {
                         </td>
                       </tr>
                     ) : (
-                      reviewers.map((r) => {
-                        const open = expandedId === r.admin_id;
-                        const history = r.assignment_history ?? [];
-                        return (
-                          <Fragment key={r.admin_id}>
-                            <tr className="no-click">
-                              <td>
-                                <button
-                                  type="button"
-                                  className={`reviewer-expand${open ? " open" : ""}`}
-                                  onClick={() =>
-                                    setExpandedId(open ? null : r.admin_id)
-                                  }
-                                  aria-expanded={open}
-                                >
-                                  <span className="qid">{r.full_name || r.username}</span>
-                                  <span className="muted-note">{r.username}</span>
-                                </button>
-                              </td>
-                              <td>
-                                {r.assigned_total}
-                                <div className="muted-note">
-                                  {r.remaining} left · {r.reviewed} reviewed
-                                </div>
-                              </td>
-                              <td className="work-progress-cell">
-                                <ProgressBar value={r.progress_pct} />
-                                <span>{r.progress_pct}%</span>
-                              </td>
-                              <td>
-                                <span className={statusClass(r.status)}>
-                                  {STATUS_LABEL[r.status] || r.status}
-                                </span>
-                              </td>
-                              <td>
-                                <div className="work-assign-cell">
-                                  <input
-                                    type="number"
-                                    min={1}
-                                    max={2000}
-                                    value={countFor(r)}
-                                    disabled={!r.is_active || !!savingKey}
-                                    onChange={(e) =>
-                                      setCounts((prev) => ({
-                                        ...prev,
-                                        [r.admin_id]: e.target.value,
-                                      }))
-                                    }
-                                    aria-label={`Questions to assign to ${r.full_name || r.username}`}
-                                  />
-                                  <button
-                                    type="button"
-                                    className="compact"
-                                    disabled={!r.is_active || !!savingKey}
-                                    onClick={() => allocate(r)}
-                                  >
-                                    {savingKey === `assign-${r.admin_id}` ? "Assigning…" : "Assign"}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="ghost compact"
-                                    disabled={!r.is_active || !!savingKey || r.remaining < 1}
-                                    onClick={() => unassign(r, Number(countFor(r)))}
-                                  >
-                                    {savingKey === `unassign-${r.admin_id}` ? "Reducing…" : "Reduce"}
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                            {open ? (
-                              <tr className="no-click work-history-row">
-                                <td colSpan={5}>
-                                  {history.length === 0 ? (
-                                    <p className="muted-note">No assignment history yet.</p>
-                                  ) : (
-                                    <table className="q-table work-history-table">
-                                      <thead>
-                                        <tr>
-                                          <th>When</th>
-                                          <th>Assigned</th>
-                                          <th>Left</th>
-                                          <th>Status</th>
-                                          <th />
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {history.map((batch) => (
-                                          <tr key={batch.id} className="no-click">
-                                            <td>{formatWhen(batch.created_at)}</td>
-                                            <td>{batch.count}</td>
-                                            <td>{batch.remaining}</td>
-                                            <td>
-                                              <span className={statusClass(batch.status)}>
-                                                {STATUS_LABEL[batch.status] || batch.status}
-                                              </span>
-                                            </td>
-                                            <td>
-                                              {batch.remaining > 0 ? (
-                                                <button
-                                                  type="button"
-                                                  className="ghost compact"
-                                                  disabled={!!savingKey}
-                                                  onClick={() =>
-                                                    unassign(r, batch.remaining, batch.id)
-                                                  }
-                                                >
-                                                  {savingKey === `batch-${batch.id}`
-                                                    ? "Reducing…"
-                                                    : "Reduce"}
-                                                </button>
-                                              ) : null}
-                                            </td>
-                                          </tr>
-                                        ))}
-                                      </tbody>
-                                    </table>
-                                  )}
-                                </td>
-                              </tr>
-                            ) : null}
-                          </Fragment>
-                        );
-                      })
+                      reviewers.map((r) => (
+                        <tr key={r.admin_id} className="no-click">
+                          <td>
+                            <span className="qid">{r.full_name || r.username}</span>
+                            <div className="muted-note">{r.username}</div>
+                          </td>
+                          <td>
+                            {r.assigned_total}
+                            <div className="muted-note">
+                              {r.remaining} left · {r.reviewed} reviewed
+                            </div>
+                          </td>
+                          <td className="work-progress-cell">
+                            <ProgressBar value={r.progress_pct} />
+                            <span>{r.progress_pct}%</span>
+                          </td>
+                          <td>
+                            <span className={statusClass(r.status)}>
+                              {STATUS_LABEL[r.status] || r.status}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="work-assign-cell">
+                              <input
+                                type="number"
+                                min={1}
+                                max={2000}
+                                value={countFor(r)}
+                                disabled={!r.is_active || !!savingKey}
+                                onChange={(e) =>
+                                  setCounts((prev) => ({
+                                    ...prev,
+                                    [r.admin_id]: e.target.value,
+                                  }))
+                                }
+                                aria-label={`Questions to assign to ${r.full_name || r.username}`}
+                              />
+                              <button
+                                type="button"
+                                className="compact"
+                                disabled={!r.is_active || !!savingKey}
+                                onClick={() => allocate(r)}
+                              >
+                                {savingKey === `assign-${r.admin_id}` ? "Assigning…" : "Assign"}
+                              </button>
+                              <button
+                                type="button"
+                                className="ghost compact"
+                                disabled={!r.is_active || !!savingKey || r.remaining < 1}
+                                onClick={() => unassign(r, Number(countFor(r)))}
+                              >
+                                {savingKey === `unassign-${r.admin_id}` ? "Reducing…" : "Reduce"}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
                     )}
                   </tbody>
                 </table>
@@ -422,7 +308,7 @@ export default function DashboardPage() {
                   ) : (
                     <>
                       <h2>No questions allocated yet</h2>
-                      <p>Ask the master admin to assign you a batch of questions.</p>
+                      <p>Ask the master admin to assign you questions.</p>
                     </>
                   )}
                 </div>
@@ -457,26 +343,6 @@ export default function DashboardPage() {
                   <span>Rejected</span>
                   <strong>{me?.rejected.toLocaleString() ?? "—"}</strong>
                 </article>
-              </section>
-
-              <section className="panel-block">
-                <div className="panel-head">
-                  <div>
-                    <h2>Past activity</h2>
-                    <p>
-                      {`All time ${me?.reviewed ?? 0} reviewed${
-                        me?.reviewed
-                          ? ` · ${me.accepted} accepted, ${me.rejected} rejected`
-                          : ""
-                      }.`}
-                    </p>
-                  </div>
-                </div>
-                {(data.recent_days ?? []).length === 0 ? (
-                  <p className="empty-state">No assigned questions yet.</p>
-                ) : (
-                  <ActivityTable days={data.recent_days ?? []} />
-                )}
               </section>
 
               <section className="panel-block">

@@ -36,7 +36,7 @@ export function OtpInput({ length = 4, value, onChange, onComplete, invalid, aut
         autoComplete="one-time-code"
         maxLength={length}
         aria-label="OTP"
-        className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+        className="inset-0 z-10 h-full w-full cursor-pointer opacity-0"
       />
       <div className="flex justify-between gap-1.5">
         {Array.from({ length }).map((_, index) => {

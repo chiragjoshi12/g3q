@@ -7,6 +7,7 @@ import {
   LeaderboardCategoryTabs,
   LeaderboardDetailRow,
 } from "@/components/landing/LeaderboardList";
+import { ChoiceSheet } from "@/components/auth/ChoiceSheet";
 import {
   LeaderboardFilterBar,
   LeaderboardLocationSheet,
@@ -17,7 +18,7 @@ import { BackButton } from "@/components/common/BackButton";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/StateViews";
 import { DesktopAppShell } from "@/components/layout/DesktopAppShell";
 import { appConfig, DATA_SOURCE } from "@/config/app.config";
-import { PLATFORM_WEEKS } from "@/config/platformWeeks";
+import { getActivePlatformWeek, PLATFORM_WEEKS } from "@/config/platformWeeks";
 import { ROUTES } from "@/config/routes";
 import {
   CITIZEN_LEADERBOARD,
@@ -28,6 +29,7 @@ import { profileController } from "@/controllers/profile.controller";
 import { useAsyncData } from "@/hooks/useAsyncData";
 import { getDataSource } from "@/lib/data/sources";
 import { useI18n } from "@/lib/i18n";
+import { STORAGE_KEYS, storage } from "@/lib/storage/storage";
 import { useStoreHydrated } from "@/hooks/useStoreHydrated";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -54,9 +56,11 @@ function placeLabel(entry, language) {
 function matchPlace(entry, name) {
   const key = normalizeKey(name);
   if (!key || !entry) return false;
-  return [entry.name, entry.nameGu, entry.nameEn, entry.nameHi].some(
-    (value) => normalizeKey(value) === key
-  );
+  const names = [entry.name, entry.nameGu, entry.nameEn, entry.nameHi];
+  if (names.some((value) => normalizeKey(value) === key)) return true;
+  const folded = key.replace(/[aeiou]/g, "");
+  if (folded.length < 3) return false;
+  return names.some((value) => normalizeKey(value).replace(/[aeiou]/g, "") === folded);
 }
 
 function seedIdsFromUser(user, districts) {
@@ -95,16 +99,47 @@ function seedIdsFromUser(user, districts) {
   };
 }
 
+function normalizeLocationIds(value) {
+  const districtId = Number(value?.districtId);
+  const talukaId = Number(value?.talukaId);
+  if (!Number.isInteger(districtId) || districtId <= 0) return { districtId: null, talukaId: null };
+  if (!Number.isInteger(talukaId) || talukaId <= 0) return { districtId: null, talukaId: null };
+  return { districtId, talukaId };
+}
+
+function locationExists(ids, districts) {
+  if (!ids?.districtId || !ids?.talukaId || !districts?.length) return false;
+  const district = districts.find((item) => Number(item.id) === Number(ids.districtId));
+  const taluka = (district?.talukas || []).find((item) => Number(item.id) === Number(ids.talukaId));
+  return Boolean(district && taluka);
+}
+
+function readGuestLocation(districts) {
+  const saved = normalizeLocationIds(storage.get(STORAGE_KEYS.leaderboardLocation, null));
+  return locationExists(saved, districts) ? saved : { districtId: null, talukaId: null };
+}
+
+function writeGuestLocation(districtId, talukaId) {
+  const next = normalizeLocationIds({ districtId, talukaId });
+  if (!next.districtId || !next.talukaId) return;
+  storage.set(STORAGE_KEYS.leaderboardLocation, next);
+}
+
 async function ensureUserProfile(user, isAuthenticated) {
   if (!isAuthenticated) return user;
-  if (user?.taluka || user?.district || user?.talukaId) return user;
-  const me = await profileController.loadMe();
-  if (me) {
-    useAuthStore.setState((state) => ({
-      user: state.user ? { ...state.user, ...me } : me,
-    }));
+  if (Number(user?.talukaId) > 0) return user;
+  try {
+    const me = await profileController.loadMe();
+    if (me) {
+      useAuthStore.setState((state) => ({
+        user: state.user ? { ...state.user, ...me } : me,
+      }));
+      return { ...user, ...me };
+    }
+  } catch {
+    /* keep the session user if /users/me is unavailable */
   }
-  return me || user;
+  return user;
 }
 
 export default function LeaderboardPage() {
@@ -114,12 +149,13 @@ export default function LeaderboardPage() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
   const [tab, setTab] = useState("school");
-  const [week, setWeek] = useState(appConfig.certificate.week || PLATFORM_WEEKS[0]?.id || 1);
+  const [week, setWeek] = useState(() => getActivePlatformWeek().id || appConfig.certificate.week || 1);
   const [districtId, setDistrictId] = useState(null);
   const [talukaId, setTalukaId] = useState(null);
   const [locationReady, setLocationReady] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
   const [weekOpen, setWeekOpen] = useState(false);
+  const [chipPicker, setChipPicker] = useState(null);
   const EMPTY_MESSAGES = {
     school: t("noPlaysYetDescription"),
     college: t("noPlaysYetDescription"),
@@ -140,22 +176,45 @@ export default function LeaderboardPage() {
   );
 
   const districts = geographyData?.districts || [];
+  const userId = user?.id ?? null;
 
   useEffect(() => {
-    if (!hydrated || !liveLeaderboard || locationReady) return;
+    setLocationReady(false);
+  }, [isAuthenticated, userId]);
+
+  useEffect(() => {
+    if (!hydrated || locationReady) return;
+    if (!liveLeaderboard) {
+      setLocationReady(true);
+      return;
+    }
+    if (geographyStatus === "error") {
+      setLocationReady(true);
+      return;
+    }
     if (geographyStatus !== "ready") return;
     let cancelled = false;
 
     (async () => {
-      const profile = await ensureUserProfile(user, isAuthenticated);
-      if (cancelled) return;
-      const seeded = seedIdsFromUser(profile, districts);
-      setDistrictId(seeded.districtId);
-      setTalukaId(seeded.talukaId);
-      setLocationReady(true);
-      if (!seeded.districtId || !seeded.talukaId) {
-        setLocationOpen(true);
+      let next = { districtId: null, talukaId: null };
+
+      try {
+        if (isAuthenticated) {
+          const profile = await ensureUserProfile(user, isAuthenticated);
+          if (cancelled) return;
+          next = seedIdsFromUser(profile, districts);
+        } else {
+          next = readGuestLocation(districts);
+        }
+      } catch {
+        next = isAuthenticated ? seedIdsFromUser(user, districts) : readGuestLocation(districts);
       }
+
+      if (cancelled) return;
+      setDistrictId(next.districtId);
+      setTalukaId(next.talukaId);
+      setLocationReady(true);
+      setLocationOpen(!next.districtId || !next.talukaId);
     })();
 
     return () => {
@@ -166,7 +225,7 @@ export default function LeaderboardPage() {
     liveLeaderboard,
     locationReady,
     geographyStatus,
-    districts,
+    geographyData,
     isAuthenticated,
     user,
   ]);
@@ -200,6 +259,30 @@ export default function LeaderboardPage() {
       null,
     [selectedDistrict, talukaId]
   );
+  const districtOptions = useMemo(
+    () =>
+      districts.map((item) => ({
+        value: String(item.id),
+        label: placeLabel(item, language),
+      })),
+    [districts, language]
+  );
+  const talukaOptions = useMemo(
+    () =>
+      (selectedDistrict?.talukas || []).map((item) => ({
+        value: String(item.id),
+        label: placeLabel(item, language),
+      })),
+    [selectedDistrict, language]
+  );
+
+  const applyLocation = (nextDistrictId, nextTalukaId) => {
+    setDistrictId(nextDistrictId);
+    setTalukaId(nextTalukaId);
+    if (!isAuthenticated && nextDistrictId && nextTalukaId) {
+      writeGuestLocation(nextDistrictId, nextTalukaId);
+    }
+  };
 
   const activeBoard = liveLeaderboard ? data?.[tab] ?? null : null;
   const weekOptions = data?.weeks?.length ? data.weeks : PLATFORM_WEEKS;
@@ -222,8 +305,8 @@ export default function LeaderboardPage() {
       showSidebar={false}
       className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F5F6F8]"
     >
-      <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[26.5rem] flex-col bg-[#F5F6F8] md:max-w-none lg:max-w-none lg:bg-transparent">
-        <header className="relative z-20 flex shrink-0 items-center gap-3 bg-white px-4 py-3.5 lg:bg-transparent lg:px-10 lg:pt-8 lg:pb-2">
+      <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[26.5rem] flex-col bg-[#F5F6F8] md:max-w-none lg:w-[50rem] lg:max-w-[50rem] lg:self-center lg:bg-transparent">
+        <header className="relative z-20 flex shrink-0 items-center gap-3 bg-white px-4 py-3.5 lg:bg-transparent lg:px-8 lg:pt-8 lg:pb-3">
           <BackButton
             className="shrink-0"
             label={t("close")}
@@ -248,18 +331,19 @@ export default function LeaderboardPage() {
         </header>
 
         <main className="no-scrollbar relative z-0 min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <div className="px-4 pb-8 pt-4 lg:mx-auto lg:w-full lg:max-w-[56rem] lg:px-10 lg:pt-4 lg:pb-16 xl:max-w-[64rem] xl:px-14">
+          <div className="px-4 pb-8 pt-4 lg:px-8 lg:pt-2 lg:pb-16">
             <LeaderboardFilterBar
               districtLabel={placeLabel(selectedDistrict, language)}
               talukaLabel={placeLabel(selectedTaluka, language)}
-              onOpenLocation={() => setLocationOpen(true)}
+              onDistrictClick={() => setChipPicker("district")}
+              onTalukaClick={() => setChipPicker("taluka")}
             />
 
-            <div className="mt-6">
+            <div className="mt-8">
               <LeaderboardCategoryTabs value={tab} onChange={setTab} />
             </div>
 
-            <div className="mt-4 overflow-hidden rounded-t-[1.75rem] px-3 pt-1 lg:rounded-[1.75rem] lg:px-4 lg:py-2 lg:shadow-[0_12px_40px_rgb(15_23_42/0.06)]">
+            <div className="mt-4 overflow-hidden rounded-t-[1.75rem] px-3 pt-1 lg:rounded-[1.75rem] lg:px-4 lg:py-2">
               {liveLeaderboard && geographyStatus === "error" ? (
                 <ErrorState message={geographyError} onRetry={reloadGeography} className="py-10" />
               ) : null}
@@ -312,15 +396,40 @@ export default function LeaderboardPage() {
         districts={districts}
         districtId={districtId}
         talukaId={talukaId}
+        dismissible={Boolean(districtId && talukaId)}
         onDistrictChange={(next) => {
           setDistrictId(next);
           setTalukaId(null);
         }}
         onTalukaChange={(next) => {
-          setTalukaId(next);
+          applyLocation(districtId, next);
           if (districtId && next) setLocationOpen(false);
         }}
         onClose={() => setLocationOpen(false)}
+      />
+      <ChoiceSheet
+        open={chipPicker === "district"}
+        title={t("selectDistrictTitle")}
+        options={districtOptions}
+        value={districtId != null ? String(districtId) : ""}
+        onSelect={(next) => {
+          const id = Number(next);
+          setDistrictId(id);
+          setTalukaId(null);
+          setChipPicker("taluka");
+        }}
+        onClose={() => setChipPicker(null)}
+      />
+      <ChoiceSheet
+        open={chipPicker === "taluka"}
+        title={t("selectTalukaTitle")}
+        options={talukaOptions}
+        value={talukaId != null ? String(talukaId) : ""}
+        onSelect={(next) => {
+          applyLocation(districtId, Number(next));
+          setChipPicker(null);
+        }}
+        onClose={() => setChipPicker(null)}
       />
       <LeaderboardWeekSheet
         open={weekOpen}

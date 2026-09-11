@@ -17,6 +17,7 @@ export const STORAGE_KEYS = {
   analyticsVisitor: "analytics-visitor",
   language: "language",
   languagePreference: "language-preference",
+  leaderboardLocation: "leaderboard-location",
 };
 
 const prefix = `${namespace}:v${version}:`;

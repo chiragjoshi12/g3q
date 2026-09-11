@@ -30,7 +30,7 @@ export function OtpStep({
   return (
     <div className="animate-screen-in space-y-7">
       <div className="space-y-4">
-        <h2 className="text-left text-xl font-bold text-[#111] lg:text-[1.65rem]">
+        <h2 className="text-left text-[16px] font-bold text-[#111] lg:text-[1.65rem]">
           {t("enterOtp")}
         </h2>
 
@@ -71,7 +71,7 @@ export function OtpStep({
             onClick={onVerify}
             className={AUTH_BUTTON_CLASS}
           >
-            {t("submit")}
+            {t("verify")}
           </AppButton>
         </div>
         <div className="text-center text-color-[#000000]">

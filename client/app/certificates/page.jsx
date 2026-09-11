@@ -23,7 +23,7 @@ import {
   certificateFileName,
 } from "@/lib/domain/certificate";
 import { formatGujaratiDate } from "@/lib/domain/format";
-import { createAnalyticsEventId, trackAnalyticsEvent } from "@/lib/analytics-client";
+import { trackAnalyticsEvent } from "@/lib/analytics-client";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -107,20 +107,7 @@ export default function CertificatesPage() {
                           const fileName = certificateFileName(cardPayload);
                           await downloadCertificatePng(cardPayload, fileName);
                           void trackAnalyticsEvent({
-                            eventId: createAnalyticsEventId("cert"),
                             eventType: "certificate_download",
-                            source: "certificates_page",
-                            attemptId: attempt.attemptId,
-                            quizId: attempt.quizId,
-                            role: user?.role,
-                            district: user?.district || attempt?.district,
-                            taluka: user?.taluka || attempt?.taluka,
-                            metadata: {
-                              g3qId: cardPayload.g3qId,
-                              week: cardPayload.week,
-                              category: cardPayload.categoryInline,
-                              fileName,
-                            },
                           });
                         })
                       }

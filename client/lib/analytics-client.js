@@ -1,11 +1,12 @@
 import { appConfig } from "@/config/app.config";
 import { storage, STORAGE_KEYS } from "@/lib/storage/storage";
 
-function randomId(prefix) {
+/** Compact anonymous visitor id (8–24 chars, alphanumeric). */
+function shortVisitorKey() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return `${prefix}_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
+    return crypto.randomUUID().replace(/-/g, "").slice(0, 16);
   }
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`.slice(0, 16);
 }
 
 function apiUrl(path) {
@@ -21,20 +22,18 @@ function authHeaders() {
 
 export function getAnalyticsVisitorKey() {
   const existing = storage.get(STORAGE_KEYS.analyticsVisitor, null);
-  if (existing?.visitorKey) return existing.visitorKey;
-  const visitorKey = randomId("visitor");
+  const key = String(existing?.visitorKey || "")
+    .replace(/[^A-Za-z0-9]/g, "")
+    .slice(0, 24);
+  if (key.length >= 8) return key;
+  const visitorKey = shortVisitorKey();
   storage.set(STORAGE_KEYS.analyticsVisitor, { visitorKey, createdAt: Date.now() });
   return visitorKey;
 }
 
-export function createAnalyticsEventId(prefix = "evt") {
-  return randomId(prefix);
-}
-
-export function analyticsIdentity(source) {
+export function analyticsIdentity() {
   return {
     visitorKey: getAnalyticsVisitorKey(),
-    source,
   };
 }
 
@@ -47,9 +46,10 @@ export async function trackAnalyticsEvent(event) {
         ...authHeaders(),
       },
       body: JSON.stringify({
-        eventId: event.eventId || createAnalyticsEventId(event.eventType || "evt"),
+        eventType: event.eventType,
         visitorKey: event.visitorKey || getAnalyticsVisitorKey(),
-        ...event,
+        occurredAt: event.occurredAt,
+        metadata: event.metadata,
       }),
       keepalive: true,
     });

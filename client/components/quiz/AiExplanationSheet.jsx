@@ -17,7 +17,8 @@ const TYPEWRITER_INTERVAL_MS = 26;
 const MIN_STREAM_DURATION_MS = 2600;
 const MAX_STREAM_DURATION_MS = 4200;
 const PROGRESS_COMPLETE_DELAY_MS = 320;
-const RESULT_REVEAL_DELAY_MS = 1400;
+/** Wait after explanation finishes typing before showing correct/incorrect. */
+const RESULT_REVEAL_DELAY_MS = 20_00000;
 
 /**
  * Fun-fact sheet that opens the moment an answer is submitted.
@@ -63,7 +64,7 @@ export function AiExplanationSheet({
       const cardRect = card.getBoundingClientRect();
       const frameRect = frame.getBoundingClientRect();
       setDesktopBox({
-        width: cardRect.width,
+        width: Math.min(cardRect.width, 520),
       });
     };
     place();
@@ -81,7 +82,11 @@ export function AiExplanationSheet({
 
   useEffect(() => {
     if (!bodyTypedDone) return undefined;
-    const progressTimer = window.setTimeout(() => setProgressComplete(true), PROGRESS_COMPLETE_DELAY_MS);
+    // Keep the progress bar filling until just before the result stamp.
+    const progressTimer = window.setTimeout(
+      () => setProgressComplete(true),
+      Math.max(PROGRESS_COMPLETE_DELAY_MS, RESULT_REVEAL_DELAY_MS - 500)
+    );
     const revealTimer = window.setTimeout(() => setCompletionPauseDone(true), RESULT_REVEAL_DELAY_MS);
     return () => {
       window.clearTimeout(progressTimer);
@@ -124,10 +129,10 @@ export function AiExplanationSheet({
       >
         <div
           className={cn(
-            "relative flex w-full flex-col overflow-hidden rounded-t-[2rem] bg-white px-6 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-m3 lg:rounded-[1.75rem] lg:px-10 lg:py-5 lg:shadow-[0_24px_64px_rgb(15_23_42/0.18)]",
+            "relative flex w-full flex-col overflow-hidden rounded-t-[2rem] bg-white px-6 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-m3 lg:rounded-[1.75rem] lg:px-7 lg:pt-5 lg:pb-5 lg:shadow-[0_24px_64px_rgb(15_23_42/0.18)]",
             bodyDone
-              ? "h-auto max-h-[86dvh] min-h-[30rem] lg:max-h-[min(36rem,84dvh)] lg:min-h-0"
-              : "h-[68dvh] min-h-[30rem] lg:h-[min(28rem,72dvh)] lg:min-h-0"
+              ? "h-auto max-h-[86dvh] max-lg:min-h-[30rem]"
+              : "h-[68dvh] max-lg:min-h-[30rem] lg:h-auto lg:max-h-[min(28rem,72dvh)]"
           )}
         >
           {!bodyDone ? (
@@ -138,8 +143,7 @@ export function AiExplanationSheet({
             </>
           ) : null}
 
-          <div className="relative mb-4 flex flex-col items-center justify-center gap-2.5 lg:mb-2.5">
-
+          <div className="relative mb-6 flex shrink-0 flex-col items-center justify-center gap-2.5 lg:mb-7">
             <div className="relative flex w-full items-center justify-center">
               <div className="flex items-center gap-2">
                 <BrandIcon
@@ -169,21 +173,24 @@ export function AiExplanationSheet({
               "min-h-0 text-[#1F2937]",
               bodyDone
                 ? "overflow-visible"
-                : "no-scrollbar flex-1 overflow-y-auto overscroll-contain lg:flex-none lg:max-h-[7.5rem]"
+                : "no-scrollbar flex-1 overflow-y-auto overscroll-contain lg:flex-none lg:max-h-[12rem]"
             )}
           >
             <div className="relative text-[#1F2937]">
-              <ChatMarkdown className="text-[#1F2937] [&_p]:my-3.5" style={{ fontSize: 15 }}>
+              <ChatMarkdown
+                className="font-canva text-[1rem] leading-snug text-[#1F2937] sm:text-[1.1rem] [&_p]:my-3.5 lg:[&_p]:my-2"
+                style={{ fontSize: undefined, fontFamily: undefined }}
+              >
                 {body}
               </ChatMarkdown>
             </div>
           </div>
 
-          <div className="mt-1 min-h-[5.75rem] lg:min-h-[4.75rem]">
+          <div className="mt-1 max-lg:min-h-[5.75rem] lg:mt-3">
             {bodyDone ? <VerdictMark correct={correct} /> : null}
           </div>
 
-          <ActionButtonRow className="mt-5 lg:mt-3">
+          <ActionButtonRow className={cn("mt-5 shrink-0", !bodyDone ? "lg:mt-8" : "lg:mt-4")}>
             {!bodyDone ? (
               <CheckingAnswerButton progress={checkingProgress} />
             ) : (
@@ -228,8 +235,8 @@ function CheckingAnswerButton({ progress }) {
 function VerdictMark({ correct }) {
   const { t } = useI18n();
   return (
-    <div className="relative mt-[-4] flex flex-col items-center justify-center overflow-visible py-2 lg:mt-0 lg:py-1">
-      <div className="relative grid size-28 place-items-center overflow-visible lg:size-[4.5rem]">
+    <div className="relative mt-[-4] flex flex-col items-center justify-center overflow-visible py-2 lg:mt-1 lg:py-0">
+      <div className="relative grid size-28 place-items-center overflow-visible lg:size-14">
         <span
           aria-hidden
           className={cn(
@@ -240,12 +247,12 @@ function VerdictMark({ correct }) {
         <BrandIcon
           src={correct ? BRAND_ICONS.correct : BRAND_ICONS.incorrect}
           alt={correct ? t("correctAnswer") : t("incorrect")}
-          className="relative size-[4rem] animate-verdict-pop lg:size-9"
+          className="relative size-[4rem] animate-verdict-pop lg:size-8"
         />
       </div>
       <p
         className={cn(
-          "mt-[-3] font-heading text-[18px] font-bold animate-pop-in lg:mt-0 lg:text-[15px]",
+          "mt-[-3] font-heading text-[18px] font-bold animate-pop-in lg:mt-0.5 lg:text-[14px]",
           correct ? "text-[#15803D]" : "text-[#B91C1C]"
         )}
       >

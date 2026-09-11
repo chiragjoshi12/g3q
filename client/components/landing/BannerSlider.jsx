@@ -147,17 +147,20 @@ export function BannerSlider({ slides, className, sizes, children, showDots = tr
       {children}
 
       {showDots && count > 1 ? (
-        <div className="absolute bottom-3.5 left-0 right-0 z-10 flex justify-center gap-1.5">
+        <div className="absolute bottom-3.5 left-0 right-0 z-10 flex justify-center gap-1.5 lg:bottom-4 lg:gap-2">
           {slides.map((_, i) => (
             <button
               key={i}
               type="button"
               aria-label={`Banner ${i + 1}`}
               aria-current={i === index ? "true" : undefined}
-              onClick={() => go(i)}
+              onClick={(event) => {
+                event.stopPropagation();
+                go(i);
+              }}
               className={cn(
-                "h-1.5 rounded-full transition-all",
-                i === index ? "w-5 bg-white" : "w-1.5 bg-white/55"
+                "h-1.5 rounded-full transition-all lg:h-2",
+                i === index ? "w-5 bg-white lg:w-6" : "w-1.5 bg-white/55 lg:w-2.5"
               )}
             />
           ))}

@@ -15,27 +15,47 @@ export const authRepository = {
     return getDataSource().requestOtp({ role, credential, phone });
   },
 
-  async verifyOtp({ requestId, otp, role, credential }) {
+  async verifyOtp({ id, otp, role, credential }) {
     const result = await getDataSource().verifyOtp({
-      requestId,
+      id,
       otp,
       role,
       credential,
     });
-    if (result?.needsProfile) {
-      return { needsProfile: true };
+    if (result?.needsSignup || result?.needsProfile) {
+      return {
+        needsSignup: Boolean(result.needsSignup || result.needsProfile),
+        needsProfile: Boolean(result.needsProfile),
+        id: result.id ?? id,
+        phone: result.phone || null,
+      };
     }
-    return { user: toUser(result.user), token: result.token, needsProfile: false };
+    return {
+      user: toUser(result.user),
+      token: result.token,
+      existing: Boolean(result.existing),
+      needsSignup: false,
+      needsProfile: false,
+    };
   },
 
-  async registerCitizen({ requestId, name, district, taluka, districtId, talukaId }) {
+  async registerCitizen({ id, name, district, taluka, districtId, talukaId }) {
     const { user, token } = await getDataSource().registerCitizen({
-      requestId,
+      id,
       name,
       district,
       taluka,
       districtId,
       talukaId,
+    });
+    return { user: toUser(user), token };
+  },
+
+  async linkRoster({ id, role, credential }) {
+    const { user, token } = await getDataSource().linkRoster({
+      id,
+      role,
+      credential,
     });
     return { user: toUser(user), token };
   },

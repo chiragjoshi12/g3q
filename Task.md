@@ -1,13 +1,26 @@
-[x] - District Name in multiple Language
-[x] - Practice Questions should be start from 1st questions after even leaving
-[x] - Loading in Personlising your questions page
-[] - Update GIF & Size
-[x] - AI Page Prompt Section + Response & Prompt's Font Size
+## Web App
+[] Change the sequence experience & Numbering (Devendrabhai's Idea)
+[] Language Page Design Adjustment
+[] By Default Certificate Should Be Opened in Result Page
 
-[] - Change the sequence experience & Numbering (Devendrabhai's Idea)
-[] - All Strings Verify
-[] - Language Page Design Adjustment
-[] - Overall Click Effects, Page Transition, Aimations
-[] - Entire Desktop App
-[] - Build APK & iOS
-[] - 
+## Admin Panel
+[] Multiple Type Questions Edit
+
+## Analytics
+[] API Integration & Real Data 
+
+## Main Platform
+[] Web Desktop
+[] Web Mobile
+[] Web Teblet
+[] Android APK
+[] iOS App
+
+## Other
+[] All Strings Verify
+[] Overall Click Effects, Page Transition, Aimations
+[] Result Should be count ms calculation 
+
+## Infra & Back-end
+[] VAPT (Vulnerability Assessment and Penetration Testing)
+[] Load Testing With 20k Users

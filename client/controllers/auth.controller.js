@@ -57,7 +57,7 @@ export const authController = {
     });
   },
 
-  async verifyOtp({ requestId, otp, role, credential }) {
+  async verifyOtp({ id, otp, role, credential }) {
     const code = String(otp || "").trim();
     if (code.length !== appConfig.auth.otpLength) {
       throw new AppError(
@@ -66,35 +66,68 @@ export const authController = {
       );
     }
     const result = await authRepository.verifyOtp({
-      requestId,
+      id,
       otp: code,
       role,
       credential: String(credential || "").trim(),
     });
-    if (result.needsProfile) {
-      return { needsProfile: true };
+    if (result.needsSignup || result.needsProfile) {
+      return {
+        needsSignup: true,
+        needsProfile: Boolean(result.needsProfile),
+        id: result.id ?? id,
+        phone: result.phone || null,
+      };
     }
     if (!result.user) {
       throw new AppError(ERROR_CODE.UNKNOWN, ERROR_MESSAGE[ERROR_CODE.UNKNOWN]);
     }
-    return { user: result.user, token: result.token, needsProfile: false };
+    return {
+      user: result.user,
+      token: result.token,
+      existing: Boolean(result.existing),
+      needsSignup: false,
+      needsProfile: false,
+    };
   },
 
-  async registerCitizen({ requestId, name, district, taluka, districtId, talukaId }) {
+  async registerCitizen({ id, name, district, taluka, districtId, talukaId }) {
     const invalid = validateCitizenProfile({ name, district, taluka, districtId, talukaId });
     if (invalid) {
       throw new AppError(ERROR_CODE.INVALID_CREDENTIAL, invalid);
     }
-    if (!requestId) {
+    if (!id) {
       throw new AppError(ERROR_CODE.INVALID_OTP, ERROR_MESSAGE[ERROR_CODE.INVALID_OTP]);
     }
     const { user, token } = await authRepository.registerCitizen({
-      requestId,
+      id,
       name: String(name).trim(),
       district: district != null ? String(district).trim() : undefined,
       taluka: taluka != null ? String(taluka).trim() : undefined,
       districtId: districtId != null ? Number(districtId) : undefined,
       talukaId: talukaId != null ? Number(talukaId) : undefined,
+    });
+    if (!user) {
+      throw new AppError(ERROR_CODE.UNKNOWN, ERROR_MESSAGE[ERROR_CODE.UNKNOWN]);
+    }
+    return { user, token };
+  },
+
+  async linkRoster({ id, role, credential }) {
+    if (!usesRosterIdentity(role)) {
+      throw new AppError(ERROR_CODE.INVALID_CREDENTIAL, "અમાન્ય પ્રકાર.");
+    }
+    const invalid = validateCredential(role, credential);
+    if (invalid) {
+      throw new AppError(ERROR_CODE.INVALID_CREDENTIAL, invalid);
+    }
+    if (!id) {
+      throw new AppError(ERROR_CODE.INVALID_OTP, ERROR_MESSAGE[ERROR_CODE.INVALID_OTP]);
+    }
+    const { user, token } = await authRepository.linkRoster({
+      id,
+      role,
+      credential: String(credential).trim(),
     });
     if (!user) {
       throw new AppError(ERROR_CODE.UNKNOWN, ERROR_MESSAGE[ERROR_CODE.UNKNOWN]);

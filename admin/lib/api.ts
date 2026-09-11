@@ -134,25 +134,6 @@ export type QuestionListResponse = {
   items: QuestionListItem[];
 };
 
-export type WorkDayCount = {
-  date: string;
-  assigned: number;
-  reviewed: number;
-  accepted: number;
-  rejected: number;
-  remaining?: number;
-};
-
-export type WorkAssignmentBatch = {
-  id: number;
-  date: string;
-  created_at: string;
-  count: number;
-  remaining: number;
-  released: number;
-  status: string;
-};
-
 export type WorkReviewer = {
   admin_id: number;
   username: string;
@@ -167,8 +148,6 @@ export type WorkReviewer = {
   rejected: number;
   progress_pct: number;
   status: string;
-  recent_days?: WorkDayCount[];
-  assignment_history?: WorkAssignmentBatch[];
 };
 
 export type WorkCommentItem = {
@@ -197,7 +176,6 @@ export type WorkDashboard = {
   me: WorkReviewer;
   my_comments: WorkCommentItem[];
   reviewers?: WorkReviewer[];
-  recent_days?: WorkDayCount[];
   warnings?: string[];
 };
 

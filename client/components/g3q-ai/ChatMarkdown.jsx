@@ -18,6 +18,18 @@ export function ChatMarkdown({ children, className, style }) {
     "  \n"
   );
 
+  const mergedStyle = {
+    fontFamily: 'var(--font-noto), "Noto Sans", sans-serif',
+    fontSize: 16,
+    ...style,
+  };
+  if (style && "fontFamily" in style && style.fontFamily == null) {
+    delete mergedStyle.fontFamily;
+  }
+  if (style && "fontSize" in style && style.fontSize == null) {
+    delete mergedStyle.fontSize;
+  }
+
   return (
     <div
       className={cn(
@@ -42,11 +54,7 @@ export function ChatMarkdown({ children, className, style }) {
         "[&_td]:border-b [&_td]:border-[#F3F4F6] [&_td]:py-1 [&_td]:pr-2",
         className
       )}
-      style={{
-        fontFamily: 'var(--font-noto), "Noto Sans", sans-serif',
-        fontSize: 16,
-        ...style,
-      }}
+      style={mergedStyle}
     >
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
     </div>

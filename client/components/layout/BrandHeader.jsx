@@ -35,7 +35,9 @@ export function BrandHeader({ trailing = null, priority = false, plain = false }
           {appName}
         </h1>
         {trailing ? (
-          <div className="grid size-12 shrink-0 place-items-center">{trailing}</div>
+          <div className="relative z-30 grid size-12 shrink-0 place-items-center overflow-visible">
+            {trailing}
+          </div>
         ) : (
           <span className="size-12 shrink-0" aria-hidden />
         )}

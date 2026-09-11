@@ -5,6 +5,7 @@ import Image from "next/image";
 import { BrandGlyph, BrandIcon } from "@/components/common/BrandIcon";
 import { LineArrowRight, User } from "@/components/icons";
 import { BRAND_ICONS } from "@/lib/brand-icons";
+import { formatWeekLabel } from "@/lib/domain/format";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +40,7 @@ function Avatar({ name, avatar, className }) {
 /** Gold score with Rank Stars artwork (matches Canva). */
 export function LeaderboardScoreBadge({ score }) {
   return (
-    <div className="relative h-[3.85rem] w-[3.7rem] shrink-0">
+    <div className="relative h-[3.85rem] w-[3.7rem] shrink-0 lg:translate-x-[-80px]">
       <span className="absolute inset-x-0 top-1 z-[1] text-center text-[1.22rem] font-bold leading-none tracking-tight text-[#D4A017]">
         {score}
       </span>
@@ -127,7 +128,7 @@ export function LeaderboardCategoryTabs({ value, onChange }) {
             {active ? (
               <span
                 aria-hidden
-                className="absolute inset-x-2 bottom-0 h-[2px] rounded-full bg-[#2d689d]"
+                className="absolute inset-x-2 bottom-0 h-[2px] rounded-full bg-[#2d689d] lg:inset-x-10"
               />
             ) : null}
           </button>
@@ -159,10 +160,10 @@ export function LeaderboardPreviewCard({ talukaLabel, week, onClick, iconColor =
         </p>
         <p className="mt-1 truncate text-[15px] leading-snug text-black">
           {language === "gu"
-            ? `${talukaLabel} તાલુકો - ${week} મું અઠવાડિયું`
+            ? `${talukaLabel} તાલુકો - ${formatWeekLabel(week, language)}`
             : language === "hi"
-              ? `${talukaLabel} तालुका - सप्ताह ${week}`
-              : `${talukaLabel} Taluka - Week ${week}`}
+              ? `${talukaLabel} तालुका - ${formatWeekLabel(week, language)}`
+              : `${talukaLabel} Taluka - ${formatWeekLabel(week, language)}`}
         </p>
       </div>
       <LineArrowRight className="size-5 shrink-0 text-black" />

@@ -7,28 +7,25 @@ import { httpSource } from "@/lib/data/sources/http.source";
  *
  * DataSource contract — both implementations satisfy it exactly:
  *   lookupIdentity({ role, credential })         -> User (raw)
- *   requestOtp({ role, credential, phone })      -> { requestId, maskedPhone, resendSeconds }
- *   verifyOtp({ requestId, otp, role, ... })     -> { user, token } | { needsProfile }
- *   registerCitizen({ requestId, name, district, taluka }) -> { user, token }
- *   betaLogin({ firstName, lastName, district, taluka, phone }) -> { user, token }
+ *   requestOtp({ role, credential, phone })      -> { id, maskedPhone, resendSeconds }
+ *   verifyOtp({ id, otp, role, ... })            -> { user, token } | { needsProfile }
+ *   registerCitizen({ id, name, ... })           -> { user, token }
+ *   betaLogin({ firstName, lastName, ... })      -> { user, token }
+ *   getPracticeBundle({ quizId, language })      -> { quiz, questions }
  *   getLandingSummary()                          -> { totalPlays, weeklyPlays, featuredQuizId }
  *   getMe()                                      -> User
- *   listQuizzes()                             -> Quiz[]
- *   getQuizById(quizId)                       -> Quiz
- *   getQuestionsByQuizId(quizId)              -> Question[]
- *   getExplanationsByQuizId(quizId)           -> Record<questionId, Explanation>
- *   startSession({ count, language })         -> SessionMeta
- *   getSession(sessionId)                     -> SessionPlayPayload | SessionResult
- *   submitSession({ sessionId, answers, timings, startedAt }) -> SessionResult
- *   getSessionResult(sessionId)               -> SessionResult
- *   listMySessions()                          -> { participatedWeeks, currentWeek, quizSessions }
- *   getMyCurrentSession()                     -> { currentWeek, weekMeta, session }
- *   getMySessionStats()                       -> Stats
- *   clearMyAttempts()                         -> Stats
- *   getSchoolLeaderboard({ ... })             -> Leaderboard
- *   getCollegeLeaderboard({ ... })            -> Leaderboard
- *   getCitizenLeaderboard({ ... })            -> Leaderboard
- *   getTalukaLeaderboard({ ... })             -> Leaderboard
+ *   startSession({ count, language })            -> SessionMeta
+ *   getSession(sessionId)                        -> SessionPlayPayload | SessionResult
+ *   submitSession({ sessionId, answers, ... })   -> SessionResult
+ *   getSessionResult(sessionId)                  -> SessionResult
+ *   listMySessions()                             -> { participatedWeeks, currentWeek, quizSessions }
+ *   getMyCurrentSession()                        -> { currentWeek, weekMeta, session }
+ *   getMySessionStats()                          -> Stats
+ *   clearMySessions()                            -> Stats
+ *   getSchoolLeaderboard({ ... })                -> Leaderboard
+ *   getCollegeLeaderboard({ ... })               -> Leaderboard
+ *   getCitizenLeaderboard({ ... })               -> Leaderboard
+ *   getTalukaLeaderboard({ ... })                -> Leaderboard
  */
 
 const REGISTRY = {

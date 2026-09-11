@@ -20,6 +20,7 @@ import { BRAND_ICONS } from "@/lib/brand-icons";
 import { getDataSource } from "@/lib/data/sources";
 import { useI18n } from "@/lib/i18n";
 import { formatTalukaLabel } from "@/lib/format-taluka";
+import { formatWeekLabel } from "@/lib/domain/format";
 import { useAuthStore } from "@/store/auth.store";
 
 const LANDING_BANNERS = ["/q3quiz.png", "/white-banner.jpeg"];
@@ -41,9 +42,10 @@ const ABOUT_LEAD = {
 
 function weekPlaysBadge(language, weeklyPlays, week) {
   const count = new Intl.NumberFormat(language === "hi" ? "hi-IN" : "en-IN").format(weeklyPlays);
-  if (language === "gu") return `${count} માં ${week}મું અઠવાડિયું`;
-  if (language === "hi") return `${count} में सप्ताह ${week}`;
-  return `${count} in week ${week}`;
+  const weekLabel = formatWeekLabel(week, language);
+  if (language === "gu") return `${count} માં ${weekLabel}`;
+  if (language === "hi") return `${count} में ${weekLabel}`;
+  return `${count} in ${weekLabel}`;
 }
 
 function practiceSubtitle(language) {
@@ -218,7 +220,6 @@ export function WelcomeScreen() {
                 slides={LANDING_BANNERS}
                 className="aspect-[4/3] w-full"
                 sizes="(min-width: 1280px) 36rem, 42vw"
-                showDots={false}
               />
             </div>
 
@@ -277,10 +278,10 @@ export function WelcomeScreen() {
               title={t("leaderboard")}
               subtitle={
                 language === "gu"
-                  ? `${talukaLabel} તાલુકો - ${week} મું અઠવાડિયું`
+                  ? `${talukaLabel} તાલુકો - ${formatWeekLabel(week, language)}`
                   : language === "hi"
-                    ? `${talukaLabel} तालुका - सप्ताह ${week}`
-                    : `${talukaLabel} Taluka - Week ${week}`
+                    ? `${talukaLabel} तालुका - ${formatWeekLabel(week, language)}`
+                    : `${talukaLabel} Taluka - ${formatWeekLabel(week, language)}`
               }
               onClick={() => router.push(ROUTES.leaderboard)}
             />

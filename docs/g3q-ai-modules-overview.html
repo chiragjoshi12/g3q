@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>G3Q — AI Modules: Technical Overview</title>
+  <style>
+    :root {
+      --text: #1b1b1b;
+      --muted: #5c5c58;
+      --rule: #d4d4ce;
+      --band: #f7f7f4;
+      --page: #ffffff;
+      --input: #d4e7e2;
+      --input-stroke: #2c5f56;
+      --model: #d6deef;
+      --model-stroke: #2e3f68;
+      --store: #eadfc4;
+      --store-stroke: #6a5426;
+      --output: #ebd4c9;
+      --output-stroke: #7a402c;
+      --process: #f1f1ed;
+      --process-stroke: #7a7a74;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: #e8e8e3;
+    }
+
+    body {
+      margin: 18px auto 32px;
+      width: 210mm;
+      min-height: 297mm;
+      padding: 12mm 13mm 12mm;
+      background: var(--page);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 11.5px;
+      line-height: 1.5;
+      box-shadow: 0 1px 10px rgba(0, 0, 0, 0.08);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin: -4px 0 8px;
+    }
+
+    .toolbar button {
+      appearance: none;
+      border: 1px solid #c8c8c2;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+      font-size: 10px;
+      letter-spacing: 0.02em;
+      padding: 4px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    .toolbar button:hover {
+      background: var(--band);
+    }
+
+    header.doc-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1.5px solid var(--text);
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .lede {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 11.5px;
+      max-width: 148mm;
+    }
+
+    .meta {
+      flex: none;
+      text-align: right;
+      color: var(--muted);
+      font-size: 9.5px;
+      line-height: 1.5;
+      padding-top: 2px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px 16px;
+      margin: 12px 0 16px;
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .legend strong {
+      color: var(--text);
+      font-weight: 650;
+      margin-right: 2px;
+    }
+
+    .swatch {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .swatch i {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 1.5px;
+      border: 1px solid #999;
+    }
+
+    .swatch.input i {
+      background: var(--input);
+      border-color: var(--input-stroke);
+    }
+
+    .swatch.model i {
+      background: var(--model);
+      border-color: var(--model-stroke);
+    }
+
+    .swatch.store i {
+      background: var(--store);
+      border-color: var(--store-stroke);
+    }
+
+    .swatch.output i {
+      background: var(--output);
+      border-color: var(--output-stroke);
+    }
+
+    .swatch.process i {
+      background: var(--process);
+      border-color: var(--process-stroke);
+    }
+
+    .module {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      padding: 14px 16px 16px;
+      margin: 0 0 16px;
+      background: var(--band);
+      border: 1px solid #ecece7;
+      border-left: 2.5px solid #b7b7b0;
+    }
+
+    section.module:nth-of-type(odd) {
+      background: #f4f4f1;
+    }
+
+    section.module:nth-of-type(even) {
+      background: #fafaf7;
+    }
+
+    .mod-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 14.5px;
+      font-weight: 650;
+      letter-spacing: -0.01em;
+    }
+
+    .when {
+      display: inline-block;
+      flex: none;
+      font-size: 9px;
+      font-weight: 650;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #fff;
+      background: var(--text);
+      padding: 3px 8px 3.5px;
+      border-radius: 2px;
+      line-height: 1.2;
+    }
+
+    .model-line {
+      margin: 0 0 10px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .model-line b {
+      color: var(--text);
+      font-weight: 650;
+    }
+
+    .diagram {
+      background: #fff;
+      border: 1px solid #e4e4de;
+      padding: 12px 14px 10px;
+      margin: 0 0 12px;
+      overflow: visible;
+    }
+
+    .diagram .mermaid {
+      margin: 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    .diagram svg {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .module-td .mod-grid {
+      display: grid;
+      grid-template-columns: minmax(240px, 1.15fr) minmax(200px, 0.85fr);
+      gap: 10px 16px;
+      align-items: center;
+    }
+
+    .module-td .diagram {
+      max-height: none;
+    }
+
+    .module-td .diagram svg {
+      width: auto;
+      max-width: 100%;
+      height: auto;
+      max-height: 420px;
+    }
+
+    .module-lr .diagram {
+      max-height: none;
+    }
+
+    .module-lr .diagram svg {
+      max-height: none;
+      width: 100%;
+      height: auto;
+    }
+
+    .module-m2 .diagram svg {
+      min-height: 250px;
+      max-height: 280px;
+      width: 100%;
+      height: auto;
+    }
+
+/* 
+    .module-m2 .diagram svg {
+      min-height: 42mm;
+      max-height: 48mm;
+    } */
+
+    .explain {
+      margin: 0;
+      font-size: 11.5px;
+      line-height: 1.55;
+      color: #2a2a2a;
+    }
+
+    footer.note {
+      margin-top: 8px;
+      padding-top: 10px;
+      border-top: 1px solid var(--rule);
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    footer.note strong {
+      color: var(--text);
+      font-weight: 650;
+    }
+
+    @media print {
+      html {
+        background: #fff;
+      }
+
+      body {
+        width: auto;
+        min-height: 0;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+        font-size: 11pt;
+      }
+
+      .toolbar {
+        display: none !important;
+      }
+
+      .module {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        padding: 12px 14px 14px;
+        margin: 0 0 14px;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .when,
+      .swatch i,
+      .diagram {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .module-td .mod-grid {
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 10px 14px;
+      }
+
+      .module-td .diagram svg {
+        max-height: 360px;
+      }
+
+      .module-lr .diagram,
+      .module-lr .diagram svg {
+        max-height: none;
+      }
+
+      .module-m1 {
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+
+      .module-m2 {
+        break-before: avoid;
+        page-break-before: avoid;
+      }
+
+
+      @page {
+        size: A4;
+        margin: 12mm 13mm 12mm;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="toolbar no-print">
+    <button type="button" onclick="window.print()">Print / Save as PDF</button>
+  </div>
+
+  <header class="doc-head">
+    <div>
+      <h1>G3Q — AI Modules: Technical Overview</h1>
+      <p class="lede">G3Q (Gujarat Gyan Guru Quiz) uses 5 AI modules across question generation, personalization,
+        explanation, imagery, and student support.</p>
+    </div>
+    <div class="meta">
+      Internal technical reference<br />
+      Print: A4 · 3 pages
+    </div>
+  </header>
+
+  <div class="legend" aria-label="Diagram color legend">
+    <strong>Node colors</strong>
+    <span class="swatch input"><i></i> Input / external data</span>
+    <span class="swatch process"><i></i> Process / routing</span>
+    <span class="swatch model"><i></i> AI model</span>
+    <span class="swatch store"><i></i> Data store</span>
+    <span class="swatch output"><i></i> Final output</span>
+  </div>
+
+  <section class="module module-td module-m1">
+    <div class="mod-head">
+      <h2>1. AI Question Bank Module</h2>
+      <span class="when">One-time process</span>
+    </div>
+    <p class="model-line"><b>Model:</b> Gemini Flash 3.6 (Generator, Reviewer)</p>
+    <div class="mod-grid">
+      <div class="diagram">
+        <pre class="mermaid">
+%%{init: {'flowchart': {'rankSpacing': 14, 'nodeSpacing': 12, 'padding': 3}}}%%
+flowchart TD
+    m1A[Authorized PDFs & Websites] --> m1B[Text Extraction]
+    m1B --> m1C[Sector-wise .txt Source Files]
+    m1C --> m1D[Embedding of Source Files]
+    m1D --> m1E["Generator Model — Gemini Flash 3.6 <br> System Message + Skill"]
+    m1E -->|One sector at a time| m1F[Draft Questions]
+    m1F --> m1G["Reviewer Model — Gemini Flash 3.6 <br> System Message + Skill"]
+    m1G -->|Approved| m1H[(Question Bank DB)]
+    m1G -->|Needs modification| m1I["Modifier Model <br> Edits per Reviewer's instructions"]
+    m1I --> m1G
+    classDef input fill:#d4e7e2,stroke:#2c5f56,stroke-width:1.2px,color:#1b1b1b
+    classDef process fill:#f1f1ed,stroke:#7a7a74,stroke-width:1px,color:#1b1b1b
+    classDef model fill:#d6deef,stroke:#2e3f68,stroke-width:1.2px,color:#1b1b1b
+    classDef store fill:#eadfc4,stroke:#6a5426,stroke-width:1.2px,color:#1b1b1b
+    class m1A input
+    class m1B,m1C,m1D,m1F process
+    class m1E,m1G,m1I model
+    class m1H store
+        </pre>
+      </div>
+      <p class="explain">Source PDFs and authorized sites are extracted into sector-wise text files and embedded before
+        generation. Gemini Flash 3.6 drafts questions one sector at a time; a second Flash 3.6 reviewer either commits
+        approved items to the question bank or sends them to a modifier, which edits to the reviewer’s instructions and
+        re-enters review. This pipeline is offline relative to quiz play — it fills the bank, it does not run at session
+        start.</p>
+    </div>
+  </section>
+
+  <section class="module module-lr module-m2">
+    <span class="when">Runs on every quiz start</span>
+    </div>
+    <p class="model-line"><b>Model:</b> Gemini 3.5 Flash</p>
+    <div class="diagram">
+      <pre class="mermaid">
+        %%{init: {'flowchart': {'rankSpacing': 36, 'nodeSpacing': 26, 'padding': 8}, 'themeVariables': {'fontSize': '22px'}}}%%
+flowchart LR
+    m2QB[(Question Bank DB)] --> m2C["Extractor <br> Pulls 50 matching questions"]
+    m2B --> m2C
+    m2C --> m2E["Generator Model — Gemini 3.5 Flash"]
+    m2A --> m2E
+    m2E -->|Selects & personalizes| m2F["15 Personalized Questions <br> (interactive elements may be added)"]
+    classDef input fill:#d4e7e2,stroke:#2c5f56,stroke-width:1.2px,color:#1b1b1b
+    classDef process fill:#f1f1ed,stroke:#7a7a74,stroke-width:1px,color:#1b1b1b
+    classDef model fill:#d6deef,stroke:#2e3f68,stroke-width:1.2px,color:#1b1b1b
+    classDef store fill:#eadfc4,stroke:#6a5426,stroke-width:1.2px,color:#1b1b1b
+    classDef output fill:#ebd4c9,stroke:#7a402c,stroke-width:1.2px,color:#1b1b1b
+    class m2A input
+    class m2B,m2C process
+    class m2QB store
+    class m2E model
+    class m2F output
+      </pre>
+    </div>
+    <p class="explain">Registration attributes go to the backend, which extracts 50 in-scope bank questions (district,
+      taluka, caste, stream, and related filters). Gemini 3.5 Flash then selects and personalizes a 15-question session
+      from that pool — and may attach interactive elements — so each quiz start is both bank-constrained and
+      student-specific.</p>
+  </section>
+
+  <section class="module module-lr">
+    <div class="mod-head">
+      <h2>3. Explanation Generator Module</h2>
+      <span class="when">Runs per question</span>
+    </div>
+    <p class="model-line"><b>Model:</b> Gemini 3.5 Flash Lite</p>
+    <div class="diagram">
+      <pre class="mermaid">
+flowchart LR
+    m3A[Question + Options + Correct Answer] --> m3C["Explainer Model — Gemini 3.5 Flash Lite"]
+    m3B[Student Details] --> m3C
+    m3C --> m3D["Short Explanation <br> Pre-generated on question-page load to minimize latency"]
+    classDef input fill:#d4e7e2,stroke:#2c5f56,stroke-width:1.2px,color:#1b1b1b
+    classDef model fill:#d6deef,stroke:#2e3f68,stroke-width:1.2px,color:#1b1b1b
+    classDef output fill:#ebd4c9,stroke:#7a402c,stroke-width:1.2px,color:#1b1b1b
+    class m3A,m3B input
+    class m3C model
+    class m3D output
+      </pre>
+    </div>
+    <p class="explain">The explainer receives the stem, options, correct answer, and student profile, and writes a short
+      explanation. Generation is triggered on question-page load — not after the student answers — so the copy is
+      already in hand when the result UI needs it, keeping latency off the critical path.</p>
+  </section>
+
+  <section class="module module-td">
+    <div class="mod-head">
+      <h2>4. Background Image Generation Module</h2>
+      <span class="when">One-time process</span>
+    </div>
+    <p class="model-line"><b>Models:</b> FLUX.1 Schnell · Gemini 3 Flash Lite</p>
+    <div class="mod-grid">
+      <div class="diagram">
+        <pre class="mermaid">
+%%{init: {'flowchart': {'rankSpacing': 16, 'nodeSpacing': 14, 'padding': 4}}}%%
+flowchart TD
+    m4A["Question — Sector + Category"] --> m4B{Style Router}
+    m4B -->|Styles suited to FLUX| m4C[FLUX.1 Schnell]
+    m4B -->|Styles suited to Gemini| m4D[Gemini 3 Flash Lite]
+    m4C --> m4E["6 Style-Variant Images <br> generated for this question"]
+    m4D --> m4E
+    m4E --> m4F[(Question Bank DB <br> stored question-wise)]
+    classDef input fill:#d4e7e2,stroke:#2c5f56,stroke-width:1.2px,color:#1b1b1b
+    classDef process fill:#f1f1ed,stroke:#7a7a74,stroke-width:1px,color:#1b1b1b
+    classDef model fill:#d6deef,stroke:#2e3f68,stroke-width:1.2px,color:#1b1b1b
+    classDef output fill:#ebd4c9,stroke:#7a402c,stroke-width:1.2px,color:#1b1b1b
+    classDef store fill:#eadfc4,stroke:#6a5426,stroke-width:1.2px,color:#1b1b1b
+    class m4A input
+    class m4B process
+    class m4C,m4D model
+    class m4E output
+    class m4F store
+        </pre>
+      </div>
+      <p class="explain">For each question, the sector and category are passed to a style router, which assigns each of
+        the 6 image styles to whichever model renders it best — FLUX.1 Schnell or Gemini 3 Flash Lite. All 6 style
+        variants are generated once per question and stored against that question in the database, so at quiz time the
+        platform simply fetches the pre-generated image for the quiz's chosen style rather than generating anything
+        live.</p>
+    </div>
+  </section>
+
+  <section class="module module-lr">
+    <div class="mod-head">
+      <h2>5. G3Q AI Assistant Module</h2>
+      <span class="when">Runs per student query</span>
+    </div>
+    <p class="model-line"><b>Model:</b> Gemini Flash 3.1 Lite</p>
+    <div class="diagram">
+      <pre class="mermaid">
+flowchart LR
+    m5A[Student Query] --> m5D["Assistant Model — Gemini Flash 3.1 Lite"]
+    m5B[Student User Info] --> m5D
+    m5D -->|Browses only| m5E["G3Q Official Site & <br> Other Authorized Sources"]
+    m5E --> m5D
+    m5D --> m5F[Personalized Answer to Student]
+    classDef input fill:#d4e7e2,stroke:#2c5f56,stroke-width:1.2px,color:#1b1b1b
+    classDef model fill:#d6deef,stroke:#2e3f68,stroke-width:1.2px,color:#1b1b1b
+    classDef output fill:#ebd4c9,stroke:#7a402c,stroke-width:1.2px,color:#1b1b1b
+    class m5A,m5B,m5E input
+    class m5D model
+    class m5F output
+      </pre>
+    </div>
+    <p class="explain">The assistant takes the student query and user info, then may browse only the G3Q official site
+      and other authorized sources before answering. Grounding is closed-world relative to those sources; the returned
+      answer is personalized to the student, not a general web search.</p>
+  </section>
+
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: "base",
+      securityLevel: "loose",
+      themeVariables: {
+        fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif",
+        fontSize: "14px",
+        lineColor: "#6d6d68",
+        tertiaryColor: "#f1f1ed",
+        edgeLabelBackground: "#ffffff",
+        clusterBkg: "transparent",
+        primaryTextColor: "#1b1b1b",
+      },
+      flowchart: {
+        htmlLabels: true,
+        curve: "linear",
+        padding: 10,
+        nodeSpacing: 28,
+        rankSpacing: 40,
+        diagramPadding: 8,
+        wrappingWidth: 160,
+        useMaxWidth: true,
+      },
+    });
+
+    const blocks = [...document.querySelectorAll(".mermaid")];
+    let n = 0;
+    for (const el of blocks) {
+      n += 1;
+      const def = el.textContent.trim();
+      const { svg } = await mermaid.render(`g3q-diagram-${n}`, def);
+      el.innerHTML = svg;
+      el.removeAttribute("data-processed");
+    }
+
+    document.querySelectorAll(".diagram svg").forEach((svg) => {
+      svg.removeAttribute("height");
+      svg.removeAttribute("width");
+      svg.style.maxWidth = "100%";
+      svg.style.height = "auto";
+      svg.style.display = "block";
+      svg.style.margin = "0 auto";
+    });
+  </script>
+</body>
+
+</html>
