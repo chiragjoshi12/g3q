@@ -102,3 +102,4 @@ loadtest/.venv/
 loadtest/users.json
 loadtest/report-*
 loadtest/__pycache__/
+databank
