@@ -14,21 +14,27 @@ export const requestOtp = asyncHandler(async (req, res) => {
 });
 
 export const verifyOtp = asyncHandler(async (req, res) => {
-  const { requestId, otp, role, credential } = req.body;
-  const result = await authService.verifyOtp({ requestId, otp, role, credential });
+  const { id, otp, role, credential } = req.body;
+  const result = await authService.verifyOtp({ id, otp, role, credential });
   return res.status(200).json(result);
 });
 
 export const registerCitizen = asyncHandler(async (req, res) => {
-  const { requestId, name, district, taluka, districtId, talukaId } = req.body;
+  const { id, name, district, taluka, districtId, talukaId } = req.body;
   const result = await authService.registerCitizen({
-    requestId,
+    id,
     name,
     district,
     taluka,
     districtId,
     talukaId,
   });
+  return res.status(200).json(result);
+});
+
+export const linkRoster = asyncHandler(async (req, res) => {
+  const { id, role, credential } = req.body;
+  const result = await authService.linkRoster({ id, role, credential });
   return res.status(200).json(result);
 });
 

@@ -14,26 +14,25 @@ async function upsertDepartments() {
       update: {
         key: department.key,
         nameEn: department.nameEn,
-        nameGu: department.nameGu,
+        nameGu: department.nameGu || department.nameEn,
       },
       create: {
         id: department.id,
         key: department.key,
         nameEn: department.nameEn,
-        nameGu: department.nameGu,
+        nameGu: department.nameGu || department.nameEn,
       },
     });
   }
 }
 
-async function normalizeBankQuestions() {
-  const rows = await prisma.bankQuestion.findMany({
+async function normalizeQuestionRoots() {
+  const rows = await prisma.questionRoot.findMany({
     select: {
       id: true,
-      queId: true,
+      legacyQueId: true,
       departmentId: true,
-      departmentEn: true,
-      departmentGu: true,
+      departmentRef: { select: { nameEn: true, nameGu: true } },
     },
   });
 
@@ -41,28 +40,23 @@ async function normalizeBankQuestions() {
   let updated = 0;
 
   for (const row of rows) {
-    const raw = pickRawDepartment(row);
-    const department = resolveDepartment(raw);
+    const raw =
+      row.departmentRef?.nameEn ||
+      row.departmentRef?.nameGu ||
+      '';
+    // If already linked, skip unless we want to re-resolve from legacy ids — keep as-is
+    if (row.departmentId) continue;
+
+    const department = resolveDepartment(raw || row.legacyQueId);
     if (!department) {
       unresolved.set(raw || '(empty)', unresolved.get(raw || '(empty)') || []);
-      unresolved.get(raw || '(empty)').push(row.queId);
+      unresolved.get(raw || '(empty)').push(row.legacyQueId || String(row.id));
       continue;
     }
 
-    const needsUpdate =
-      row.departmentId !== department.id ||
-      row.departmentEn !== department.nameEn ||
-      row.departmentGu !== department.nameGu;
-
-    if (!needsUpdate) continue;
-
-    await prisma.bankQuestion.update({
+    await prisma.questionRoot.update({
       where: { id: row.id },
-      data: {
-        departmentId: department.id,
-        departmentEn: department.nameEn,
-        departmentGu: department.nameGu,
-      },
+      data: { departmentId: department.id },
     });
     updated += 1;
   }
@@ -105,11 +99,11 @@ async function normalizeSessionSnapshots() {
 
 async function main() {
   await upsertDepartments();
-  const bank = await normalizeBankQuestions();
+  const roots = await normalizeQuestionRoots();
   const snapshots = await normalizeSessionSnapshots();
 
-  if (bank.unresolved.size > 0) {
-    const details = [...bank.unresolved.entries()]
+  if (roots.unresolved.size > 0) {
+    const details = [...roots.unresolved.entries()]
       .map(([raw, queIds]) => `${raw}: ${queIds.slice(0, 5).join(', ')}`)
       .join('\n');
     throw new Error(`Unresolved department values remain:\n${details}`);
@@ -119,7 +113,7 @@ async function main() {
     JSON.stringify(
       {
         departments: DEPARTMENTS.length,
-        bankQuestions: bank,
+        questionRoots: roots,
         sessionSnapshots: snapshots,
       },
       null,

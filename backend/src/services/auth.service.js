@@ -1,5 +1,4 @@
 import { CONFIG } from '../config/index.js';
-import { nanoid } from 'nanoid';
 import {
   isCitizen,
   usesRosterIdentity,
@@ -18,16 +17,14 @@ import { AppError, ERROR_CODE } from '../utils/appError.js';
 const generateOtp = () =>
   String(Math.floor(Math.random() * 10 ** CONFIG.OTP.LENGTH)).padStart(CONFIG.OTP.LENGTH, '0');
 
-const createRequestId = (prefix) => `${prefix}_${Date.now()}_${nanoid(10)}`;
-
 const maskPhone = (phone) => String(phone).replace(/\d(?=\d{4})/g, '•');
 
 function hasCitizenProfile(user) {
   return Boolean(
     user &&
       String(user.name || '').trim() &&
-      (user.districtId != null || String(user.district || '').trim()) &&
-      (user.talukaId != null || String(user.taluka || '').trim())
+      user.districtId != null &&
+      user.talukaId != null
   );
 }
 
@@ -53,7 +50,7 @@ export const authService = {
     return resolveUser(role, credential);
   },
 
-  /** School/college: issue OTP after resolving the roster identity. Citizen: OTP by mobile only. */
+  /** School/college: issue OTP after resolving the roster identity. Citizen / phone-first: OTP by mobile. */
   async requestOtp({ role, credential, phone }) {
     const roleError = validateRole(role);
     if (roleError) throw new AppError(ERROR_CODE.INVALID_REQUEST, roleError);
@@ -63,92 +60,89 @@ export const authService = {
 
     const trimmedPhone = String(phone).trim();
     const otp = generateOtp();
+    const expiresAt = new Date(Date.now() + CONFIG.OTP.EXPIRY_MINUTES * 60_000);
 
     if (isCitizen(role)) {
-      const user = await UserModel.findByPhone(ROLE.CITIZEN, trimmedPhone);
-      const requestId = createRequestId(`otp_${user?.id ?? 'citizen'}`);
+      const user = await UserModel.findByPhoneAny(trimmedPhone);
+      const otpRole = user?.role || ROLE.CITIZEN;
 
-      await OtpModel.create({
-        requestId,
-        userId: user?.id ?? null,
-        role,
+      const row = await OtpModel.create({
+        role: otpRole,
         phone: trimmedPhone,
-        maskedPhone: maskPhone(trimmedPhone),
         otp,
-        expiresAt: new Date(Date.now() + CONFIG.OTP.EXPIRY_MINUTES * 60_000),
+        expiresAt,
       });
 
-      console.log(`[OTP] ${trimmedPhone} (નાગરિક${user ? ` ${user.name}` : ''}) -> ${otp} (request ${requestId})`);
+      console.log(
+        `[OTP] ${trimmedPhone} (${user ? `${user.role} ${user.name}` : 'new'}) -> ${otp} (id ${row.id})`
+      );
 
       return {
-        requestId,
+        id: row.id,
         maskedPhone: maskPhone(trimmedPhone),
         resendSeconds: CONFIG.OTP.RESEND_SECONDS,
       };
     }
 
-    const user = await resolveUser(role, credential);
-    const requestId = createRequestId(`otp_${user.id}`);
+    await resolveUser(role, credential);
 
-    await OtpModel.create({
-      requestId,
-      userId: user.id,
+    const row = await OtpModel.create({
       role,
       phone: trimmedPhone,
-      maskedPhone: maskPhone(trimmedPhone),
       otp,
-      expiresAt: new Date(Date.now() + CONFIG.OTP.EXPIRY_MINUTES * 60_000),
+      expiresAt,
     });
 
-    console.log(`[OTP] ${trimmedPhone} (${user.name}) -> ${otp} (request ${requestId})`);
+    console.log(`[OTP] ${trimmedPhone} (${role}) -> ${otp} (id ${row.id})`);
 
     return {
-      requestId,
+      id: row.id,
       maskedPhone: maskPhone(trimmedPhone),
       resendSeconds: CONFIG.OTP.RESEND_SECONDS,
     };
   },
 
-  /** Verify the OTP. Roster users get a session; new citizens continue to the profile form. */
-  async verifyOtp({ requestId, otp, role, credential }) {
+  /**
+   * Verify OTP.
+   * Phone-first (citizen role on request): existing user → session; else needsSignup.
+   * Legacy roster OTP still returns session for school/college codes.
+   */
+  async verifyOtp({ id, otp, role, credential }) {
     const code = String(otp ?? '').trim();
     if (code.length !== CONFIG.OTP.LENGTH) {
       throw new AppError(ERROR_CODE.INVALID_OTP, `OTP ${CONFIG.OTP.LENGTH} અંકનો હોવો જોઈએ.`);
     }
 
-    const pending = await OtpModel.findActiveByRequestId(requestId);
+    const pending = await OtpModel.findActiveById(id);
     const isDevBypass = CONFIG.NODE_ENV !== 'production' && code === CONFIG.OTP.DEV_BYPASS_CODE;
-    const citizenFlow = isCitizen(role) || pending?.role === ROLE.CITIZEN;
+    const phoneFirst = isCitizen(role) || !credential;
 
-    if (citizenFlow) {
+    if (phoneFirst) {
       if (!pending) {
         throw new AppError(ERROR_CODE.INVALID_OTP);
-      }
-      if (pending.expiresAt.getTime() < Date.now()) {
-        throw new AppError(ERROR_CODE.INVALID_OTP, 'OTP ની મુદત પૂરી થઈ ગઈ છે. ફરી પ્રયાસ કરો.');
       }
       if (!isDevBypass && code !== pending.otp) {
         throw new AppError(ERROR_CODE.INVALID_OTP);
       }
 
-      const user = pending.userId
-        ? await UserModel.findById(pending.userId)
-        : await UserModel.findByPhone(ROLE.CITIZEN, pending.phone);
+      const user = await UserModel.findByPhoneAny(pending.phone);
 
-      if (hasCitizenProfile(user)) {
-        await OtpModel.consume(pending.id);
+      if (user) {
+        if (user.role === ROLE.CITIZEN && !hasCitizenProfile(user)) {
+          await OtpModel.markVerified(pending.id);
+          return { needsSignup: true, needsProfile: true, id: pending.id, phone: pending.phone };
+        }
+        await OtpModel.markVerified(pending.id);
+        await OtpModel.deleteById(pending.id);
         const token = generateAccessToken({ id: user.id, role: user.role });
-        return { user, token, needsProfile: false };
+        return { user, token, existing: true, needsProfile: false, needsSignup: false };
       }
 
       await OtpModel.markVerified(pending.id);
-      return { needsProfile: true, requestId: pending.requestId, phone: pending.phone };
+      return { needsSignup: true, needsProfile: false, id: pending.id, phone: pending.phone };
     }
 
     if (!pending) {
-      // In-memory request lost (e.g. server restart) — fall back to the
-      // credential like the frontend's json data source does, but only the
-      // dev bypass code can succeed since there's no OTP left to check.
       if (isDevBypass) {
         const user = await resolveUser(role, credential);
         return { user, token: generateAccessToken({ id: user.id, role: user.role }) };
@@ -156,39 +150,57 @@ export const authService = {
       throw new AppError(ERROR_CODE.INVALID_OTP);
     }
 
-    if (pending.expiresAt.getTime() < Date.now()) {
-      throw new AppError(ERROR_CODE.INVALID_OTP, 'OTP ની મુદત પૂરી થઈ ગઈ છે. ફરી પ્રયાસ કરો.');
-    }
-
     if (!isDevBypass && code !== pending.otp) {
       throw new AppError(ERROR_CODE.INVALID_OTP);
     }
 
-    await OtpModel.consume(pending.id);
+    await OtpModel.markVerified(pending.id);
+    await OtpModel.deleteById(pending.id);
 
-    const user = await UserModel.findById(pending.userId);
-    if (!user) throw new AppError(ERROR_CODE.UNKNOWN);
-
+    const user = await resolveUser(role, credential);
     const token = generateAccessToken({ id: user.id, role: user.role });
     return { user, token };
   },
 
-  async registerCitizen({ requestId, name, district, taluka, districtId, talukaId }) {
+  /** After phone OTP signup: attach verified phone to a roster school/college identity. */
+  async linkRoster({ id, role, credential }) {
+    if (!usesRosterIdentity(role)) {
+      throw new AppError(ERROR_CODE.INVALID_REQUEST, 'અમાન્ય પ્રકાર.');
+    }
+
+    const pending = await OtpModel.findVerifiedById(id);
+    if (!pending) {
+      throw new AppError(ERROR_CODE.INVALID_OTP);
+    }
+
+    const user = await resolveUser(role, credential);
+    const phoneOwner = await UserModel.findByPhoneAny(pending.phone);
+    if (phoneOwner && phoneOwner.id !== user.id) {
+      throw new AppError(
+        ERROR_CODE.INVALID_REQUEST,
+        'આ મોબાઇલ નંબર પહેલેથી બીજા એકાઉન્ટ સાથે જોડાયેલો છે.'
+      );
+    }
+
+    const linked = await UserModel.updatePhone(user.id, pending.phone);
+    await OtpModel.deleteById(pending.id);
+    const token = generateAccessToken({ id: linked.id, role: linked.role });
+    return { user: linked, token };
+  },
+
+  async registerCitizen({ id, name, district, taluka, districtId, talukaId }) {
     const profileError = validateCitizenProfile({ name, district, taluka, districtId, talukaId });
     if (profileError) throw new AppError(ERROR_CODE.INVALID_REQUEST, profileError);
 
-    const pending = await OtpModel.findVerifiedByRequestId(requestId);
-    if (!pending || pending.role !== ROLE.CITIZEN) {
+    const pending = await OtpModel.findVerifiedById(id);
+    if (!pending) {
       throw new AppError(ERROR_CODE.INVALID_OTP);
     }
-    if (pending.expiresAt.getTime() < Date.now()) {
-      throw new AppError(ERROR_CODE.INVALID_OTP, 'OTP ની મુદત પૂરી થઈ ગઈ છે. ફરી પ્રયાસ કરો.');
+    if (pending.role && pending.role !== ROLE.CITIZEN) {
+      throw new AppError(ERROR_CODE.INVALID_OTP);
     }
 
-    let user = pending.userId
-      ? await UserModel.findById(pending.userId)
-      : await UserModel.findByPhone(ROLE.CITIZEN, pending.phone);
-
+    let user = await UserModel.findByPhone(ROLE.CITIZEN, pending.phone);
     const geoInput = { district, taluka, districtId, talukaId };
 
     if (user) {
@@ -201,7 +213,7 @@ export const authService = {
       });
     }
 
-    await OtpModel.consume(pending.id);
+    await OtpModel.deleteById(pending.id);
     const token = generateAccessToken({ id: user.id, role: user.role });
     return { user, token };
   },

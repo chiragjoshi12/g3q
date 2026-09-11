@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { BETA_DEPARTMENTS } from '../config/beta-departments.js';
+import { DEPARTMENTS } from '../config/departments.js';
 import { GUJARAT_DISTRICTS } from '../config/gujarat-geography.js';
 
 const prisma = new PrismaClient();
@@ -72,229 +73,6 @@ const users = {
   ],
 };
 
-const quizzes = [
-  {
-    id: 'quiz_gujarat_gk',
-    title: 'ગુજરાત સામાન્ય જ્ઞાન',
-    subtitle: 'ઇતિહાસ, ભૂગોળ અને સંસ્કૃતિ',
-    description:
-      'ગુજરાતના ઇતિહાસ, ભૂગોળ, વારસો અને સંસ્કૃતિ પર આધારિત મિશ્ર પ્રકારની પ્રશ્નોત્તરી. દરેક પ્રશ્ન પછી વિગતવાર સમજૂતી મળશે.',
-    banner: 'https://i.ibb.co/r2RnQjZB/q3quiz.png',
-    category: 'સામાન્ય જ્ઞાન',
-    level: 'મધ્યમ',
-    totalQuestions: 7,
-    durationMinutes: 8,
-    totalPoints: 7,
-    featured: true,
-    tags: ['ગુજરાત', 'ઇતિહાસ', 'ભૂગોળ'],
-  },
-];
-
-const questions = {
-  quiz_gujarat_gk: [
-    {
-      id: 'q2',
-      order: 1,
-      type: 'true_false',
-      points: 1,
-      prompt: 'સ્ટેચ્યુ ઓફ યુનિટી વિશ્વની સૌથી ઊંચી પ્રતિમા છે.',
-      options: [
-        { id: 'true', label: 'સાચું' },
-        { id: 'false', label: 'ખોટું' },
-      ],
-      answer: ['true'],
-    },
-    {
-      id: 'q1',
-      order: 2,
-      type: 'single_choice',
-      points: 1,
-      prompt: 'ગુજરાત રાજ્યની રાજધાની કયું શહેર છે?',
-      options: [
-        { id: 'a', label: 'અમદાવાદ' },
-        { id: 'b', label: 'ગાંધીનગર' },
-        { id: 'c', label: 'સુરત' },
-        { id: 'd', label: 'વડોદરા' },
-      ],
-      answer: ['b'],
-    },
-    {
-      id: 'q3',
-      order: 3,
-      type: 'match_following',
-      points: 1,
-      prompt: 'નીચેના સ્થળોને તેમના જિલ્લા સાથે જોડો.',
-      left: [
-        { id: 'l1', label: 'સ્ટેચ્યુ ઓફ યુનિટી' },
-        { id: 'l2', label: 'રાણી કી વાવ' },
-        { id: 'l3', label: 'સાબરમતી આશ્રમ' },
-        { id: 'l4', label: 'દ્વારકાધીશ મંદિર' },
-      ],
-      right: [
-        { id: 'r1', label: 'પાટણ' },
-        { id: 'r2', label: 'દેવભૂમિ દ્વારકા' },
-        { id: 'r3', label: 'નર્મદા' },
-        { id: 'r4', label: 'અમદાવાદ' },
-      ],
-      answer: { l1: 'r3', l2: 'r1', l3: 'r4', l4: 'r2' },
-    },
-    {
-      id: 'q4',
-      order: 4,
-      type: 'image_choice',
-      points: 1,
-      prompt: "નીચેનામાંથી કયું ચિત્ર 'સ્ટેચ્યુ ઓફ યુનિટી' દર્શાવે છે?",
-      options: [
-        {
-          id: 'a',
-          label: 'સોમનાથ મંદિર',
-          image:
-            'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Somanath_mandir_%28cropped%29.jpg/1280px-Somanath_mandir_%28cropped%29.jpg?utm_source=gu.wikipedia.org&utm_campaign=index&utm_content=thumbnail',
-        },
-        {
-          id: 'b',
-          label: 'સ્ટેચ્યુ ઓફ યુનિટી',
-          image: 'https://static.abplive.com/wp-content/uploads/sites/7/2020/10/17132101/Statue-of-unity-open-today.jpg?impolicy=abp_cdn&imwidth=1200',
-        },
-        {
-          id: 'c',
-          label: 'રાણી કી વાવ',
-          image: 'https://upload.wikimedia.org/wikipedia/commons/a/a5/Rani_ki_vav_02.jpg',
-        },
-        {
-          id: 'd',
-          label: 'એશિયાઈ સિંહ',
-          image: 'https://gujarati.opindia.com/wp-content/uploads/sites/7/2023/08/Image-10-08-23-at-7.14-PM.jpeg',
-        },
-      ],
-      answer: ['b'],
-    },
-    {
-      id: 'q6',
-      order: 5,
-      type: 'drag_drop',
-      points: 1,
-      prompt: 'નીચેની ઘટનાઓને સમયક્રમ પ્રમાણે (જૂનીથી નવી) ગોઠવો.',
-      items: [
-        { id: 'i1', label: 'ગુજરાત રાજ્યની સ્થાપના' },
-        { id: 'i2', label: 'સ્ટેચ્યુ ઓફ યુનિટીનું ઉદ્ઘાટન' },
-        { id: 'i3', label: 'સોમનાથ મંદિરનું પુનઃનિર્માણ' },
-        { id: 'i4', label: 'સરદાર સરોવર બંધનું લોકાર્પણ' },
-      ],
-      answer: ['i3', 'i1', 'i4', 'i2'],
-    },
-    {
-      id: 'q7',
-      order: 6,
-      type: 'drag_into_blanks',
-      points: 1,
-      prompt: 'નીચે આપેલા શબ્દોને યોગ્ય ખાલી જગ્યામાં ખેંચીને ગોઠવો.',
-      segments: [
-        { type: 'text', value: 'ગુજરાતનું સૌથી મોટું શહેર' },
-        { type: 'blank', id: 'b1' },
-        { type: 'text', value: 'છે અને રાજ્યની સ્થાપના' },
-        { type: 'blank', id: 'b2' },
-        { type: 'text', value: 'માં થઈ હતી.' },
-      ],
-      bank: [
-        { id: 'w1', label: 'સુરત' },
-        { id: 'w2', label: 'અમદાવાદ' },
-        { id: 'w3', label: '1947' },
-        { id: 'w4', label: '1960' },
-      ],
-      answer: { b1: 'w2', b2: 'w4' },
-    },
-    {
-      id: 'q8',
-      order: 7,
-      type: 'single_choice',
-      points: 1,
-      prompt: 'એશિયાઈ સિંહો માટે પ્રખ્યાત ગીર રાષ્ટ્રીય ઉદ્યાન મુખ્યત્વે કયા જિલ્લામાં આવેલું છે?',
-      options: [
-        { id: 'a', label: 'કચ્છ' },
-        { id: 'b', label: 'ભરૂચ' },
-        { id: 'c', label: 'જૂનાગઢ' },
-        { id: 'd', label: 'વલસાડ' },
-      ],
-      answer: ['c'],
-    },
-  ],
-};
-
-const explanations = {
-  q2: {
-    model: 'GujaratGPT',
-    summary: 'સ્ટેચ્યુ ઓફ યુનિટી વિશ્વની સૌથી ઊંચી પ્રતિમા છે.',
-    body: 'સ્ટેચ્યુ ઓફ યુનિટી સરદાર વલ્લભભાઈ પટેલની 182 મીટર ઊંચી પ્રતિમા છે, જે વિશ્વની સૌથી ઊંચી પ્રતિમા ગણાય છે. તેનું ઉદ્ઘાટન 31 ઑક્ટોબર, 2018ના રોજ કેવડિયા, નર્મદા જિલ્લામાં થયું હતું.',
-    keyPoints: [
-      'ઊંચાઈ: 182 મીટર — વિશ્વની સૌથી ઊંચી પ્રતિમા',
-      'ઉદ્ઘાટન: 31 ઑક્ટોબર, 2018',
-      'સ્થળ: કેવડિયા, નર્મદા જિલ્લો',
-    ],
-  },
-  q1: {
-    model: 'GujaratGPT',
-    summary: 'ગાંધીનગર ગુજરાતની રાજધાની છે.',
-    body: "1 મે, 1960ના રોજ ગુજરાત રાજ્યની સ્થાપના થઈ ત્યારે શરૂઆતમાં અમદાવાદ કામચલાઉ રાજધાની હતું. ત્યાર બાદ સાબરમતી નદીના કિનારે આયોજનબદ્ધ રીતે નવું શહેર વસાવવામાં આવ્યું, જેને રાષ્ટ્રપિતા મહાત્મા ગાંધીના નામ પરથી 'ગાંધીનગર' નામ અપાયું. 1970થી ગાંધીનગર ગુજરાતની કાયમી રાજધાની છે. અમદાવાદ રાજ્યનું સૌથી મોટું શહેર અને આર્થિક કેન્દ્ર છે, પણ તે રાજધાની નથી.",
-    keyPoints: [
-      'ગુજરાતની સ્થાપના: 1 મે, 1960',
-      'કાયમી રાજધાની ગાંધીનગર: 1970થી',
-      'અમદાવાદ સૌથી મોટું શહેર છે, રાજધાની નહીં',
-    ],
-  },
-  q3: {
-    model: 'GujaratGPT',
-    summary: 'દરેક સ્થળ તેના જિલ્લા સાથે આ રીતે જોડાય છે.',
-    body: 'સ્ટેચ્યુ ઓફ યુનિટી નર્મદા જિલ્લામાં કેવડિયા ખાતે સરદાર સરોવર બંધ પાસે આવેલું છે. રાણી કી વાવ પાટણ જિલ્લામાં આવેલી 11મી સદીની વાવ છે, જેને યુનેસ્કો વર્લ્ડ હેરિટેજ સાઇટનો દરજ્જો મળેલો છે. સાબરમતી આશ્રમ અમદાવાદમાં સાબરમતી નદીના કિનારે આવેલો છે, જ્યાંથી ગાંધીજીએ દાંડીકૂચ શરૂ કરી હતી. દ્વારકાધીશ મંદિર દેવભૂમિ દ્વારકા જિલ્લામાં આવેલું છે અને તે ચાર ધામમાંનું એક છે.',
-    keyPoints: [
-      'સ્ટેચ્યુ ઓફ યુનિટી — નર્મદા (કેવડિયા)',
-      'રાણી કી વાવ — પાટણ (યુનેસ્કો સાઇટ)',
-      'સાબરમતી આશ્રમ — અમદાવાદ',
-      'દ્વારકાધીશ મંદિર — દેવભૂમિ દ્વારકા',
-    ],
-  },
-  q4: {
-    model: 'GujaratGPT',
-    summary: 'સરદાર પટેલની વિશાળ પ્રતિમા દર્શાવતું ચિત્ર સાચો જવાબ છે.',
-    body: 'સ્ટેચ્યુ ઓફ યુનિટી સરદાર વલ્લભભાઈ પટેલની 182 મીટર ઊંચી પ્રતિમા છે, જે વિશ્વની સૌથી ઊંચી પ્રતિમા ગણાય છે. તેનું ઉદ્ઘાટન 31 ઓક્ટોબર, 2018ના રોજ થયું હતું. બાકીના વિકલ્પોમાં સોમનાથ મંદિર (શિખરવાળું મંદિર), રાણી કી વાવ (પગથિયાંવાળી વાવ) અને એશિયાઈ સિંહ (ગીરનું પ્રતીક) દર્શાવાયા છે.',
-    keyPoints: [
-      'ઊંચાઈ: 182 મીટર — વિશ્વની સૌથી ઊંચી પ્રતિમા',
-      'ઉદ્ઘાટન: 31 ઓક્ટોબર, 2018',
-      'સ્થળ: કેવડિયા, નર્મદા જિલ્લો',
-    ],
-  },
-  q6: {
-    model: 'GujaratGPT',
-    summary: 'સાચો સમયક્રમ: સોમનાથ (1951) → ગુજરાત સ્થાપના (1960) → સરદાર સરોવર (2017) → સ્ટેચ્યુ ઓફ યુનિટી (2018).',
-    body: 'આઝાદી પછી સરદાર પટેલની પહેલથી સોમનાથ મંદિરનું પુનઃનિર્માણ થયું અને 11 મે, 1951ના રોજ તેની પ્રાણપ્રતિષ્ઠા થઈ. ત્યાર બાદ મહાગુજરાત આંદોલનના પરિણામે 1 મે, 1960ના રોજ મુંબઈ રાજ્યમાંથી અલગ ગુજરાત રાજ્યની રચના થઈ. નર્મદા નદી પરના સરદાર સરોવર બંધનું લોકાર્પણ 17 સપ્ટેમ્બર, 2017ના રોજ થયું અને તેની નજીક જ 31 ઓક્ટોબર, 2018ના રોજ સ્ટેચ્યુ ઓફ યુનિટીનું ઉદ્ઘાટન થયું.',
-    keyPoints: [
-      '1951 — સોમનાથ મંદિરની પ્રાણપ્રતિષ્ઠા',
-      '1960 — ગુજરાત રાજ્યની સ્થાપના',
-      '2017 — સરદાર સરોવર બંધનું લોકાર્પણ',
-      '2018 — સ્ટેચ્યુ ઓફ યુનિટીનું ઉદ્ઘાટન',
-    ],
-  },
-  q7: {
-    model: 'GujaratGPT',
-    summary: 'સાચું વાક્ય: ગુજરાતનું સૌથી મોટું શહેર અમદાવાદ છે અને રાજ્યની સ્થાપના 1960માં થઈ હતી.',
-    body: 'વસ્તી અને વિસ્તારની દૃષ્ટિએ અમદાવાદ ગુજરાતનું સૌથી મોટું શહેર છે. સુરત વસ્તીની દૃષ્ટિએ બીજા ક્રમે આવે છે અને હીરા તથા કાપડ ઉદ્યોગ માટે જાણીતું છે. 1947 એ ભારતની આઝાદીનું વર્ષ છે, જ્યારે ગુજરાત રાજ્યની અલગ રચના તેના તેર વર્ષ પછી 1 મે, 1960ના રોજ થઈ હતી.',
-    keyPoints: [
-      'અમદાવાદ — ગુજરાતનું સૌથી મોટું શહેર',
-      'સુરત — વસ્તીમાં બીજા ક્રમે',
-      '1947 આઝાદીનું વર્ષ, 1960 ગુજરાત સ્થાપનાનું',
-    ],
-  },
-  q8: {
-    model: 'GujaratGPT',
-    summary: 'ગીર રાષ્ટ્રીય ઉદ્યાન મુખ્યત્વે જૂનાગઢ જિલ્લામાં આવેલું છે.',
-    body: 'ગીર રાષ્ટ્રીય ઉદ્યાન અને અભયારણ્ય સૌરાષ્ટ્રમાં જૂનાગઢ જિલ્લામાં ફેલાયેલું છે અને તેનો કેટલોક ભાગ ગીર સોમનાથ તથા અમરેલી જિલ્લામાં પણ આવે છે. એશિયાઈ સિંહ (Panthera leo persica) આજે વિશ્વમાં કુદરતી રીતે માત્ર અહીં જ જોવા મળે છે, જેના કારણે ગીર ભારતનું અત્યંત મહત્ત્વનું સંરક્ષિત ક્ષેત્ર ગણાય છે.',
-    keyPoints: [
-      'મુખ્ય જિલ્લો: જૂનાગઢ',
-      'એશિયાઈ સિંહનું વિશ્વમાં એકમાત્ર કુદરતી નિવાસસ્થાન',
-      'સ્થાપના: 1965 (અભયારણ્ય)',
-    ],
-  },
-};
 
 async function seedDistricts() {
   for (const district of GUJARAT_DISTRICTS) {
@@ -340,6 +118,26 @@ async function seedSeedTalukas() {
     });
   }
   console.log(`Seeded ${SEED_TALUKAS.length} demo talukas.`);
+}
+
+async function seedDepartments() {
+  for (const department of DEPARTMENTS) {
+    await prisma.department.upsert({
+      where: { id: department.id },
+      update: {
+        key: department.key,
+        nameEn: department.nameEn,
+        nameGu: department.nameGu || department.nameEn,
+      },
+      create: {
+        id: department.id,
+        key: department.key,
+        nameEn: department.nameEn,
+        nameGu: department.nameGu || department.nameEn,
+      },
+    });
+  }
+  console.log(`Seeded ${DEPARTMENTS.length} departments.`);
 }
 
 async function seedBetaDepartments() {
@@ -402,38 +200,20 @@ async function seedUsers() {
   console.log(`Seeded ${allUsers.length} users.`);
 }
 
-async function seedQuizzes() {
-  for (const quiz of quizzes) {
-    await prisma.quiz.upsert({ where: { id: quiz.id }, update: quiz, create: quiz });
-
-    for (const question of questions[quiz.id] ?? []) {
-      await prisma.question.upsert({
-        where: { id: question.id },
-        update: { ...question, quizId: quiz.id },
-        create: { ...question, quizId: quiz.id },
-      });
-
-      const explanation = explanations[question.id];
-      if (explanation) {
-        await prisma.explanation.upsert({
-          where: { questionId: question.id },
-          update: explanation,
-          create: { ...explanation, questionId: question.id },
-        });
-      }
-    }
-  }
-  console.log(`Seeded ${quizzes.length} quiz(zes) with questions and explanations.`);
-}
 
 async function seedAdminAndBank() {
   const { adminAuthService } = await import('../services/adminAuth.service.js');
+  const { buildVariantPayloadFromBankRow, legacyTypeToBankType } = await import(
+    '../config/question-types.js'
+  );
+  const { resolveDepartment } = await import('../config/departments.js');
   await adminAuthService.ensureMasterAdmin();
   console.log('Ensured master admin user.');
 
   const bankQuestions = [
     {
       queId: 'G3Q_Q_1',
+      type: 'single_choice',
       departmentGu: 'Education, Science and technology',
       departmentEn: 'Education, Science and technology',
       questionGu: 'આઈટી/આઈટીસ નીતિ (2022-27) હેઠળ, ડીબીટીનું પૂરું નામ શું છે ?',
@@ -448,11 +228,12 @@ async function seedAdminAndBank() {
       optionDEn: 'Direct Business Transfer',
       correctOption: 'B',
       scope: 'GENERAL',
-      district: null,
+      districtId: null,
       casteCategory: 'GENERAL',
     },
     {
       queId: 'G3Q_Q_2',
+      type: 'single_choice',
       departmentGu: 'શિક્ષણ, વિજ્ઞાન અને ટેકનોલોજી',
       departmentEn: 'Education, Science and technology',
       questionGu: "ઇન્ટરનેટના સંદર્ભમાં 'યુઆરએલ' નો અર્થ શું છે ?",
@@ -467,11 +248,12 @@ async function seedAdminAndBank() {
       optionDEn: 'Universal Record Link',
       correctOption: 'C',
       scope: 'GENERAL',
-      district: null,
+      districtId: null,
       casteCategory: 'GENERAL',
     },
     {
       queId: 'G3Q_Q_3',
+      type: 'single_choice',
       departmentGu: 'શિક્ષણ, વિજ્ઞાન અને ટેકનોલોજી',
       departmentEn: 'Education, Science and technology',
       questionGu:
@@ -488,11 +270,12 @@ async function seedAdminAndBank() {
       optionDEn: 'Providing scholarships to college students',
       correctOption: 'B',
       scope: 'TARGETED',
-      district: null,
+      districtId: null,
       casteCategory: 'SC',
     },
     {
       queId: 'G3Q_Q_4',
+      type: 'single_choice',
       departmentGu: 'Education, Science and technology',
       departmentEn: 'Education, Science and technology',
       questionGu:
@@ -509,11 +292,12 @@ async function seedAdminAndBank() {
       optionDEn: '20th January',
       correctOption: 'A',
       scope: 'GENERAL',
-      district: null,
+      districtId: null,
       casteCategory: 'GENERAL',
     },
     {
       queId: 'G3Q_Q_47',
+      type: 'single_choice',
       departmentGu: 'Freedom Fighters of India',
       departmentEn: 'Freedom Fighters of India',
       questionGu: 'સરદાર પટેલ સ્મારક ભવન અમદાવાદમાં કઈ જગ્યાએ આવેલું છે ?',
@@ -528,27 +312,56 @@ async function seedAdminAndBank() {
       optionDEn: 'Vasana',
       correctOption: 'B',
       scope: 'TARGETED',
-      district: 'Ahmedabad',
+      districtId: null,
       casteCategory: 'GENERAL',
     },
   ];
 
   for (const q of bankQuestions) {
-    await prisma.bankQuestion.upsert({
-      where: { queId: q.queId },
-      update: {},
-      create: q,
+    const resolved = resolveDepartment(q.departmentEn || q.departmentGu);
+    const root = await prisma.questionRoot.upsert({
+      where: { legacyQueId: q.queId },
+      update: {
+        departmentId: resolved?.id ?? null,
+        scope: q.scope,
+        districtId: q.districtId,
+        casteCategory: q.casteCategory,
+      },
+      create: {
+        legacyQueId: q.queId,
+        departmentId: resolved?.id ?? null,
+        scope: q.scope,
+        districtId: q.districtId,
+        casteCategory: q.casteCategory,
+      },
+    });
+
+    await prisma.questionVariant.upsert({
+      where: { legacyQueId: q.queId },
+      update: {
+        rootId: root.id,
+        type: legacyTypeToBankType(q.type),
+        payload: buildVariantPayloadFromBankRow(q),
+        reviewStatus: 'ACCEPTED',
+      },
+      create: {
+        rootId: root.id,
+        type: legacyTypeToBankType(q.type),
+        legacyQueId: q.queId,
+        payload: buildVariantPayloadFromBankRow(q),
+        reviewStatus: 'ACCEPTED',
+      },
     });
   }
-  console.log(`Seeded ${bankQuestions.length} bank questions.`);
+  console.log(`Seeded ${bankQuestions.length} question roots/variants.`);
 }
 
 async function main() {
   await seedDistricts();
   await seedSeedTalukas();
+  await seedDepartments();
   await seedBetaDepartments();
   await seedUsers();
-  await seedQuizzes();
   await seedAdminAndBank();
   // Roster sample from admin/students.json (30 students).
   const { spawnSync } = await import('child_process');

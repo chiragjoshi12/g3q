@@ -88,7 +88,7 @@ const schoolLabel = (scopeName, week, lang = DEFAULT_LANG) => {
   const safeLang = normalizeLang(lang);
   if (safeLang === 'en') return `${scopeName || 'State'} - Week ${week}`;
   if (safeLang === 'hi') return `${scopeName || 'राज्य'} - सप्ताह ${week}`;
-  return `${scopeName || 'રાજ્ય'} - ${week} મું અઠવાડિયું`;
+  return `${scopeName || 'રાજ્ય'} - અઠવાડિયું ${week}`;
 };
 
 function talukaNamesForFilter(scopeTaluka) {
@@ -119,13 +119,13 @@ function resolveWeek(week) {
   return CONFIG.QUIZ.CURRENT_WEEK;
 }
 
-function baseFilters({ week, talukaNames, role, schoolId, institute }) {
+function baseFilters({ week, talukaId, role, schoolId, institute }) {
   const where = ['la.week = ?'];
   const params = [resolveWeek(week)];
 
-  if (talukaNames?.length) {
-    where.push(`(${talukaNames.map(() => 'LOWER(la.taluka) = LOWER(?)').join(' OR ')})`);
-    params.push(...talukaNames);
+  if (talukaId != null) {
+    where.push('la.taluka_id = ?');
+    params.push(Number(talukaId));
   }
 
   if (role === ROLE.STUDENT) {
@@ -146,8 +146,8 @@ function baseFilters({ week, talukaNames, role, schoolId, institute }) {
   return { whereSql: where.join(' AND '), params };
 }
 
-async function rankedUsers({ week, talukaNames, role, schoolId, institute, limit, meId, lang }) {
-  const { whereSql, params } = baseFilters({ week, talukaNames, role, schoolId, institute });
+async function rankedUsers({ week, talukaId, role, schoolId, institute, limit, meId, lang }) {
+  const { whereSql, params } = baseFilters({ week, talukaId, role, schoolId, institute });
   const sql = `
     SELECT
       la.user_id AS user_id,
@@ -155,17 +155,17 @@ async function rankedUsers({ week, talukaNames, role, schoolId, institute, limit
       u.institute,
       u.school_id,
       u.grade,
-      COALESCE(t.name_gu, t.name_en, la.taluka) AS taluka,
-      COALESCE(d.name_gu, d.name_en, la.district) AS district,
+      COALESCE(t.name_gu, t.name_en) AS taluka,
+      COALESCE(d.name_gu, d.name_en) AS district,
       la.best_percentage,
       la.total_time_ms
     FROM leaderboard_aggregates la
     INNER JOIN users u
       ON u.id = la.user_id
     LEFT JOIN talukas t
-      ON t.id = u.taluka_id
+      ON t.id = la.taluka_id
     LEFT JOIN districts d
-      ON d.id = u.district_id
+      ON d.id = COALESCE(la.district_id, u.district_id)
     WHERE ${whereSql}
     ORDER BY
       la.best_percentage DESC,
@@ -192,9 +192,9 @@ async function rankedUsers({ week, talukaNames, role, schoolId, institute, limit
   );
 }
 
-async function findMyRank({ week, talukaNames, role, schoolId, institute, meId, lang }) {
+async function findMyRank({ week, talukaId, role, schoolId, institute, meId, lang }) {
   if (!meId) return null;
-  const { whereSql, params } = baseFilters({ week, talukaNames, role, schoolId, institute });
+  const { whereSql, params } = baseFilters({ week, talukaId, role, schoolId, institute });
 
   const meSql = `
     SELECT
@@ -203,8 +203,8 @@ async function findMyRank({ week, talukaNames, role, schoolId, institute, meId, 
       u.institute,
       u.school_id,
       u.grade,
-      COALESCE(t.name_gu, t.name_en, la.taluka) AS taluka,
-      COALESCE(d.name_gu, d.name_en, la.district) AS district,
+      COALESCE(t.name_gu, t.name_en) AS taluka,
+      COALESCE(d.name_gu, d.name_en) AS district,
       la.best_percentage,
       la.total_correct,
       la.total_time_ms
@@ -212,9 +212,9 @@ async function findMyRank({ week, talukaNames, role, schoolId, institute, meId, 
     INNER JOIN users u
       ON u.id = la.user_id
     LEFT JOIN talukas t
-      ON t.id = u.taluka_id
+      ON t.id = la.taluka_id
     LEFT JOIN districts d
-      ON d.id = u.district_id
+      ON d.id = COALESCE(la.district_id, u.district_id)
     WHERE ${whereSql} AND la.user_id = ?
     LIMIT 1
   `;
@@ -282,13 +282,13 @@ async function topRunningTalukaRows(week) {
   const scopedWeek = resolveWeek(week);
   const currentWeekRows = await prisma.leaderboardTalukaStat.findMany({
     where: { week: scopedWeek },
-    orderBy: [{ submittedSessions: 'desc' }, { taluka: 'asc' }],
+    orderBy: [{ submittedSessions: 'desc' }, { talukaId: 'asc' }],
     take: 25,
   });
   if (currentWeekRows.length) return currentWeekRows;
 
   return prisma.leaderboardTalukaStat.findMany({
-    orderBy: [{ submittedSessions: 'desc' }, { week: 'desc' }, { taluka: 'asc' }],
+    orderBy: [{ submittedSessions: 'desc' }, { week: 'desc' }, { talukaId: 'asc' }],
     take: 25,
   });
 }
@@ -335,7 +335,8 @@ async function resolveTaluka({ userId, talukaId, talukaName, week }) {
 
   const topRows = await topRunningTalukaRows(week);
   for (const row of topRows) {
-    const matched = await findTalukaByAnyName(row?.taluka);
+    const cache = await getLocationCache();
+    const matched = cache.talukasById.get(Number(row.talukaId));
     if (matched) return matched;
   }
 
@@ -360,11 +361,10 @@ async function talukaLeaderboardByRole({
   }
 
   const cap = clampLimit(limit);
-  const talukaNames = talukaNamesForFilter(scopeTaluka);
   const [items, meEntry] = await Promise.all([
     rankedUsers({
       week: scopedWeek,
-      talukaNames,
+      talukaId: scopeTaluka.id,
       role,
       schoolId,
       institute,
@@ -374,7 +374,7 @@ async function talukaLeaderboardByRole({
     }),
     findMyRank({
       week: scopedWeek,
-      talukaNames,
+      talukaId: scopeTaluka.id,
       role,
       schoolId,
       institute,
@@ -438,12 +438,13 @@ export const leaderboardService = {
     }
 
     const cap = clampLimit(limit);
-    const scopeTaluka = await findTalukaByAnyName(me?.taluka);
-    const talukaNames = talukaNamesForFilter(scopeTaluka);
+    const scopeTaluka = me?.talukaId
+      ? (await getLocationCache()).talukasById.get(Number(me.talukaId))
+      : await findTalukaByAnyName(me?.taluka);
     const [items, meEntry] = await Promise.all([
       rankedUsers({
         week: scopedWeek,
-        talukaNames,
+        talukaId: scopeTaluka?.id ?? null,
         role: ROLE.STUDENT,
         schoolId: scopeSchoolId,
         institute: scopeInstitute,
@@ -453,7 +454,7 @@ export const leaderboardService = {
       }),
       findMyRank({
         week: scopedWeek,
-        talukaNames,
+        talukaId: scopeTaluka?.id ?? null,
         role: ROLE.STUDENT,
         schoolId: scopeSchoolId,
         institute: scopeInstitute,

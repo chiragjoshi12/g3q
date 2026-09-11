@@ -128,6 +128,20 @@ export class UserModel {
     return toRaw(user);
   }
 
+  /** Phone-first login: resolve any role by mobile number. */
+  static async findByPhoneAny(phone) {
+    return this.findByPhone(null, phone);
+  }
+
+  static async updatePhone(id, phone) {
+    const user = await prisma.user.update({
+      where: { id },
+      data: { phone: phoneDigits(phone) },
+      include: USER_GEO_INCLUDE,
+    });
+    return toRaw(user);
+  }
+
   static async createCitizen({ name, phone, districtId, talukaId, district, taluka }) {
     const geo = await resolveUserGeography({ districtId, talukaId, district, taluka });
     const user = await prisma.user.create({

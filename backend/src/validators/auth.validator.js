@@ -57,8 +57,14 @@ export const requestOtpSchema = z
     }
   });
 
+const otpRequestIdSchema = z.preprocess((value) => {
+  if (value == null || value === '') return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : value;
+}, z.number().int().positive());
+
 export const verifyOtpSchema = z.object({
-  requestId: z.string().min(1),
+  id: otpRequestIdSchema,
   otp: z.string().min(1),
   role: roleSchema,
   credential: z.string().optional().default(''),
@@ -66,7 +72,7 @@ export const verifyOtpSchema = z.object({
 
 export const registerCitizenSchema = z
   .object({
-    requestId: z.string().min(1),
+    id: otpRequestIdSchema,
     name: z.string().trim().min(1).max(128),
     districtId: optionalPositiveInt,
     talukaId: optionalPositiveInt,
@@ -74,6 +80,12 @@ export const registerCitizenSchema = z
     taluka: optionalName,
   })
   .superRefine(refineGeography);
+
+export const linkRosterSchema = z.object({
+  id: otpRequestIdSchema,
+  role: rosterRoleSchema,
+  credential: z.string().min(1),
+});
 
 export const betaLoginSchema = z
   .object({

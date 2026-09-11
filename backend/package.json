@@ -14,6 +14,7 @@
     "prisma:pull": "prisma db pull --schema=src/prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema=src/prisma/schema.prisma",
     "prisma:seed": "node src/prisma/seed.js",
+    "backfill:question-bank": "node -e \"console.error('bank_questions dropped; backfill is obsolete'); process.exit(1)\"",
     "seed:demo": "node scripts/seed-demo-leaderboard-data.js",
     "import:beta-backgrounds": "node scripts/import-beta-background-images.js",
     "import:beta-explanations": "node scripts/import-beta-explanations.js",
@@ -22,7 +23,6 @@
     "leaderboard:rebuild": "node scripts/rebuild-leaderboard-aggregates.js",
     "geography:sync": "node scripts/sync-gujarat-geography.js",
     "departments:normalize": "node scripts/normalize-departments.js",
-    "import:bank": "node scripts/import-bank-csv.js",
     "import:legacy-bank": "node scripts/import-legacy-bank.js",
     "import:students": "node scripts/import-students.js"
   },

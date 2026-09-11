@@ -3,37 +3,14 @@ import { ADMIN_ROLE } from '../config/admin.roles.js';
 import { BankQuestionModel } from '../models/BankQuestionModel.js';
 import { AdminWorkModel } from '../models/AdminWorkModel.js';
 
-const buildListWhere = ({ language, review_status, q, correct_option, assigned_to, has_comments }, admin) => {
+const buildListWhere = ({ review_status, correct_option, assigned_to, has_comments }, admin) => {
   const where = {};
 
   if (review_status && review_status !== 'all') {
     where.reviewStatus = review_status;
   }
 
-  if (correct_option) {
-    where.correctOption = correct_option;
-  }
-
-  if (language === 'both') {
-    where.AND = [
-      { questionGu: { not: null } },
-      { questionEn: { not: null } },
-    ];
-  } else if (language === 'gu_only') {
-    where.AND = [{ questionGu: { not: null } }, { questionEn: null }];
-  } else if (language === 'en_only') {
-    where.AND = [{ questionEn: { not: null } }, { questionGu: null }];
-  }
-
-  if (q) {
-    where.OR = [
-      { queId: { contains: q } },
-      { questionGu: { contains: q } },
-      { questionEn: { contains: q } },
-      { departmentGu: { contains: q } },
-      { departmentEn: { contains: q } },
-    ];
-  }
+  // correct_option filter skipped (payload JSON); kept for API compat without erroring.
 
   const assigned = assigned_to && assigned_to !== 'all' ? assigned_to : null;
   if (assigned === 'mine') {
@@ -64,6 +41,8 @@ export const adminQuestionService = {
       where,
       page: query.page,
       pageSize: query.page_size,
+      language: query.language,
+      q: query.q,
     });
   },
 

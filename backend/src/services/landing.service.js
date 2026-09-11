@@ -1,6 +1,5 @@
 import { prisma } from '../config/prisma.client.js';
 import { CONFIG } from '../config/index.js';
-import { QuizModel } from '../models/QuizModel.js';
 import { createTtlCache } from '../utils/ttlCache.js';
 
 const MS_IN_DAY = 24 * 60 * 60 * 1000;
@@ -12,7 +11,7 @@ export const landingService = {
     if (cached) return cached;
 
     const since = new Date(Date.now() - 7 * MS_IN_DAY);
-    const [totalPlays, weeklyPlays, featuredQuiz] = await Promise.all([
+    const [totalPlays, weeklyPlays] = await Promise.all([
       prisma.quizSession.count({ where: { status: 'submitted' } }),
       prisma.quizSession.count({
         where: {
@@ -20,7 +19,6 @@ export const landingService = {
           completedAt: { gte: since },
         },
       }),
-      QuizModel.findFeatured(),
     ]);
 
     const payload = {
@@ -29,7 +27,7 @@ export const landingService = {
       week: CONFIG.QUIZ.CURRENT_WEEK,
       weekMeta: CONFIG.QUIZ.CURRENT_WEEK_META,
       weeks: CONFIG.QUIZ.WEEKS,
-      featuredQuizId: featuredQuiz?.id ?? null,
+      featuredQuizId: 'practice',
       playTitle: 'G3Q Quiz',
       playSubtitle: `વિદ્યાર્થી પ્રોફાઇલ મુજબ ${CONFIG.QUIZ.QUESTION_COUNT} પ્રશ્નો`,
       playQuestionCount: CONFIG.QUIZ.QUESTION_COUNT,

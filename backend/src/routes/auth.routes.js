@@ -4,6 +4,7 @@ import {
   requestOtp,
   verifyOtp,
   registerCitizen,
+  linkRoster,
   betaLogin,
 } from '../controllers/auth.controller.js';
 import { validateRequest } from '../middlewares/validation.middleware.js';
@@ -12,6 +13,7 @@ import {
   requestOtpSchema,
   verifyOtpSchema,
   registerCitizenSchema,
+  linkRosterSchema,
   betaLoginSchema,
 } from '../validators/auth.validator.js';
 
@@ -22,6 +24,7 @@ router.post('/identity/lookup', validateRequest(identityLookupSchema), lookupIde
 router.post('/otp/request', validateRequest(requestOtpSchema), requestOtp);
 router.post('/otp/verify', validateRequest(verifyOtpSchema), verifyOtp);
 router.post('/citizen/register', validateRequest(registerCitizenSchema), registerCitizen);
+router.post('/roster/link', validateRequest(linkRosterSchema), linkRoster);
 router.post('/beta/login', validateRequest(betaLoginSchema), betaLogin);
 
 export default router;

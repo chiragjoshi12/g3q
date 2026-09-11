@@ -9,7 +9,6 @@ import { apiEnvelopeMiddleware } from './utils/apiResponse.js';
 
 import authRoutes from './routes/auth.routes.js';
 import quizRoutes from './routes/quiz.routes.js';
-import attemptRoutes from './routes/attempt.routes.js';
 import userRoutes from './routes/user.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import sessionRoutes from './routes/session.routes.js';
@@ -61,7 +60,6 @@ app.use('/api/geography', geographyRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/quizzes', quizRoutes);
-app.use('/api/attempts', attemptRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/g3q-ai', g3qAiRoutes);
 // Admin console paths kept under /api/v1/admin to match the Next.js client.

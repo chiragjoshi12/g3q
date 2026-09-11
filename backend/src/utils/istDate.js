@@ -1,4 +1,4 @@
-/** Calendar helpers in Asia/Kolkata — review quotas are “questions/day” in IST. */
+/** Calendar helpers in Asia/Kolkata (IST). */
 
 const TZ = 'Asia/Kolkata';
 

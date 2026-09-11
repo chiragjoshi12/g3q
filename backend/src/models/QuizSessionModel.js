@@ -207,7 +207,7 @@ export const toPlayExplanation = (row, language = 'gu') => {
   const storedExplanation = parseJson(row.content)?.explanation;
   if (storedExplanation?.body) {
     return {
-      questionId: row.bankQueId,
+      questionId: row.queId,
       model: storedExplanation.model || 'G3Q',
       summary: storedExplanation.summary ?? '',
       body: storedExplanation.body,
@@ -216,7 +216,7 @@ export const toPlayExplanation = (row, language = 'gu') => {
   }
   const correctText = choiceAnswerText(row, lang);
   return {
-    questionId: row.bankQueId,
+    questionId: row.queId,
     model: 'G3Q',
     summary:
       lang === 'en'
@@ -241,7 +241,7 @@ export const toPlayQuestion = (row, language = 'gu') => {
   const explanation = toPlayExplanation(row, lang);
   const targets = compactTargets(row, lang);
   return {
-    id: row.bankQueId,
+    id: row.queId,
     order: row.order,
     type,
     points: row.points,
@@ -310,7 +310,7 @@ export const toSessionResult = (session) => {
   return {
     ...toSessionSummary(session),
     breakdown: questions.map((q) => ({
-      questionId: q.bankQueId,
+      questionId: q.queId,
       order: q.order,
       type: questionTypeOf(q),
       correct: Boolean(q.isCorrect),
@@ -330,13 +330,14 @@ const buildExposureUpsert = (rows, completedAt) => {
   if (!rows.length) return null;
 
   const valuesSql = rows
-    .map(() => '(?, ?, ?, ?, 1, ?, ?, ?)')
+    .map(() => '(?, ?, ?, ?, ?, 1, ?, ?, ?)')
     .join(', ');
   const params = [];
   for (const row of rows) {
     params.push(
       row.userId,
-      row.bankQueId,
+      row.variantId,
+      row.rootId,
       completedAt,
       completedAt,
       row.isCorrect ? 1 : 0,
@@ -349,7 +350,8 @@ const buildExposureUpsert = (rows, completedAt) => {
     sql: `
       INSERT INTO user_question_exposures (
         user_id,
-        bank_que_id,
+        variant_id,
+        root_id,
         first_seen_at,
         last_seen_at,
         times_seen,
@@ -423,8 +425,8 @@ const buildQuestionAnswersBulkUpdate = (gradedRows) => {
 const buildLeaderboardAggregateUpsert = ({
   week,
   role,
-  taluka,
-  district,
+  talukaId,
+  districtId,
   userId,
   totals,
   completedAt,
@@ -433,8 +435,8 @@ const buildLeaderboardAggregateUpsert = ({
     INSERT INTO leaderboard_aggregates (
       week,
       role,
-      taluka,
-      district,
+      taluka_id,
+      district_id,
       user_id,
       best_percentage,
       total_correct,
@@ -447,7 +449,7 @@ const buildLeaderboardAggregateUpsert = ({
     )
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
-      district = COALESCE(VALUES(district), district),
+      district_id = COALESCE(VALUES(district_id), district_id),
       best_percentage = GREATEST(best_percentage, VALUES(best_percentage)),
       total_correct = total_correct + VALUES(total_correct),
       total_wrong = total_wrong + VALUES(total_wrong),
@@ -459,8 +461,8 @@ const buildLeaderboardAggregateUpsert = ({
   params: [
     week,
     role,
-    taluka,
-    district,
+    talukaId,
+    districtId,
     userId,
     totals.percentage,
     totals.correctCount,
@@ -472,23 +474,23 @@ const buildLeaderboardAggregateUpsert = ({
   ],
 });
 
-const buildLeaderboardTalukaStatUpsert = ({ week, taluka, district, completedAt }) => ({
+const buildLeaderboardTalukaStatUpsert = ({ week, talukaId, districtId, completedAt }) => ({
   sql: `
     INSERT INTO leaderboard_taluka_stats (
       week,
-      taluka,
-      district,
+      taluka_id,
+      district_id,
       submitted_sessions,
       created_at,
       updated_at
     )
     VALUES (?, ?, ?, 1, ?, ?)
     ON DUPLICATE KEY UPDATE
-      district = COALESCE(VALUES(district), district),
+      district_id = COALESCE(VALUES(district_id), district_id),
       submitted_sessions = submitted_sessions + 1,
       updated_at = VALUES(updated_at)
   `,
-  params: [week, taluka, district, completedAt, completedAt],
+  params: [week, talukaId, districtId, completedAt, completedAt],
 });
 
 /** Merge graded answers onto the already-loaded session for the API response. */
@@ -501,8 +503,6 @@ export const applyGradedRowsToSession = (session, gradedRows, totals, completedA
     correctCount: totals.correctCount,
     wrongCount: totals.wrongCount,
     totalTimeMs: totals.totalTimeMs,
-    wallClockMs: totals.wallClockMs,
-    averageTimeMs: totals.averageTimeMs,
     percentage: totals.percentage,
     questions: (session.questions || []).map((question) => {
       const graded = byId.get(question.id);
@@ -521,7 +521,7 @@ export const applyGradedRowsToSession = (session, gradedRows, totals, completedA
 const updateLeaderboardAfterSubmit = async (leaderboardContext, totals, completedAt) => {
   if (
     !leaderboardContext?.userId ||
-    !leaderboardContext?.taluka ||
+    !leaderboardContext?.talukaId ||
     !leaderboardContext?.role
   ) {
     return;
@@ -531,16 +531,16 @@ const updateLeaderboardAfterSubmit = async (leaderboardContext, totals, complete
   const aggregateUpsert = buildLeaderboardAggregateUpsert({
     week,
     role: leaderboardContext.role,
-    taluka: leaderboardContext.taluka,
-    district: leaderboardContext.district || null,
+    talukaId: leaderboardContext.talukaId,
+    districtId: leaderboardContext.districtId || null,
     userId: leaderboardContext.userId,
     totals,
     completedAt,
   });
   const talukaUpsert = buildLeaderboardTalukaStatUpsert({
     week,
-    taluka: leaderboardContext.taluka,
-    district: leaderboardContext.district || null,
+    talukaId: leaderboardContext.talukaId,
+    districtId: leaderboardContext.districtId || null,
     completedAt,
   });
 
@@ -555,14 +555,6 @@ export class QuizSessionModel {
     return prisma.quizSession.findUnique({
       where: { id },
       include: { questions: { orderBy: { order: 'asc' } } },
-    });
-  }
-
-  static async findInProgressForUser(userId) {
-    return prisma.quizSession.findFirst({
-      where: { userId, status: 'in_progress' },
-      include: { questions: { orderBy: { order: 'asc' } } },
-      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -625,7 +617,8 @@ export class QuizSessionModel {
       sessionId,
       order: index + 1,
       type: q.type || QUESTION_TYPE.SINGLE_CHOICE,
-      bankQueId: q.queId,
+      queId: q.queId,
+      variantId: q.variantId,
       points: 1,
       departmentGu: q.departmentGu,
       departmentEn: q.departmentEn,
@@ -697,8 +690,6 @@ export class QuizSessionModel {
             correctCount: totals.correctCount,
             wrongCount: totals.wrongCount,
             totalTimeMs: totals.totalTimeMs,
-            wallClockMs: totals.wallClockMs,
-            averageTimeMs: totals.averageTimeMs,
             percentage: totals.percentage,
           },
         });

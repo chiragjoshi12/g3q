@@ -313,6 +313,7 @@ function toBankQuestion(block, index) {
 }
 
 async function main() {
+  throw new Error('This importer still targets bank_questions (dropped). Re-point it at question_roots/question_variants.');
   const markdown = await fs.readFile(SOURCE_PATH, 'utf8');
   const blocks = markdown
     .split(/(?=\*\*(?:Que\s+)?[0-9]+\.\*\*)/g)

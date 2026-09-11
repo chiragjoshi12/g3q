@@ -14,8 +14,8 @@ async function main() {
     SELECT
       s.user_id AS user_id,
       u.role AS role,
-      COALESCE(t.name_gu, t.name_en) AS taluka,
-      COALESCE(d.name_gu, d.name_en) AS district,
+      u.taluka_id AS taluka_id,
+      u.district_id AS district_id,
       MAX(s.percentage) AS best_percentage,
       COALESCE(SUM(s.correct_count), 0) AS total_correct,
       COALESCE(SUM(s.wrong_count), 0) AS total_wrong,
@@ -25,13 +25,9 @@ async function main() {
     FROM quiz_sessions s
     INNER JOIN users u
       ON u.id = s.user_id
-    LEFT JOIN talukas t
-      ON t.id = u.taluka_id
-    LEFT JOIN districts d
-      ON d.id = u.district_id
     WHERE s.status = 'submitted'
       AND u.taluka_id IS NOT NULL
-    GROUP BY s.user_id, u.role, t.name_gu, t.name_en, d.name_gu, d.name_en
+    GROUP BY s.user_id, u.role, u.taluka_id, u.district_id
   `);
 
   if (aggregateRows.length) {
@@ -39,8 +35,8 @@ async function main() {
       data: aggregateRows.map((row) => ({
         week,
         role: row.role,
-        taluka: row.taluka,
-        district: row.district || null,
+        talukaId: Number(row.taluka_id),
+        districtId: row.district_id != null ? Number(row.district_id) : null,
         bestPercentage: Number(row.best_percentage) || 0,
         totalCorrect: Number(row.total_correct) || 0,
         totalWrong: Number(row.total_wrong) || 0,
@@ -54,27 +50,23 @@ async function main() {
 
   const talukaRows = await prisma.$queryRawUnsafe(`
     SELECT
-      COALESCE(t.name_gu, t.name_en) AS taluka,
-      MAX(COALESCE(d.name_gu, d.name_en)) AS district,
+      u.taluka_id AS taluka_id,
+      MAX(u.district_id) AS district_id,
       COUNT(*) AS submitted_sessions
     FROM quiz_sessions s
     INNER JOIN users u
       ON u.id = s.user_id
-    LEFT JOIN talukas t
-      ON t.id = u.taluka_id
-    LEFT JOIN districts d
-      ON d.id = u.district_id
     WHERE s.status = 'submitted'
       AND u.taluka_id IS NOT NULL
-    GROUP BY t.name_gu, t.name_en
+    GROUP BY u.taluka_id
   `);
 
   if (talukaRows.length) {
     await prisma.leaderboardTalukaStat.createMany({
       data: talukaRows.map((row) => ({
         week,
-        taluka: row.taluka,
-        district: row.district || null,
+        talukaId: Number(row.taluka_id),
+        districtId: row.district_id != null ? Number(row.district_id) : null,
         submittedSessions: Number(row.submitted_sessions) || 0,
       })),
     });

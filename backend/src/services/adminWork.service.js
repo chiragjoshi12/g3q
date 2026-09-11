@@ -5,18 +5,6 @@ import { AdminWorkModel } from '../models/AdminWorkModel.js';
 import { BankQuestionModel } from '../models/BankQuestionModel.js';
 import { IST_TIMEZONE, istTodayYmd } from '../utils/istDate.js';
 
-const toReviewerPayload = async (admin, ymd, { includeDays = false } = {}) => {
-  const [stats, assignment_history] = await Promise.all([
-    AdminWorkModel.reviewerStats(admin),
-    AdminWorkModel.assignmentHistory(admin.id),
-  ]);
-  const payload = { ...stats, assignment_history };
-  if (includeDays) {
-    payload.recent_days = await AdminWorkModel.recentDayCounts(admin.id, ymd);
-  }
-  return payload;
-};
-
 export const adminWorkService = {
   async dashboard(actor) {
     const ymd = istTodayYmd();
@@ -24,9 +12,7 @@ export const adminWorkService = {
     const unassignedPending = await AdminWorkModel.countUnassignedPending();
 
     const meUser = await AdminUserModel.findById(actor.id);
-    const me = await toReviewerPayload(meUser, ymd, {
-      includeDays: actor.role !== ADMIN_ROLE.MASTER,
-    });
+    const me = await AdminWorkModel.reviewerStats(meUser);
 
     const payload = {
       date: ymd,
@@ -45,13 +31,13 @@ export const adminWorkService = {
 
     if (actor.role === ADMIN_ROLE.MASTER) {
       const reviewers = await AdminWorkModel.listReviewers();
-      payload.reviewers = await Promise.all(reviewers.map((row) => toReviewerPayload(row, ymd)));
-      payload.recent_days = await AdminWorkModel.overallRecentDayCounts(ymd, 14);
+      payload.reviewers = await Promise.all(
+        reviewers.map((row) => AdminWorkModel.reviewerStats(row))
+      );
       if (unassignedPending === 0) {
         payload.warnings.push('No unassigned pending questions left to allocate.');
       }
     } else {
-      payload.recent_days = me.recent_days;
       payload.my_comments = await AdminWorkModel.commentedQuestions(actor.id, 12);
     }
 
@@ -72,13 +58,12 @@ export const adminWorkService = {
       adminId: admin.id,
       assignedById: actor.id,
       count: body.count,
-      ymd: istTodayYmd(),
     });
-    const stats = await toReviewerPayload(admin, istTodayYmd());
-    return { allocation, reviewer: stats };
+    const reviewer = await AdminWorkModel.reviewerStats(admin);
+    return { allocation, reviewer };
   },
 
-  async unassign(body, actor) {
+  async unassign(body) {
     const admin = await AdminUserModel.findById(body.admin_id);
     if (!admin) throw new AppError(ERROR_CODE.NOT_FOUND, 'Admin user not found.');
     if (admin.role === ADMIN_ROLE.MASTER) {
@@ -88,9 +73,8 @@ export const adminWorkService = {
     const allocation = await AdminWorkModel.unassignPending({
       adminId: admin.id,
       count: body.count,
-      batchId: body.batch_id ?? null,
     });
-    const stats = await toReviewerPayload(admin, istTodayYmd());
-    return { allocation, reviewer: stats };
+    const reviewer = await AdminWorkModel.reviewerStats(admin);
+    return { allocation, reviewer };
   },
 };

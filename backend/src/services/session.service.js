@@ -9,6 +9,7 @@ import {
   toSessionPlayPayload,
   toSessionResult,
 } from '../models/QuizSessionModel.js';
+import { flattenVariantRow } from '../models/BankQuestionModel.js';
 import { UserModel } from '../models/UserModel.js';
 import { gradeQuestion } from './grading.service.js';
 import { resolveAzureBlobUrl } from '../utils/azureStorage.js';
@@ -91,21 +92,35 @@ const shuffle = (items) => {
   return arr;
 };
 
-const isProfileMatch = (q, district, caste) => {
-  const qDistrict = (q.district || '').trim().toLowerCase();
-  const qCaste = (q.casteCategory || '').trim().toUpperCase();
-  const isLocal = Boolean(district && qDistrict && qDistrict === district);
-  const isCaste = Boolean(
+const districtIdOf = (q) => (q.districtId != null ? Number(q.districtId) : null);
+
+const casteOf = (q) => (q.casteCategory || '').trim().toUpperCase();
+
+const isDistrictMatch = (q, districtId) =>
+  districtId != null && districtIdOf(q) != null && Number(districtId) === districtIdOf(q);
+
+const isCasteMatch = (q, caste) => {
+  const qCaste = casteOf(q);
+  return Boolean(
     caste && caste !== 'GENERAL' && qCaste && qCaste !== 'GENERAL' && qCaste === caste
   );
-  return isLocal || isCaste;
 };
 
-const personalizedTargetCount = () => {
-  const min = Math.max(0, CONFIG.QUIZ.PERSONALIZED_MIN);
-  const max = Math.max(min, CONFIG.QUIZ.PERSONALIZED_MAX);
-  if (max === min) return min;
-  return min + Math.floor(Math.random() * (max - min + 1));
+const isProfileMatch = (q, districtId, caste) =>
+  isDistrictMatch(q, districtId) || isCasteMatch(q, caste);
+
+const takeUnique = (pools, count) => {
+  const picked = [];
+  const seen = new Set();
+  for (const pool of pools) {
+    for (const item of pool) {
+      if (picked.length >= count) return picked;
+      if (seen.has(item.variantId)) continue;
+      seen.add(item.variantId);
+      picked.push(item);
+    }
+  }
+  return picked;
 };
 
 function isBetaUser(user) {
@@ -184,19 +199,19 @@ function mixBetaQuestions(pool, count) {
 }
 
 async function attachBetaQuestionBackgrounds(bankRows) {
-  const betaRows = bankRows.filter((row) => Number.isFinite(Number(row.betaDepartmentId)));
-  if (!betaRows.length) {
+  const tagged = bankRows.filter((row) => Number.isFinite(Number(row.departmentId)));
+  if (!tagged.length) {
     return { bankRows, backgroundStyle: null };
   }
 
-  const departmentIds = [...new Set(betaRows.map((row) => Number(row.betaDepartmentId)))];
-  const imageRows = await prisma.betaDepartmentQuizImage.findMany({
+  const departmentIds = [...new Set(tagged.map((row) => Number(row.departmentId)))];
+  const imageRows = await prisma.departmentQuizImage.findMany({
     where: {
-      betaDepartmentId: { in: departmentIds },
+      departmentId: { in: departmentIds },
       isActive: true,
     },
     select: {
-      betaDepartmentId: true,
+      departmentId: true,
       imageUrl: true,
     },
   });
@@ -208,14 +223,14 @@ async function attachBetaQuestionBackgrounds(bankRows) {
   const byDepartment = new Map();
 
   for (const row of imageRows) {
-    if (!byDepartment.has(row.betaDepartmentId)) byDepartment.set(row.betaDepartmentId, []);
-    byDepartment.get(row.betaDepartmentId).push(row);
+    if (!byDepartment.has(row.departmentId)) byDepartment.set(row.departmentId, []);
+    byDepartment.get(row.departmentId).push(row);
   }
 
   return {
     backgroundStyle: null,
     bankRows: bankRows.map((row) => {
-      const departmentId = Number(row.betaDepartmentId);
+      const departmentId = Number(row.departmentId);
       if (!Number.isFinite(departmentId)) return row;
       const fallback = byDepartment.get(departmentId) || [];
       const chosenImage = pickRandom(fallback);
@@ -235,117 +250,125 @@ async function attachBetaQuestionBackgrounds(bankRows) {
 async function fetchCandidateLight({
   userId,
   limit,
-  districtRaw,
+  districtId,
   casteRaw,
   personalized,
   betaOnly,
 }) {
   const params = [userId];
+  const scopeExpr = "UPPER(COALESCE(qr.scope, 'GENERAL'))";
+  const districtExpr = 'qr.district_id';
+  const casteExpr = "UPPER(COALESCE(qr.caste_category, 'GENERAL'))";
   const filters = [
-    "bq.review_status = 'ACCEPTED'",
+    "qv.review_status = 'ACCEPTED'",
     `(
-      (bq.correct_option IS NOT NULL AND bq.type IN ('single_choice', 'true_false', 'image_choice'))
-      OR bq.answer IS NOT NULL
+      JSON_EXTRACT(qv.payload, '$.correct') IS NOT NULL
+      OR JSON_EXTRACT(qv.payload, '$.answer') IS NOT NULL
+      OR qv.type IN ('mcq', 'true_false', 'match_pairs', 'sequence', 'fill_blanks')
     )`,
-    betaOnly
-      ? "UPPER(COALESCE(bq.scope, '')) = 'BETA'"
-      : "UPPER(COALESCE(bq.scope, 'GENERAL')) <> 'BETA'",
-    'uqe.bank_que_id IS NULL',
+    betaOnly ? `${scopeExpr} = 'BETA'` : `${scopeExpr} <> 'BETA'`,
+    'uqe.variant_id IS NULL',
   ];
+
+  const casteNorm =
+    casteRaw && String(casteRaw).trim().toUpperCase() !== 'GENERAL'
+      ? String(casteRaw).trim().toUpperCase()
+      : null;
+  const hasDistrict = districtId != null;
+  const hasCaste = Boolean(casteNorm);
 
   if (personalized) {
     const personal = [];
-    if (districtRaw) {
-      personal.push('bq.district = ?');
-      params.push(districtRaw);
+    if (hasDistrict) {
+      personal.push(`${districtExpr} = ?`);
+      params.push(Number(districtId));
     }
-    if (casteRaw && casteRaw !== 'GENERAL') {
-      personal.push('bq.caste_category = ?');
-      params.push(casteRaw);
+    if (hasCaste) {
+      personal.push(`${casteExpr} = ?`);
+      params.push(casteNorm);
     }
     if (!personal.length) return [];
     filters.push(`(${personal.join(' OR ')})`);
   } else {
     const exclusions = [];
-    if (districtRaw) {
-      exclusions.push('(bq.district IS NULL OR bq.district <> ?)');
-      params.push(districtRaw);
+    if (hasDistrict) {
+      exclusions.push(`(${districtExpr} IS NULL OR ${districtExpr} <> ?)`);
+      params.push(Number(districtId));
     }
-    if (casteRaw && casteRaw !== 'GENERAL') {
-      exclusions.push('(bq.caste_category IS NULL OR bq.caste_category <> ?)');
-      params.push(casteRaw);
+    if (hasCaste) {
+      exclusions.push(`(${casteExpr} = 'GENERAL' OR ${casteExpr} <> ?)`);
+      params.push(casteNorm);
     }
     if (exclusions.length) {
       filters.push(exclusions.join(' AND '));
     }
   }
 
+  let orderBy = '';
+  if (personalized && hasDistrict && hasCaste) {
+    orderBy = `ORDER BY CASE WHEN ${districtExpr} = ? AND ${casteExpr} = ? THEN 0 ELSE 1 END, RAND()`;
+    params.push(Number(districtId), casteNorm);
+  } else if (personalized) {
+    orderBy = 'ORDER BY RAND()';
+  }
+
   params.push(limit);
   const sql = `
     SELECT
-      bq.que_id AS queId,
-      bq.beta_department_id AS betaDepartmentId,
-      bq.department_gu AS departmentGu,
-      bq.department_en AS departmentEn,
-      bq.type AS type,
-      bq.district AS district,
-      bq.caste_category AS casteCategory
-    FROM bank_questions bq
+      qv.id AS variantId,
+      qv.root_id AS rootId,
+      qv.legacy_que_id AS queId,
+      CASE qv.type
+        WHEN 'mcq' THEN 'single_choice'
+        WHEN 'true_false' THEN 'true_false'
+        WHEN 'fill_blanks' THEN 'drag_into_blanks'
+        WHEN 'sequence' THEN 'drag_drop'
+        WHEN 'match_pairs' THEN 'match_following'
+        ELSE 'single_choice'
+      END AS type,
+      qr.department_id AS departmentId,
+      d.name_gu AS departmentGu,
+      d.name_en AS departmentEn,
+      ${districtExpr} AS districtId,
+      qr.caste_category AS casteCategory
+    FROM question_variants qv
+    INNER JOIN question_roots qr ON qr.id = qv.root_id
+    LEFT JOIN departments d ON d.id = qr.department_id
     LEFT JOIN user_question_exposures uqe
-      ON uqe.user_id = ? AND uqe.bank_que_id = bq.que_id
+      ON uqe.user_id = ? AND uqe.variant_id = qv.id
     WHERE ${filters.join(' AND ')}
+    ${orderBy}
     LIMIT ?
   `;
   return prisma.$queryRawUnsafe(sql, ...params);
 }
 
-async function hydrateBankQuestions(queIds) {
-  if (!queIds.length) return [];
-  const placeholders = queIds.map(() => '?').join(',');
-  const rows = await prisma.$queryRawUnsafe(
-    `
-      SELECT
-        bq.que_id AS queId,
-        bq.beta_department_id AS betaDepartmentId,
-        bq.department_gu AS departmentGu,
-        bq.department_en AS departmentEn,
-        bq.question_gu AS questionGu,
-        bq.question_en AS questionEn,
-        bq.type AS type,
-        bq.option_a_gu AS optionAGu,
-        bq.option_b_gu AS optionBGu,
-        bq.option_c_gu AS optionCGu,
-        bq.option_d_gu AS optionDGu,
-        bq.option_a_en AS optionAEn,
-        bq.option_b_en AS optionBEn,
-        bq.option_c_en AS optionCEn,
-        bq.option_d_en AS optionDEn,
-        bq.correct_option AS correctOption,
-        bq.content AS content,
-        bq.answer AS answer,
-        bq.district AS district,
-        bq.caste_category AS casteCategory
-      FROM bank_questions bq
-      WHERE bq.que_id IN (${placeholders})
-    `,
-    ...queIds
-  );
-  const byId = new Map(rows.map((row) => [row.queId, row]));
-  return queIds.map((id) => byId.get(id)).filter(Boolean);
+async function hydrateVariants(variantIds) {
+  if (!variantIds.length) return [];
+  const variants = await prisma.questionVariant.findMany({
+    where: { id: { in: variantIds } },
+    include: {
+      root: { include: { departmentRef: true } },
+    },
+  });
+  const byId = new Map(variants.map((v) => [v.id, flattenVariantRow(v)]));
+  return variantIds.map((id) => byId.get(id)).filter(Boolean);
 }
 
 /**
- * Pick `count` ACCEPTED bank questions the user has never seen.
- * Tries to include PERSONALIZED_MIN..MAX profile-tagged rows (district / caste);
- * fills the rest from the general pool. Shortfalls fall back to whichever pool
- * still has unseen questions so the session can still start.
+ * Pick `count` ACCEPTED variants the user has never seen.
+ * Fills the session in this order (no cap on personalised rows):
+ *   1. district AND caste matches
+ *   2. district OR caste matches
+ *   3. general pool
+ * Shortfalls fall back to later pools so the session can still start.
  */
 async function allocateBankQuestions(user, count) {
   if (isBetaUser(user)) {
     const betaPool = await fetchCandidateLight({
       userId: user.id,
       limit: Math.max(count * 10, 40),
-      districtRaw: null,
+      districtId: null,
       casteRaw: null,
       personalized: false,
       betaOnly: true,
@@ -359,21 +382,21 @@ async function allocateBankQuestions(user, count) {
     }
 
     const pickedLight = mixBetaQuestions(betaPool, count);
-    return hydrateBankQuestions(pickedLight.map((q) => q.queId));
+    return hydrateVariants(pickedLight.map((q) => q.variantId));
   }
 
-  const district = (user.district || '').trim().toLowerCase();
+  const districtId = user.districtId != null ? Number(user.districtId) : null;
   const caste = (user.socialCategory || '').trim().toUpperCase();
-  const districtRaw = (user.district || '').trim();
   const casteRaw = (user.socialCategory || '').trim();
-  const needPersonalized = Boolean(districtRaw || (casteRaw && caste !== 'GENERAL'));
+  const needPersonalized = Boolean(districtId != null || (casteRaw && caste !== 'GENERAL'));
+  const poolLimit = Math.max(count * 20, 200);
 
   const [tagged, generalPool] = await Promise.all([
     needPersonalized
       ? fetchCandidateLight({
           userId: user.id,
-          limit: Math.max(CONFIG.QUIZ.PERSONALIZED_MAX * 20, 60),
-          districtRaw,
+          limit: poolLimit,
+          districtId,
           casteRaw,
           personalized: true,
           betaOnly: false,
@@ -381,48 +404,42 @@ async function allocateBankQuestions(user, count) {
       : Promise.resolve([]),
     fetchCandidateLight({
       userId: user.id,
-      limit: Math.max(count * 8, 120),
-      districtRaw,
+      limit: poolLimit,
+      districtId,
       casteRaw,
       personalized: false,
       betaOnly: false,
     }),
   ]);
 
-  let preferred = tagged.filter((q) => isProfileMatch(q, district, caste));
-  const preferredById = new Map(preferred.map((q) => [q.queId, q]));
+  const preferredById = new Map();
+  for (const q of tagged) {
+    if (isProfileMatch(q, districtId, caste)) preferredById.set(q.variantId, q);
+  }
   const general = [];
   for (const q of generalPool) {
-    if (isProfileMatch(q, district, caste)) preferredById.set(q.queId, q);
+    if (isProfileMatch(q, districtId, caste)) preferredById.set(q.variantId, q);
     else general.push(q);
   }
-  preferred = [...preferredById.values()];
 
-  if (!preferred.length && !general.length) {
+  const dual = [];
+  const single = [];
+  for (const q of preferredById.values()) {
+    if (isDistrictMatch(q, districtId) && isCasteMatch(q, caste)) dual.push(q);
+    else single.push(q);
+  }
+
+  if (!dual.length && !single.length && !general.length) {
     throw new AppError(
       ERROR_CODE.INVALID_REQUEST,
       'No new approved questions available for this user.'
     );
   }
 
-  const targetPersonal = Math.min(personalizedTargetCount(), count);
-  const preferredShuffled = shuffle(preferred);
-  const generalShuffled = shuffle(general);
-
-  const personalPick = preferredShuffled.slice(
-    0,
-    Math.min(targetPersonal, preferredShuffled.length)
+  const picked = takeUnique(
+    [shuffle(dual), shuffle(single), shuffle(general)],
+    count
   );
-  let remaining = count - personalPick.length;
-  let generalPick = generalShuffled.slice(0, remaining);
-  remaining = count - personalPick.length - generalPick.length;
-
-  if (remaining > 0) {
-    const leftoverPersonal = preferredShuffled.slice(personalPick.length);
-    generalPick = [...generalPick, ...leftoverPersonal.slice(0, remaining)];
-  }
-
-  const picked = shuffle([...personalPick, ...generalPick]);
 
   if (picked.length < count) {
     throw new AppError(
@@ -431,7 +448,7 @@ async function allocateBankQuestions(user, count) {
     );
   }
 
-  return hydrateBankQuestions(picked.map((q) => q.queId));
+  return hydrateVariants(picked.map((q) => q.variantId));
 }
 
 export const sessionService = {
@@ -541,12 +558,18 @@ export const sessionService = {
     const answerMap = answers || {};
     const timingMap = timings || {};
 
+    const rootRows = await prisma.questionVariant.findMany({
+      where: { id: { in: session.questions.map((q) => q.variantId) } },
+      select: { id: true, rootId: true },
+    });
+    const rootByVariant = new Map(rootRows.map((row) => [row.id, row.rootId]));
+
     const gradedRows = session.questions.map((q) => {
       const gradingQuestion = toGradingQuestion(q, session.language);
-      const selectedAnswer = normalizeSubmittedAnswer(gradingQuestion, answerMap[q.bankQueId]);
-      const attempted = Object.prototype.hasOwnProperty.call(timingMap, q.bankQueId);
+      const selectedAnswer = normalizeSubmittedAnswer(gradingQuestion, answerMap[q.queId]);
+      const attempted = Object.prototype.hasOwnProperty.call(timingMap, q.queId);
       const timeSpentMs = attempted
-        ? Math.max(0, Math.round(Number(timingMap[q.bankQueId]) || 0))
+        ? Math.max(0, Math.round(Number(timingMap[q.queId]) || 0))
         : 0;
       const grade = attempted
         ? gradeQuestion(gradingQuestion, selectedAnswer, timeSpentMs)
@@ -554,7 +577,9 @@ export const sessionService = {
       return {
         id: q.id,
         userId,
-        bankQueId: q.bankQueId,
+        queId: q.queId,
+        variantId: q.variantId,
+        rootId: rootByVariant.get(q.variantId),
         selectedOption: selectedOptionForStorage(gradingQuestion.type, selectedAnswer),
         selectedAnswer: selectedAnswer ?? null,
         isCorrect: Boolean(attempted && grade.correct),
@@ -576,9 +601,6 @@ export const sessionService = {
         correctCount,
         wrongCount: attemptedRows.length - correctCount,
         totalTimeMs,
-        wallClockMs: completedMs - startedMs,
-        averageTimeMs:
-          attemptedRows.length > 0 ? Math.round(totalTimeMs / attemptedRows.length) : 0,
         percentage:
           totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0,
         abandoned: Boolean(abandoned),
@@ -586,8 +608,8 @@ export const sessionService = {
       {
         userId,
         role: user.role,
-        district: user.district || null,
-        taluka: user.taluka || null,
+        districtId: user.districtId || null,
+        talukaId: user.talukaId || null,
       }
     );
 
@@ -622,6 +644,15 @@ export const sessionService = {
   },
 
   async stats(userId) {
+    return QuizSessionModel.userStats(userId);
+  },
+
+  async clearMine(userId) {
+    await prisma.$transaction([
+      prisma.quizSession.deleteMany({ where: { userId } }),
+      prisma.userQuestionExposure.deleteMany({ where: { userId } }),
+      prisma.leaderboardAggregate.deleteMany({ where: { userId } }),
+    ]);
     return QuizSessionModel.userStats(userId);
   },
 

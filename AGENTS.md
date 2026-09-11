@@ -41,7 +41,7 @@ There is a single root `.gitignore`. Do not add per-app `.gitignore` files for t
 
 API prefixes:
 
-- Client/public: `/api/auth`, `/api/sessions`, `/api/quizzes`, `/api/attempts`, `/api/users`, `/api/leaderboard`, `/api/landing`, `/api/g3q-ai`
+- Client/public: `/api/auth`, `/api/sessions`, `/api/quizzes/practice/bundle`, `/api/users`, `/api/leaderboard`, `/api/landing`, `/api/geography`, `/api/g3q-ai`
 - Admin console: `/api/v1/admin`
 - Health: `GET /api/v1/health`
 
@@ -81,10 +81,9 @@ Core Prisma models (`backend/src/prisma/schema.prisma`):
 
 - `User` — student / college / citizen identities
 - `AdminUser` — console logins (master + allocated reviewers)
-- `BankQuestion` (+ comments, activity, assignments, work quotas)
+- `QuestionRoot` / `QuestionVariant` — bilingual question bank (scope/district/caste on root; type + JSON payload + review on variant)
 - `QuizSession` / `QuizSessionQuestion` / `UserQuestionExposure` — live bank-backed play
-- `Quiz` / `Question` / `Explanation` / `Attempt` / `AttemptAnswer` — legacy fixed quizzes
-- `District` — geography
+- `District` / `Taluka` — geography
 - `OtpRequest` — login OTP
 
 Migrations: `cd backend && npm run prisma:migrate`. Seed: `npm run prisma:seed`.

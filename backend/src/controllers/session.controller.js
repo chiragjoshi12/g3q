@@ -53,3 +53,8 @@ export const mySessionStats = asyncHandler(async (req, res) => {
   const stats = await sessionService.stats(req.user.id);
   return res.status(200).json(stats);
 });
+
+export const clearMySessions = asyncHandler(async (req, res) => {
+  const stats = await sessionService.clearMine(req.user.id);
+  return res.status(200).json(stats);
+});

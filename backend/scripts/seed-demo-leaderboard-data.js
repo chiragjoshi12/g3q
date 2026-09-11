@@ -234,12 +234,12 @@ function targetAccuracy(role) {
 
 async function createSubmittedSession(user, bankQuestions, indexSeed) {
   const selected = shuffle(bankQuestions).slice(0, QUESTION_COUNT);
-  const session = await QuizSessionModel.createWithQuestions({
+  const created = await QuizSessionModel.createWithQuestions({
     userId: user.id,
     language: 'gu',
-    expiresAt: new Date(Date.now() + 90 * 60 * 1000),
     bankRows: selected,
   });
+  const session = await QuizSessionModel.findById(created.id);
 
   const desiredCorrect = Math.min(QUESTION_COUNT, targetAccuracy(user.role));
   const correctIndexes = new Set(shuffle([...Array(QUESTION_COUNT).keys()]).slice(0, desiredCorrect));
@@ -253,7 +253,8 @@ async function createSubmittedSession(user, bankQuestions, indexSeed) {
     return {
       id: row.id,
       userId: user.id,
-      bankQueId: row.bankQueId,
+      variantId: row.variantId,
+      rootId: selected.find((q) => q.variantId === row.variantId)?.rootId,
       attempted: true,
       selectedOption,
       isCorrect: selectedOption === correctLetter,
@@ -270,8 +271,8 @@ async function createSubmittedSession(user, bankQuestions, indexSeed) {
     },
     { correctCount: 0, wrongCount: 0, totalTimeMs: 0 }
   );
-  totals.wallClockMs = totals.totalTimeMs + range(20000, 120000);
-  totals.averageTimeMs = Math.round(totals.totalTimeMs / gradedRows.length);
+  totals.totalTimeMs = totals.totalTimeMs || gradedRows.reduce((s, r) => s + (r.timeSpentMs || 0), 0);
+  const wallClockMs = totals.totalTimeMs + range(20000, 120000);
   totals.percentage = Math.round((totals.correctCount / QUESTION_COUNT) * 100);
 
   await Promise.all(
@@ -290,9 +291,9 @@ async function createSubmittedSession(user, bankQuestions, indexSeed) {
   for (const row of gradedRows) {
     await prisma.userQuestionExposure.upsert({
       where: {
-        userId_bankQueId: {
+        userId_variantId: {
           userId: row.userId,
-          bankQueId: row.bankQueId,
+          variantId: row.variantId,
         },
       },
       update: {
@@ -304,7 +305,8 @@ async function createSubmittedSession(user, bankQuestions, indexSeed) {
       },
       create: {
         userId: row.userId,
-        bankQueId: row.bankQueId,
+        variantId: row.variantId,
+        rootId: row.rootId,
         firstSeenAt: new Date(),
         lastSeenAt: new Date(),
         timesSeen: 1,
@@ -317,7 +319,7 @@ async function createSubmittedSession(user, bankQuestions, indexSeed) {
 
   const daysAgo = range(0, 21);
   const completedAt = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000 - range(0, 8) * 60 * 60 * 1000);
-  const startedAt = new Date(completedAt.getTime() - totals.wallClockMs);
+  const startedAt = new Date(completedAt.getTime() - wallClockMs);
 
   await prisma.quizSession.update({
     where: { id: session.id },
@@ -325,13 +327,10 @@ async function createSubmittedSession(user, bankQuestions, indexSeed) {
       status: 'submitted',
       startedAt,
       completedAt,
-      expiresAt: new Date(startedAt.getTime() + 90 * 60 * 1000),
       createdAt: startedAt,
       correctCount: totals.correctCount,
       wrongCount: totals.wrongCount,
       totalTimeMs: totals.totalTimeMs,
-      wallClockMs: totals.wallClockMs,
-      averageTimeMs: totals.averageTimeMs,
       percentage: totals.percentage,
     },
   });
@@ -350,23 +349,27 @@ async function seedSessions(users, bankQuestions) {
 }
 
 async function main() {
-  let bankQuestions = await prisma.bankQuestion.findMany({
-    where: {
-      reviewStatus: 'ACCEPTED',
-      correctOption: { not: null },
-    },
+  const { flattenVariantRow } = await import('../src/models/BankQuestionModel.js');
+  let variants = await prisma.questionVariant.findMany({
+    where: { reviewStatus: 'ACCEPTED' },
+    include: { root: true },
+    take: 500,
   });
 
+  let bankQuestions = variants.map(flattenVariantRow).filter((row) => row?.correctOption);
+
   if (bankQuestions.length < QUESTION_COUNT) {
-    bankQuestions = await prisma.bankQuestion.findMany({
-      where: {
-        correctOption: { not: null },
-      },
+    variants = await prisma.questionVariant.findMany({
+      include: { root: true },
+      take: 500,
     });
+    bankQuestions = variants.map(flattenVariantRow).filter((row) => row?.correctOption);
   }
 
   if (bankQuestions.length < QUESTION_COUNT) {
-    throw new Error(`Need at least ${QUESTION_COUNT} bank questions with answers, found ${bankQuestions.length}.`);
+    throw new Error(
+      `Need at least ${QUESTION_COUNT} questions with answers, found ${bankQuestions.length}.`
+    );
   }
 
   const users = await withResolvedGeography([

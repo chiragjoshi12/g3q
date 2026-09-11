@@ -1,16 +1,22 @@
 import { prisma } from '../config/prisma.client.js';
 
 export class OtpModel {
-  static async create({ requestId, userId, role, phone, maskedPhone, otp, expiresAt }) {
+  static async create({ role, phone, otp, expiresAt }) {
     return prisma.otpRequest.create({
-      data: { requestId, userId: userId || null, role, phone, maskedPhone, otp, expiresAt },
+      data: { role, phone, otp, expiresAt },
     });
   }
 
-  static async findActiveByRequestId(requestId) {
+  /** Pending challenge: not yet verified and not expired. */
+  static async findActiveById(id) {
+    const otpId = Number(id);
+    if (!Number.isInteger(otpId) || otpId <= 0) return null;
     return prisma.otpRequest.findFirst({
-      where: { requestId, consumedAt: null },
-      include: { user: true },
+      where: {
+        id: otpId,
+        verifiedAt: null,
+        expiresAt: { gt: new Date() },
+      },
     });
   }
 
@@ -21,16 +27,20 @@ export class OtpModel {
     });
   }
 
-  static async findVerifiedByRequestId(requestId) {
+  /** OTP already accepted; still within expiry for signup / roster link. */
+  static async findVerifiedById(id) {
+    const otpId = Number(id);
+    if (!Number.isInteger(otpId) || otpId <= 0) return null;
     return prisma.otpRequest.findFirst({
-      where: { requestId, consumedAt: null, verifiedAt: { not: null } },
+      where: {
+        id: otpId,
+        verifiedAt: { not: null },
+        expiresAt: { gt: new Date() },
+      },
     });
   }
 
-  static async consume(id) {
-    return prisma.otpRequest.update({
-      where: { id },
-      data: { consumedAt: new Date() },
-    });
+  static async deleteById(id) {
+    return prisma.otpRequest.delete({ where: { id } }).catch(() => null);
   }
 }

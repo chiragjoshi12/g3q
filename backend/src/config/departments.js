@@ -341,6 +341,23 @@ export const DEPARTMENTS = [
     nameGu: 'સરકારી યોજનાઓ',
     aliases: ['Gov. yojana & scheme', 'STRIDE YOJANA'],
   },
+  {
+    id: 35,
+    key: 'beta-poverty-reduction',
+    nameEn: 'Poverty Reduction',
+    nameGu: 'Poverty Reduction',
+    aliases: ['Poverty Reduction'],
+  },
+  {
+    id: 36,
+    key: 'beta-national-security-international-diplomacy',
+    nameEn: 'National Security & International Diplomacy',
+    nameGu: 'National Security & International Diplomacy',
+    aliases: [
+      'National Security & International Diplomacy',
+      'National Security & International Diplomacy (e.g., foreign policy)',
+    ],
+  },
 ];
 
 export function normalizeDepartmentAlias(value) {

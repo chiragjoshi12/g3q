@@ -13,6 +13,7 @@ import {
   listMySessions,
   myCurrentSession,
   mySessionStats,
+  clearMySessions,
 } from '../controllers/session.controller.js';
 
 const router = Router();
@@ -21,6 +22,7 @@ router.use(requireAuth);
 
 router.post('/', validateRequest(startSessionSchema), startSession);
 router.get('/', listMySessions);
+router.delete('/', clearMySessions);
 router.get('/current', myCurrentSession);
 router.get('/stats', mySessionStats);
 router.get('/:sessionId', getSession);

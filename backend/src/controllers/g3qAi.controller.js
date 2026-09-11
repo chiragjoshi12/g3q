@@ -1,7 +1,6 @@
 import { AppError, ERROR_CODE } from '../utils/appError.js';
 import { g3qAiChatService } from '../services/g3qAiChat.service.js';
 import { analyticsTrackingService } from '../services/analyticsTracking.service.js';
-import { nanoid } from 'nanoid';
 
 const writeSse = (res, payload) => {
   res.write(`data: ${JSON.stringify(payload)}\n\n`);
@@ -55,19 +54,13 @@ export const chat = async (req, res, next) => {
     if (sentChunk && doneMeta) {
       void analyticsTrackingService.trackEvent(
         {
-          eventId: `g3qai_${Date.now()}_${nanoid(10)}`,
           eventType: 'g3q_ai_query',
           visitorKey: req.body.visitorKey,
-          source: req.body.source || 'g3q_ai_page',
-          questionCount: 1,
-          success: true,
-          latencyMs: doneMeta.latencyMs,
           metadata: {
             model: doneMeta.model,
-            messageCount: Array.isArray(req.body.messages) ? req.body.messages.length : 0,
-            userTurnCount: Array.isArray(req.body.messages)
+            queryCount: Array.isArray(req.body.messages)
               ? req.body.messages.filter((message) => message?.role === 'user').length
-              : 0,
+              : 1,
           },
         },
         { userId: req.user?.id ?? null }

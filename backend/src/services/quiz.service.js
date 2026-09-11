@@ -1,6 +1,6 @@
 import { prisma } from '../config/prisma.client.js';
 import { CONFIG } from '../config/index.js';
-import { QuizModel } from '../models/QuizModel.js';
+import { flattenVariantRow } from '../models/BankQuestionModel.js';
 import { toPlayQuestion } from '../models/QuizSessionModel.js';
 import { AppError, ERROR_CODE } from '../utils/appError.js';
 
@@ -15,49 +15,26 @@ const PRACTICE_QUESTION_IDS = [
 function toPracticeSessionRow(row, order) {
   return {
     ...row,
-    bankQueId: row.queId,
+    queId: row.queId,
     order,
     points: 1,
   };
 }
 
 export const quizService = {
-  async listQuizzes() {
-    return QuizModel.list();
-  },
-
-  async getQuizById(quizId) {
-    const quiz = await QuizModel.findById(quizId);
-    if (!quiz) throw new AppError(ERROR_CODE.NOT_FOUND, 'ક્વિઝ મળી નથી.');
-    return quiz;
-  },
-
-  async getQuestions(quizId) {
-    if (!(await QuizModel.exists(quizId))) {
-      throw new AppError(ERROR_CODE.NOT_FOUND, 'પ્રશ્નો મળ્યા નથી.');
-    }
-    const rows = await QuizModel.getQuestions(quizId);
-    return rows.map((row) => toPlayQuestion({ ...row, bankQueId: row.id || row.queId }, CONFIG.QUIZ.DEFAULT_LANGUAGE));
-  },
-
-  async getExplanations(quizId) {
-    if (!(await QuizModel.exists(quizId))) {
-      throw new AppError(ERROR_CODE.NOT_FOUND, 'ક્વિઝ મળી નથી.');
-    }
-    return QuizModel.getExplanations(quizId);
-  },
-
   async getPracticeBundle({ quizId = 'practice', language = CONFIG.QUIZ.DEFAULT_LANGUAGE } = {}) {
-    const rows = await prisma.bankQuestion.findMany({
+    const variants = await prisma.questionVariant.findMany({
       where: {
-        queId: { in: PRACTICE_QUESTION_IDS },
+        legacyQueId: { in: PRACTICE_QUESTION_IDS },
         reviewStatus: 'ACCEPTED',
       },
+      include: { root: { include: { departmentRef: true } } },
     });
 
-    const orderedRows = PRACTICE_QUESTION_IDS.map((queId) => rows.find((row) => row.queId === queId)).filter(
-      Boolean
-    );
+    const rows = variants.map(flattenVariantRow);
+    const orderedRows = PRACTICE_QUESTION_IDS.map((queId) =>
+      rows.find((row) => row.queId === queId)
+    ).filter(Boolean);
 
     if (orderedRows.length !== PRACTICE_QUESTION_IDS.length) {
       throw new AppError(
@@ -66,9 +43,7 @@ export const quizService = {
       );
     }
 
-    const questions = orderedRows.map((row, index) =>
-      toPracticeSessionRow(row, index + 1)
-    );
+    const questions = orderedRows.map((row, index) => toPracticeSessionRow(row, index + 1));
 
     return {
       quiz: {

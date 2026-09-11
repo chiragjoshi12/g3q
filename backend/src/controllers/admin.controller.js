@@ -35,7 +35,7 @@ export const adminAllocateWork = asyncHandler(async (req, res) => {
 });
 
 export const adminUnassignWork = asyncHandler(async (req, res) => {
-  const result = await adminWorkService.unassign(req.body, req.admin);
+  const result = await adminWorkService.unassign(req.body);
   return res.status(200).json(result);
 });
 

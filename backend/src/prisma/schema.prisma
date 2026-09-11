@@ -5,7 +5,6 @@
 //      citizen: mobile → OTP → name/district/taluka → JWT
 //   2. Bank play: start session (allocate unseen ACCEPTED bank Qs) -> submit -> stats
 //   3. Admin: bilingual bank review (separate /api/v1/admin)
-//   4. Legacy fixed quizzes/attempts kept for compatibility
 //
 // Run `npm run prisma:migrate` then `npm run prisma:seed` to stand this up locally.
 
@@ -26,6 +25,7 @@ enum UserRole {
 }
 
 // Mirrors QUESTION_TYPE in gujarat-gov-quiz/config/question-types.js
+// Legacy play/session enum (snapshot + older bank rows).
 enum QuestionType {
   single_choice
   true_false
@@ -33,6 +33,15 @@ enum QuestionType {
   image_choice
   drag_drop
   drag_into_blanks
+}
+
+/// Canonical bank types for question_variants (5 product types).
+enum BankQuestionType {
+  mcq
+  true_false
+  fill_blanks
+  sequence
+  match_pairs
 }
 
 /// A login identity. School and college rows are provisioned (seeded / imported)
@@ -64,13 +73,10 @@ model User {
   district District? @relation(fields: [districtId], references: [id], onDelete: SetNull)
   taluka   Taluka?   @relation(fields: [talukaId], references: [id], onDelete: SetNull)
 
-  otpRequests OtpRequest[]
-  attempts    Attempt[]
   quizSessions QuizSession[]
   questionExposures UserQuestionExposure[]
   betaProfile BetaUser?
   analyticsVisitors AnalyticsVisitor[]
-  analyticsEvents AnalyticsEvent[]
   leaderboardAggregates LeaderboardAggregate[]
 
   @@index([schoolId])
@@ -89,14 +95,14 @@ enum AnalyticsEventType {
   practice_quiz_complete
 }
 
+/// Anonymous/session visitor. Link user_id when they log in.
 model AnalyticsVisitor {
-  id         String   @id @default(cuid())
-  visitorKey String   @unique @map("visitor_key") @db.VarChar(64)
-  userId     String?  @map("user_id")
+  id          Int      @id @default(autoincrement())
+  visitorKey  String   @unique @map("visitor_key") @db.VarChar(24)
+  userId      String?  @map("user_id")
   firstSeenAt DateTime @default(now()) @map("first_seen_at")
   lastSeenAt  DateTime @default(now()) @map("last_seen_at")
   createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
 
   user   User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
   events AnalyticsEvent[]
@@ -106,35 +112,22 @@ model AnalyticsVisitor {
   @@map("analytics_visitors")
 }
 
+/// Product telemetry row. Identity is always via visitor FK (user lives on visitors).
 model AnalyticsEvent {
-  id            BigInt             @id @default(autoincrement())
-  eventId       String             @unique @map("event_id") @db.VarChar(64)
-  eventType     AnalyticsEventType @map("event_type")
-  occurredAt    DateTime           @default(now()) @map("occurred_at")
-  week          Int
-  userId        String?            @map("user_id")
-  visitorId     String?            @map("visitor_id")
-  role          UserRole?
-  district      String?            @db.VarChar(128)
-  taluka        String?            @db.VarChar(128)
-  quizId        String?            @map("quiz_id") @db.VarChar(64)
-  sessionId     String?            @map("session_id") @db.VarChar(64)
-  attemptId     String?            @map("attempt_id") @db.VarChar(64)
-  questionCount Int?               @map("question_count")
-  success       Boolean?
-  latencyMs     Int?               @map("latency_ms")
-  source        String?            @db.VarChar(64)
-  metadata      Json?
-  createdAt     DateTime           @default(now()) @map("created_at")
+  id         BigInt             @id @default(autoincrement())
+  eventType  AnalyticsEventType @map("event_type")
+  occurredAt DateTime           @default(now()) @map("occurred_at")
+  week       Int
+  visitorId  Int                @map("visitor_id")
+  /// AI-focused payload only (e.g. model, queryCount). Avoid noise like source=database.
+  metadata   Json?
+  createdAt  DateTime           @default(now()) @map("created_at")
 
-  user    User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
-  visitor AnalyticsVisitor? @relation(fields: [visitorId], references: [id], onDelete: SetNull)
+  visitor AnalyticsVisitor @relation(fields: [visitorId], references: [id], onDelete: Cascade)
 
   @@index([occurredAt])
   @@index([eventType, occurredAt])
-  @@index([week, role])
-  @@index([district, taluka])
-  @@index([userId])
+  @@index([week])
   @@index([visitorId])
   @@map("analytics_events")
 }
@@ -143,8 +136,8 @@ model LeaderboardAggregate {
   id                BigInt   @id @default(autoincrement())
   week              Int
   role              UserRole
-  taluka            String   @db.VarChar(128)
-  district          String?  @db.VarChar(128)
+  talukaId          Int      @map("taluka_id")
+  districtId        Int?     @map("district_id")
   userId            String   @map("user_id")
   bestPercentage    Int      @default(0) @map("best_percentage")
   totalCorrect      Int      @default(0) @map("total_correct")
@@ -155,11 +148,13 @@ model LeaderboardAggregate {
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taluka   Taluka   @relation(fields: [talukaId], references: [id], onDelete: Cascade)
+  district District? @relation(fields: [districtId], references: [id], onDelete: SetNull)
 
-  @@unique([week, role, taluka, userId])
-  @@index([week, taluka, role])
-  @@index([week, role, taluka, bestPercentage, totalCorrect, totalTimeMs])
+  @@unique([week, role, talukaId, userId])
+  @@index([week, talukaId, role])
+  @@index([week, role, talukaId, bestPercentage, totalCorrect, totalTimeMs], map: "leaderboard_aggregates_rank_idx")
   @@index([userId, week])
   @@map("leaderboard_aggregates")
 }
@@ -167,13 +162,16 @@ model LeaderboardAggregate {
 model LeaderboardTalukaStat {
   id                BigInt   @id @default(autoincrement())
   week              Int
-  taluka            String   @db.VarChar(128)
-  district          String?  @db.VarChar(128)
+  talukaId          Int      @map("taluka_id")
+  districtId        Int?     @map("district_id")
   submittedSessions Int      @default(0) @map("submitted_sessions")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
-  @@unique([week, taluka])
+  taluka   Taluka    @relation(fields: [talukaId], references: [id], onDelete: Cascade)
+  district District? @relation(fields: [districtId], references: [id], onDelete: SetNull)
+
+  @@unique([week, talukaId])
   @@index([week, submittedSessions])
   @@map("leaderboard_taluka_stats")
 }
@@ -186,8 +184,12 @@ model District {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  talukas Taluka[]
-  users   User[]
+  talukas               Taluka[]
+  users                 User[]
+  betaUsers             BetaUser[]
+  questionRoots         QuestionRoot[]
+  leaderboardAggregates LeaderboardAggregate[]
+  leaderboardTalukaStats LeaderboardTalukaStat[]
 
   @@map("districts")
 }
@@ -201,8 +203,11 @@ model Taluka {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  district District @relation(fields: [districtId], references: [id], onDelete: Cascade)
-  users    User[]
+  district               District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  users                  User[]
+  betaUsers              BetaUser[]
+  leaderboardAggregates  LeaderboardAggregate[]
+  leaderboardTalukaStats LeaderboardTalukaStat[]
 
   @@unique([districtId, nameEn])
   @@unique([districtId, nameGu])
@@ -218,8 +223,8 @@ model Department {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  questions  BankQuestion[]
-  quizImages DepartmentQuizImage[]
+  questionRoots QuestionRoot[]
+  quizImages    DepartmentQuizImage[]
 
   @@map("departments")
 }
@@ -250,7 +255,6 @@ model BetaDepartment {
 
   roots         BetaQuestionRoot[]
   quizImages    BetaDepartmentQuizImage[]
-  bankQuestions BankQuestion[]
 
   @@map("beta_departments")
 }
@@ -276,16 +280,20 @@ model BetaUser {
   firstName    String   @map("first_name") @db.VarChar(128)
   lastName     String?  @map("last_name") @db.VarChar(128)
   fullName     String   @map("full_name") @db.VarChar(255)
-  district     String   @db.VarChar(128)
-  taluka       String   @db.VarChar(128)
+  districtId   Int      @map("district_id")
+  talukaId     Int      @map("taluka_id")
   phone        String   @db.VarChar(20)
   linkedUserId String   @unique @map("linked_user_id")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  linkedUser User @relation(fields: [linkedUserId], references: [id], onDelete: Cascade)
+  district   District @relation(fields: [districtId], references: [id], onDelete: Restrict)
+  taluka     Taluka   @relation(fields: [talukaId], references: [id], onDelete: Restrict)
+  linkedUser User     @relation(fields: [linkedUserId], references: [id], onDelete: Cascade)
 
   @@index([phone])
+  @@index([districtId])
+  @@index([talukaId])
   @@map("beta_users")
 }
 
@@ -356,8 +364,6 @@ model QuizSession {
   correctCount   Int?          @map("correct_count")
   wrongCount     Int?          @map("wrong_count")
   totalTimeMs    Int?          @map("total_time_ms")
-  wallClockMs    Int?          @map("wall_clock_ms")
-  averageTimeMs  Int?          @map("average_time_ms")
   percentage     Int?
   createdAt      DateTime      @default(now()) @map("created_at")
 
@@ -371,13 +377,15 @@ model QuizSession {
   @@map("quiz_sessions")
 }
 
-/// Frozen snapshot of a bank MCQ inside a session (correctOption never sent until result).
+/// Frozen snapshot of a variant inside a session (correctOption never sent until result).
 model QuizSessionQuestion {
   id            String  @id @default(cuid())
   sessionId     String  @map("session_id")
   order         Int
   type          QuestionType @default(single_choice)
-  bankQueId     String  @map("bank_que_id") @db.VarChar(32)
+  /// Public id (= variant.legacy_que_id) for client answer maps.
+  queId         String  @map("que_id") @db.VarChar(32)
+  variantId     Int     @map("variant_id")
   points        Int     @default(1)
   departmentGu  String? @map("department_gu") @db.VarChar(255)
   departmentEn  String? @map("department_en") @db.VarChar(255)
@@ -399,19 +407,21 @@ model QuizSessionQuestion {
   isCorrect     Boolean? @map("is_correct")
   timeSpentMs   Int?     @map("time_spent_ms")
 
-  session      QuizSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  bankQuestion BankQuestion @relation(fields: [bankQueId], references: [queId], onDelete: Restrict)
+  session QuizSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  variant QuestionVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
 
   @@unique([sessionId, order])
-  @@unique([sessionId, bankQueId])
-  @@index([bankQueId])
+  @@unique([sessionId, variantId])
+  @@index([variantId])
+  @@index([queId])
   @@map("quiz_session_questions")
 }
 
-/// Per-user history of bank questions seen — drives no-repeat allocation.
+/// Per-user history of variants seen — drives no-repeat allocation.
 model UserQuestionExposure {
   userId       String   @map("user_id")
-  bankQueId    String   @map("bank_que_id") @db.VarChar(32)
+  variantId    Int      @map("variant_id")
+  rootId       Int      @map("root_id")
   firstSeenAt  DateTime @map("first_seen_at")
   lastSeenAt   DateTime @map("last_seen_at")
   timesSeen    Int      @default(1) @map("times_seen")
@@ -419,157 +429,34 @@ model UserQuestionExposure {
   timesWrong   Int      @default(0) @map("times_wrong")
   totalTimeMs  Int      @default(0) @map("total_time_ms")
 
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bankQuestion BankQuestion @relation(fields: [bankQueId], references: [queId], onDelete: Cascade)
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  variant QuestionVariant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  root    QuestionRoot    @relation(fields: [rootId], references: [id], onDelete: Cascade)
 
-  @@id([userId, bankQueId])
+  @@id([userId, variantId])
   @@index([userId, lastSeenAt])
-  @@index([userId, bankQueId])
+  @@index([userId, rootId])
+  @@index([rootId])
   @@map("user_question_exposures")
 }
 
-/// One OTP challenge issued for a login attempt. Short-lived and single-use.
+/// One OTP challenge for a login attempt. created_at = requested; expires_at ≈ +10m;
+/// verified_at = OTP accepted. No user_id (signup often has no user yet).
 model OtpRequest {
-  id          String    @id @default(cuid())
-  requestId   String    @unique @map("request_id")
-  userId      String?   @map("user_id")
-  role        UserRole
-  phone       String
-  maskedPhone String    @map("masked_phone")
-  otp         String
-  expiresAt   DateTime  @map("expires_at")
-  verifiedAt  DateTime? @map("verified_at")
-  consumedAt  DateTime? @map("consumed_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
+  id         Int       @id @default(autoincrement())
+  role       UserRole
+  phone      String    @db.VarChar(20)
+  otp        String    @db.VarChar(16)
+  expiresAt  DateTime  @map("expires_at")
+  verifiedAt DateTime? @map("verified_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
 
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
+  @@index([phone, createdAt])
   @@map("otp_requests")
-}
-
-/// A quiz module, shown on the home/list screen. Mirrors data/quizzes.json.
-model Quiz {
-  id              String   @id
-  title           String
-  subtitle        String?
-  description     String?  @db.Text
-  banner          String?
-  category        String?
-  level           String?
-  totalQuestions  Int      @default(0) @map("total_questions")
-  durationMinutes Int      @default(0) @map("duration_minutes")
-  totalPoints     Int      @default(0) @map("total_points")
-  featured        Boolean  @default(false)
-  tags            Json?
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-
-  questions Question[]
-  attempts  Attempt[]
-
-  @@map("quizzes")
-}
-
-/// One question inside a quiz. The shape is a superset covering every type in
-/// QUESTION_TYPE — each row only populates the fields its `type` needs, same
-/// as data/questions.json. `answer` holds the grading key.
-model Question {
-  id          String       @id
-  quizId      String       @map("quiz_id")
-  order       Int
-  type        QuestionType
-  points      Int          @default(1)
-  prompt      String       @db.Text
-  placeholder String?
-  options     Json?
-  left        Json?
-  right       Json?
-  items       Json?
-  segments    Json?
-  bank        Json?
-  answer      Json
-  acceptable  Json?
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
-
-  quiz           Quiz            @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  explanation    Explanation?
-  attemptAnswers AttemptAnswer[]
-
-  @@index([quizId])
-  @@map("questions")
-}
-
-/// The AI-style explanation shown after a question is answered. Mirrors
-/// data/explanations.json (keyed there by questionId).
-model Explanation {
-  id         String  @id @default(cuid())
-  questionId String  @unique @map("question_id")
-  model      String  @default("AI")
-  summary    String? @db.Text
-  body       String? @db.Text
-  keyPoints  Json?   @map("key_points")
-
-  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-
-  @@map("explanations")
-}
-
-/// One graded, completed quiz session. Shape mirrors buildAttemptResult() in
-/// gujarat-gov-quiz/lib/domain/scoring.js, so a future frontend swap to the
-/// REST source needs no changes downstream (ScoreSummary, QuestionReviewCard).
-model Attempt {
-  id             String   @id
-  userId         String   @map("user_id")
-  quizId         String   @map("quiz_id")
-  quizTitle      String   @map("quiz_title")
-  startedAt      DateTime @map("started_at")
-  completedAt    DateTime @map("completed_at")
-  totalQuestions Int      @map("total_questions")
-  correctCount   Int      @map("correct_count")
-  wrongCount     Int      @map("wrong_count")
-  earnedPoints   Int      @map("earned_points")
-  maxPoints      Int      @map("max_points")
-  percentage     Int
-  totalTimeMs    Int      @map("total_time_ms")
-  wallClockMs    Int      @map("wall_clock_ms")
-  averageTimeMs  Int      @map("average_time_ms")
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quiz      Quiz            @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  breakdown AttemptAnswer[]
-
-  @@index([userId])
-  @@index([quizId])
-  @@map("attempts")
-}
-
-/// Per-question grading row within an attempt — mirrors gradeQuestion() in
-/// gujarat-gov-quiz/lib/domain/grading.js.
-model AttemptAnswer {
-  id            String  @id @default(cuid())
-  attemptId     String  @map("attempt_id")
-  questionId    String  @map("question_id")
-  type          QuestionType
-  correct       Boolean
-  earnedPoints  Int     @map("earned_points")
-  maxPoints     Int     @map("max_points")
-  answer        Json
-  correctAnswer Json    @map("correct_answer")
-  timeSpentMs   Int     @map("time_spent_ms")
-
-  attempt  Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-
-  @@unique([attemptId, questionId])
-  @@map("attempt_answers")
 }
 
 // ---------------------------------------------------------------------------
 // Admin console + bilingual MCQ bank (formerly admin/ FastAPI MySQL schema).
-// Quiz runtime `questions` stay separate; this bank is the reviewable source.
 // ---------------------------------------------------------------------------
 
 enum AdminRole {
@@ -597,116 +484,116 @@ model AdminUser {
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at")
 
-  reviewedQuestions BankQuestion[] @relation("QuestionReviewedBy")
-  editedQuestions   BankQuestion[] @relation("QuestionEditedBy")
-  comments          BankQuestionComment[]
-  activities        BankQuestionActivity[]
+  reviewedVariants  QuestionVariant[] @relation("VariantReviewedBy")
+  editedVariants    QuestionVariant[] @relation("VariantEditedBy")
+  editedRoots       QuestionRoot[] @relation("RootEditedBy")
+  comments          QuestionVariantComment[]
+  activities        QuestionVariantActivity[]
   workQuota         AdminWorkQuota?
   quotasCreated     AdminWorkQuota[] @relation("QuotaSetter")
   assignedWork      AdminQuestionAssignment[] @relation("AssignedAdmin")
   assignmentsMade   AdminQuestionAssignment[] @relation("AssignmentCreator")
-  workBatches       AdminWorkBatch[] @relation("BatchReviewer")
-  batchesCreated    AdminWorkBatch[] @relation("BatchCreator")
 
   @@map("admin_users")
 }
 
-/// Bilingual 4-option MCQ bank row. Correct key is letter-only; answer text
-/// is derived from option_* + correct_option at read time.
-model BankQuestion {
-  id            Int           @id @default(autoincrement())
-  queId         String        @unique @map("que_id") @db.VarChar(32)
+/// One concept + shared explanation. Scope / district / caste live here (serve filters).
+model QuestionRoot {
+  id               Int      @id @default(autoincrement())
+  /// Preserves legacy bank que_id for 1:1 migrated roots (nullable for new multi-variant roots).
+  legacyQueId      String?  @unique @map("legacy_que_id") @db.VarChar(32)
+  departmentId     Int?     @map("department_id")
+  scope            String   @default("GENERAL") @db.VarChar(32)
+  districtId       Int?     @map("district_id")
+  casteCategory    String   @default("GENERAL") @map("caste_category") @db.VarChar(32)
+  explanationGu    String?  @map("explanation_gu") @db.Text
+  explanationEn    String?  @map("explanation_en") @db.Text
+  explanationHi    String?  @map("explanation_hi") @db.Text
+  lastEditedById   Int?     @map("last_edited_by_id")
+  lastEditedAt     DateTime? @map("last_edited_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
-  departmentId  Int?          @map("department_id")
-  betaDepartmentId Int?       @map("beta_department_id")
-  departmentGu  String?       @map("department_gu") @db.VarChar(255)
-  departmentEn  String?       @map("department_en") @db.VarChar(255)
-  questionGu    String?       @map("question_gu") @db.Text
-  questionEn    String?       @map("question_en") @db.Text
-  type          QuestionType  @default(single_choice)
+  departmentRef     Department?     @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  districtRef       District?       @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  lastEditedBy      AdminUser?      @relation("RootEditedBy", fields: [lastEditedById], references: [id], onDelete: SetNull)
+  variants          QuestionVariant[]
+  exposures         UserQuestionExposure[]
 
-  optionAGu     String?       @map("option_a_gu") @db.Text
-  optionBGu     String?       @map("option_b_gu") @db.Text
-  optionCGu     String?       @map("option_c_gu") @db.Text
-  optionDGu     String?       @map("option_d_gu") @db.Text
-  optionAEn     String?       @map("option_a_en") @db.Text
-  optionBEn     String?       @map("option_b_en") @db.Text
-  optionCEn     String?       @map("option_c_en") @db.Text
-  optionDEn     String?       @map("option_d_en") @db.Text
-  correctOption String?       @map("correct_option") @db.Char(1)
-  content       Json?
-  answer        Json?
-
-  scope         String        @default("GENERAL") @db.VarChar(32)
-  district      String?       @db.VarChar(128)
-  casteCategory String        @default("GENERAL") @map("caste_category") @db.VarChar(32)
-
-  reviewStatus        ReviewStatus @default(PENDING) @map("review_status")
-  reviewedById        Int?         @map("reviewed_by_id")
-  reviewedAt          DateTime?    @map("reviewed_at")
-  lastEditedById      Int?         @map("last_edited_by_id")
-  lastEditedAt        DateTime?    @map("last_edited_at")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  reviewedBy AdminUser? @relation("QuestionReviewedBy", fields: [reviewedById], references: [id])
-  lastEditedBy AdminUser? @relation("QuestionEditedBy", fields: [lastEditedById], references: [id])
-  departmentRef Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  betaDepartmentRef BetaDepartment? @relation(fields: [betaDepartmentId], references: [id], onDelete: SetNull)
-  comments   BankQuestionComment[]
-  activities BankQuestionActivity[]
-  sessionQuestions QuizSessionQuestion[]
-  exposures  UserQuestionExposure[]
-  assignment AdminQuestionAssignment?
-
-  @@index([departmentId])
-  @@index([betaDepartmentId])
-  @@index([correctOption])
   @@index([scope])
-  @@index([district])
+  @@index([districtId])
   @@index([casteCategory])
-  @@index([reviewStatus])
-  @@index([reviewStatus, scope])
-  @@index([reviewStatus, correctOption, district])
-  @@index([reviewStatus, correctOption, casteCategory])
-  @@map("bank_questions")
+  @@index([scope, districtId, casteCategory])
+  @@index([departmentId])
+  @@map("question_roots")
 }
 
-model BankQuestionComment {
+/// One type-version of a root. Multilingual type-specific body is in `payload` JSON.
+model QuestionVariant {
+  id             Int              @id @default(autoincrement())
+  rootId         Int              @map("root_id")
+  type           BankQuestionType
+  /// Public API id (legacy bank que_id for migrated rows).
+  legacyQueId    String           @unique @map("legacy_que_id") @db.VarChar(32)
+  payload        Json
+  reviewStatus   ReviewStatus     @default(PENDING) @map("review_status")
+  reviewedById   Int?             @map("reviewed_by_id")
+  reviewedAt     DateTime?        @map("reviewed_at")
+  lastEditedById Int?             @map("last_edited_by_id")
+  lastEditedAt   DateTime?        @map("last_edited_at")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  root         QuestionRoot @relation(fields: [rootId], references: [id], onDelete: Cascade)
+  reviewedBy   AdminUser?   @relation("VariantReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  lastEditedBy AdminUser?   @relation("VariantEditedBy", fields: [lastEditedById], references: [id], onDelete: SetNull)
+  comments     QuestionVariantComment[]
+  activities   QuestionVariantActivity[]
+  sessionQuestions QuizSessionQuestion[]
+  exposures    UserQuestionExposure[]
+  assignment   AdminQuestionAssignment?
+
+  @@unique([rootId, type])
+  @@index([type])
+  @@index([reviewStatus])
+  @@index([reviewStatus, type])
+  @@index([rootId, reviewStatus])
+  @@map("question_variants")
+}
+
+model QuestionVariantComment {
   id        Int      @id @default(autoincrement())
-  queId     String   @map("que_id") @db.VarChar(32)
+  variantId Int      @map("variant_id")
   userId    Int      @map("user_id")
   username  String   @db.VarChar(64)
   body      String   @db.Text
   createdAt DateTime @default(now()) @map("created_at")
 
-  admin    AdminUser    @relation(fields: [userId], references: [id])
-  question BankQuestion @relation(fields: [queId], references: [queId], onDelete: Cascade)
+  admin   AdminUser       @relation(fields: [userId], references: [id])
+  variant QuestionVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
-  @@index([queId])
-  @@map("bank_question_comments")
+  @@index([variantId])
+  @@map("question_variant_comments")
 }
 
-model BankQuestionActivity {
+model QuestionVariantActivity {
   id        Int      @id @default(autoincrement())
-  queId     String   @map("que_id") @db.VarChar(32)
+  variantId Int      @map("variant_id")
   userId    Int      @map("user_id")
   username  String   @db.VarChar(64)
   action    String   @db.VarChar(32)
   detail    String?  @db.Text
   createdAt DateTime @default(now()) @map("created_at")
 
-  admin    AdminUser    @relation(fields: [userId], references: [id])
-  question BankQuestion @relation(fields: [queId], references: [queId], onDelete: Cascade)
+  admin   AdminUser       @relation(fields: [userId], references: [id])
+  variant QuestionVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
-  @@index([queId])
+  @@index([variantId])
   @@index([createdAt])
-  @@map("bank_question_activities")
+  @@map("question_variant_activities")
 }
 
-/// Daily review target for a sub-admin. Master sets questions/day; the
-/// allocator fills that many unassigned PENDING bank rows each IST day.
+/// Optional standing review target for a sub-admin (not used for day-wise queues).
 model AdminWorkQuota {
   id          Int      @id @default(autoincrement())
   adminId     Int      @unique @map("admin_id")
@@ -723,43 +610,22 @@ model AdminWorkQuota {
   @@map("admin_work_quotas")
 }
 
-/// One Allocate click. History lists these rows, not calendar days.
-model AdminWorkBatch {
-  id             Int      @id @default(autoincrement())
-  adminId        Int      @map("admin_id")
-  assignedById   Int      @map("assigned_by_id")
-  assignmentDate DateTime @map("assignment_date") @db.Date
-  allocated      Int
-  released       Int      @default(0)
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  admin       AdminUser                 @relation("BatchReviewer", fields: [adminId], references: [id], onDelete: Cascade)
-  assignedBy  AdminUser                 @relation("BatchCreator", fields: [assignedById], references: [id])
-  assignments AdminQuestionAssignment[]
-
-  @@index([adminId, createdAt])
-  @@map("admin_work_batches")
-}
-
-/// One bank question reserved for one reviewer. Unique on que_id so two
-/// sub-admins never share the same pending row.
+/// One variant reserved for one reviewer. Unique on variant_id so two
+/// sub-admins never share the same pending row. assignment_date is a stamp only.
 model AdminQuestionAssignment {
   id             Int      @id @default(autoincrement())
   adminId        Int      @map("admin_id")
-  queId          String   @map("que_id") @db.VarChar(32)
-  batchId        Int      @map("batch_id")
+  variantId      Int      @map("variant_id")
   assignmentDate DateTime @map("assignment_date") @db.Date
   assignedById   Int      @map("assigned_by_id")
   createdAt      DateTime @default(now()) @map("created_at")
 
-  admin      AdminUser     @relation("AssignedAdmin", fields: [adminId], references: [id], onDelete: Cascade)
-  assignedBy AdminUser     @relation("AssignmentCreator", fields: [assignedById], references: [id])
-  batch      AdminWorkBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  question   BankQuestion  @relation(fields: [queId], references: [queId], onDelete: Cascade)
+  admin      AdminUser       @relation("AssignedAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+  assignedBy AdminUser       @relation("AssignmentCreator", fields: [assignedById], references: [id])
+  variant    QuestionVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
-  @@unique([queId])
+  @@unique([variantId])
   @@index([adminId, assignmentDate])
   @@index([assignmentDate])
-  @@index([batchId])
   @@map("admin_question_assignments")
 }

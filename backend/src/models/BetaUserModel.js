@@ -1,6 +1,6 @@
 import { prisma } from '../config/prisma.client.js';
 import { ROLE } from '../config/roles.js';
-import { resolveUserGeography, localizedName } from '../services/geography.service.js';
+import { resolveUserGeography } from '../services/geography.service.js';
 
 function phoneDigits(value) {
   return String(value ?? '').replace(/\D/g, '').slice(-10);
@@ -55,8 +55,8 @@ export class BetaUserModel {
             firstName: first,
             lastName: last || null,
             fullName,
-            district: localizedName(geo.districtRow, 'gu') || geo.district,
-            taluka: localizedName(geo.talukaRow, 'gu') || geo.taluka,
+            districtId: geo.districtId,
+            talukaId: geo.talukaId,
             phone: phoneNumber,
           },
         });
@@ -81,8 +81,8 @@ export class BetaUserModel {
           firstName: first,
           lastName: last || null,
           fullName,
-          district: localizedName(geo.districtRow, 'gu') || geo.district,
-          taluka: localizedName(geo.talukaRow, 'gu') || geo.taluka,
+          districtId: geo.districtId,
+          talukaId: geo.talukaId,
           phone: phoneNumber,
           linkedUserId: user.id,
         },

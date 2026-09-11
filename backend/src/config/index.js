@@ -62,10 +62,11 @@ export const CONFIG = {
     ENABLED: parseBool(process.env.IS_BETA_TIME, false),
   },
 
-  // Bank-backed quiz sessions (allocate from ACCEPTED bank_questions).
+  // Bank-backed quiz sessions (allocate from ACCEPTED question_variants).
   QUIZ: {
     QUESTION_COUNT: parseInt(process.env.QUIZ_SESSION_QUESTION_COUNT) || 15,
-    // Soft personalisation: target this many profile-tagged (district / caste) Qs.
+    // Kept for env compatibility. Allocation now takes all matching
+    // district/caste questions first, then fills from the general pool.
     PERSONALIZED_MIN: parseInt(process.env.QUIZ_PERSONALIZED_MIN) || 4,
     PERSONALIZED_MAX: parseInt(process.env.QUIZ_PERSONALIZED_MAX) || 5,
     EXPIRY_MINUTES: parseInt(process.env.QUIZ_SESSION_EXPIRY_MINUTES) || 90,

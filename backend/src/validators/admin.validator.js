@@ -20,10 +20,6 @@ export const adminCreateUserSchema = z.object({
   university: z.string().trim().max(255).nullable().optional(),
   mobile_number: z.string().trim().max(20).nullable().optional(),
   role: z.enum([ADMIN_ROLE.ADMIN, ADMIN_ROLE.MASTER]).optional().default(ADMIN_ROLE.ADMIN),
-  daily_quota: z.preprocess(
-    (v) => (v === '' || v == null ? undefined : v),
-    z.coerce.number().int().min(1).max(2000).optional()
-  ),
 });
 
 export const adminWorkAllocateSchema = z.object({
@@ -34,7 +30,6 @@ export const adminWorkAllocateSchema = z.object({
 export const adminWorkUnassignSchema = z.object({
   admin_id: z.coerce.number().int().positive(),
   count: z.coerce.number().int().min(1).max(2000),
-  batch_id: z.coerce.number().int().positive().optional(),
 });
 
 export const questionUpdateSchema = z
