@@ -124,7 +124,7 @@ const takeUnique = (pools, count) => {
 };
 
 function isBetaUser(user) {
-  return String(user?.institute || '').trim().toLowerCase() === 'beta user';
+  return Boolean(user?.isBeta || user?.betaProfile);
 }
 
 function normalizeSessionLanguage(language) {

@@ -254,7 +254,6 @@ export const jsonSource = {
       districtId: districtId ?? null,
       talukaId: talukaId ?? null,
       phone: digits(phone),
-      institute: "Beta User",
       grade: "",
     };
     extraStudents.push(user);

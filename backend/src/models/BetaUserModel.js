@@ -79,7 +79,7 @@ export class BetaUserModel {
             talukaId: geo.talukaId,
             socialCategory: geo.socialCategory,
             phone: phoneNumber,
-            institute: 'Beta User',
+            institute: null,
           },
         });
 
@@ -107,7 +107,6 @@ export class BetaUserModel {
           talukaId: geo.talukaId,
           socialCategory: geo.socialCategory,
           phone: phoneNumber,
-          institute: 'Beta User',
         },
       });
 

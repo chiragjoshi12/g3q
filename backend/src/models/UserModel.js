@@ -78,6 +78,7 @@ export class UserModel {
         talukaId: true,
         district: { select: { id: true, nameEn: true, nameGu: true, nameHi: true } },
         taluka: { select: { id: true, nameEn: true, nameGu: true, nameHi: true } },
+        betaProfile: { select: { id: true } },
       },
     });
     if (!user) return null;
@@ -89,6 +90,7 @@ export class UserModel {
       talukaId: user.talukaId ?? null,
       district: localizedName(user.district, 'gu') || '',
       taluka: localizedName(user.taluka, 'gu') || null,
+      isBeta: Boolean(user.betaProfile),
     };
   }
 
