@@ -8,32 +8,34 @@ export const lookupIdentity = asyncHandler(async (req, res) => {
 });
 
 export const requestOtp = asyncHandler(async (req, res) => {
-  const { role, credential, phone } = req.body;
-  const result = await authService.requestOtp({ role, credential, phone });
+  const { mobile } = req.body;
+  const result = await authService.requestOtp({ mobile });
   return res.status(200).json(result);
 });
 
 export const verifyOtp = asyncHandler(async (req, res) => {
-  const { id, otp, role, credential } = req.body;
-  const result = await authService.verifyOtp({ id, otp, role, credential });
+  const { otp_token, otp } = req.body;
+  const result = await authService.verifyOtp({ otp_token, otp });
   return res.status(200).json(result);
 });
 
 export const registerCitizen = asyncHandler(async (req, res) => {
-  const { id, name, district, taluka, districtId, talukaId } = req.body;
+  const { otp_token, name, surname, districtId, talukaId, consentAccepted, consentVersion } =
+    req.body;
   const result = await authService.registerCitizen({
-    id,
+    otp_token,
     name,
-    district,
-    taluka,
+    surname,
     districtId,
     talukaId,
+    consentAccepted,
+    consentVersion,
   });
   return res.status(200).json(result);
 });
 
 export const linkRoster = asyncHandler(async (req, res) => {
-  const { id, role, credential } = req.body;
-  const result = await authService.linkRoster({ id, role, credential });
+  const { otp_token, role, credential } = req.body;
+  const result = await authService.linkRoster({ otp_token, role, credential });
   return res.status(200).json(result);
 });

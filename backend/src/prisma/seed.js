@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { DEPARTMENTS } from '../config/departments.js';
 import { GUJARAT_DISTRICTS } from '../config/gujarat-geography.js';
+import { mobileStorageFields } from '../utils/mobileCrypto.js';
 
 const prisma = new PrismaClient();
 
@@ -13,61 +14,62 @@ const users = {
     {
       id: 'stu_1',
       role: 'student',
-      udiseCode: '24010100101',
+      ctsId: '24010100101',
       name: 'રિયા પટેલ',
       institute: 'શ્રી સરસ્વતી વિદ્યાલય, અમદાવાદ',
       schoolId: '24070608844',
       grade: 'ધોરણ 10',
       districtKey: 'Ahmedabad',
       talukaKey: 'Daskroi',
-      phone: '+91 98765 43210',
+      mobile: '9876543210',
     },
     {
       id: 'stu_2',
       role: 'student',
-      udiseCode: '24020200202',
+      ctsId: '24020200202',
       name: 'હાર્દિક ચૌધરી',
       institute: 'સરકારી માધ્યમિક શાળા, મહેસાણા',
       schoolId: '24020200202',
       grade: 'ધોરણ 12',
       districtKey: 'Mehsana',
       talukaKey: 'Mehsana',
-      phone: '+91 91234 56780',
+      mobile: '9123456780',
     },
   ],
   colleges: [
     {
       id: 'col_1',
       role: 'college',
-      abcId: '123456789012',
+      apparId: '123456789012',
       name: 'મીરા શાહ',
       institute: 'સરકારી વિનયન કૉલેજ, ગાંધીનગર',
       grade: 'બી.એ. — સેમેસ્ટર 4',
       districtKey: 'Gandhinagar',
       talukaKey: 'Gandhinagar',
-      phone: '+91 99887 76655',
+      mobile: '9988776655',
     },
     {
       id: 'col_2',
       role: 'college',
-      abcId: '987654321098',
+      apparId: '987654321098',
       name: 'કરણ ઠક્કર',
       institute: 'એલ. ડી. ઇજનેરી કૉલેજ, અમદાવાદ',
       grade: 'બી.ઈ. — સેમેસ્ટર 6',
       districtKey: 'Ahmedabad',
       talukaKey: 'Ahmedabad City',
-      phone: '+91 90909 10101',
+      mobile: '9090910101',
     },
   ],
   citizens: [
     {
       id: 'cit_1',
       role: 'citizen',
-      name: 'અમિત દેસાઈ',
-      institute: 'નાગરિક સહભાગી',
+      name: 'અમિત',
+      surname: 'દેસાઈ',
+      institute: null,
       districtKey: 'Ahmedabad',
       talukaKey: 'Sanand',
-      phone: '9876543210',
+      mobile: '9876501234',
     },
   ],
 };
@@ -161,16 +163,19 @@ async function resolveSeedGeography(districtKey, talukaKey) {
 async function seedUsers() {
   const allUsers = [...users.students, ...users.colleges, ...users.citizens];
   for (const user of allUsers) {
-    const { districtKey, talukaKey, ...rest } = user;
+    const { districtKey, talukaKey, mobile, ...rest } = user;
     const geo = await resolveSeedGeography(districtKey, talukaKey);
+    const storedMobile = mobile ? mobileStorageFields(mobile) : { mobile: null, mobileHash: null };
     await prisma.user.upsert({
       where: { id: user.id },
       update: {
         districtId: geo.districtId,
         talukaId: geo.talukaId,
+        ...storedMobile,
       },
       create: {
         ...rest,
+        ...storedMobile,
         districtId: geo.districtId,
         talukaId: geo.talukaId,
       },

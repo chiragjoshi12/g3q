@@ -70,19 +70,23 @@ async function getLocationCache() {
   return locationCache;
 }
 
-const toEntry = (row, rank, meId, { role = null } = {}) => ({
-  rank,
-  userId: row.user_id,
-  name: row.name,
-  institute: row.institute || '',
-  schoolId: row.school_id || null,
-  grade: role === ROLE.CITIZEN ? null : row.grade || null,
-  taluka: row.taluka || null,
-  district: row.district || null,
-  bestPercentage: Number(row.best_percentage) || 0,
-  totalTimeMs: Number(row.total_time_ms) || 0,
-  you: row.user_id === meId,
-});
+const toEntry = (row, rank, meId, { role = null } = {}) => {
+  const first = String(row.name ?? '').trim();
+  const surname = String(row.surname ?? '').trim();
+  return {
+    rank,
+    userId: row.user_id,
+    name: [first, surname].filter(Boolean).join(' '),
+    institute: row.institute || null,
+    schoolId: row.school_id || null,
+    grade: role === ROLE.CITIZEN ? null : row.grade || null,
+    taluka: row.taluka || null,
+    district: row.district || null,
+    bestPercentage: Number(row.best_percentage) || 0,
+    totalTimeMs: Number(row.total_time_ms) || 0,
+    you: row.user_id === meId,
+  };
+};
 
 const schoolLabel = (scopeName, week, lang = DEFAULT_LANG) => {
   const safeLang = normalizeLang(lang);
@@ -152,6 +156,7 @@ async function rankedUsers({ week, talukaId, role, schoolId, institute, limit, m
     SELECT
       la.user_id AS user_id,
       u.name,
+      u.surname,
       u.institute,
       u.school_id,
       u.grade,
@@ -200,6 +205,7 @@ async function findMyRank({ week, talukaId, role, schoolId, institute, meId, lan
     SELECT
       la.user_id AS user_id,
       u.name,
+      u.surname,
       u.institute,
       u.school_id,
       u.grade,

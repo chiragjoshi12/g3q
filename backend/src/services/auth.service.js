@@ -1,10 +1,10 @@
 import { CONFIG } from '../config/index.js';
+import { CURRENT_CONSENT_VERSION } from '../config/consent.js';
 import {
-  isCitizen,
   usesRosterIdentity,
   validateCitizenProfile,
   validateCredential,
-  validatePhone,
+  validateMobile,
   validateRole,
   ROLE,
 } from '../config/roles.js';
@@ -12,16 +12,17 @@ import { UserModel } from '../models/UserModel.js';
 import { OtpModel } from '../models/OtpModel.js';
 import { generateAccessToken } from '../utils/jwt.js';
 import { AppError, ERROR_CODE } from '../utils/appError.js';
+import { maskMobile, normalizeMobileDigits } from '../utils/mobileCrypto.js';
+import { sendOtpSms } from './otpSms.service.js';
 
 const generateOtp = () =>
   String(Math.floor(Math.random() * 10 ** CONFIG.OTP.LENGTH)).padStart(CONFIG.OTP.LENGTH, '0');
-
-const maskPhone = (phone) => String(phone).replace(/\d(?=\d{4})/g, '•');
 
 function hasCitizenProfile(user) {
   return Boolean(
     user &&
       String(user.name || '').trim() &&
+      String(user.surname || '').trim() &&
       user.districtId != null &&
       user.talukaId != null
   );
@@ -44,175 +45,191 @@ async function resolveUser(role, credential) {
 }
 
 export const authService = {
-  /** Step 1 → 2: resolve the CTS Number/ABC code to a name, before phone or OTP. */
+  /** Step 1 → 2: resolve CTS ID / Appar ID to a name, before mobile or OTP. */
   async lookupIdentity({ role, credential }) {
     return resolveUser(role, credential);
   },
 
-  /** School/college: issue OTP after resolving the roster identity. Citizen / phone-first: OTP by mobile. */
-  async requestOtp({ role, credential, phone }) {
-    const roleError = validateRole(role);
-    if (roleError) throw new AppError(ERROR_CODE.INVALID_REQUEST, roleError);
+  /**
+   * Mobile-only OTP issue.
+   * Role/credential are not accepted — we discover whether the number is known.
+   */
+  async requestOtp({ mobile }) {
+    const mobileError = validateMobile(mobile);
+    if (mobileError) throw new AppError(ERROR_CODE.INVALID_PHONE, mobileError);
 
-    const phoneError = validatePhone(phone);
-    if (phoneError) throw new AppError(ERROR_CODE.INVALID_PHONE, phoneError);
+    const trimmedMobile = normalizeMobileDigits(mobile);
+    await OtpModel.assertCanSend(trimmedMobile);
 
-    const trimmedPhone = String(phone).trim();
+    const user = await UserModel.findByMobileAny(trimmedMobile);
+    const authCase = user ? 'login' : 'signup';
+    const otpRole = user?.role || ROLE.CITIZEN;
+
     const otp = generateOtp();
     const expiresAt = new Date(Date.now() + CONFIG.OTP.EXPIRY_MINUTES * 60_000);
 
-    if (isCitizen(role)) {
-      const user = await UserModel.findByPhoneAny(trimmedPhone);
-      const otpRole = user?.role || ROLE.CITIZEN;
-
-      const row = await OtpModel.create({
-        role: otpRole,
-        phone: trimmedPhone,
-        otp,
-        expiresAt,
-      });
-
-      console.log(
-        `[OTP] ${trimmedPhone} (${user ? `${user.role} ${user.name}` : 'new'}) -> ${otp} (id ${row.id})`
-      );
-
-      return {
-        id: row.id,
-        maskedPhone: maskPhone(trimmedPhone),
-        resendSeconds: CONFIG.OTP.RESEND_SECONDS,
-      };
-    }
-
-    await resolveUser(role, credential);
-
     const row = await OtpModel.create({
-      role,
-      phone: trimmedPhone,
+      role: otpRole,
+      mobile: trimmedMobile,
       otp,
       expiresAt,
     });
 
-    console.log(`[OTP] ${trimmedPhone} (${role}) -> ${otp} (id ${row.id})`);
+    await sendOtpSms({ mobile: trimmedMobile, otp });
+
+    const logLabel = user ? `${user.role} ${user.name}` : 'new';
+    if (!CONFIG.OTP.SEND_SMS) {
+      console.log(`[OTP] ${trimmedMobile} (${logLabel}) -> ${otp} (token ${row.token})`);
+    } else {
+      console.log(`[OTP] issued token ${row.token} for ${maskMobile(trimmedMobile)} (${logLabel})`);
+    }
 
     return {
-      id: row.id,
-      maskedPhone: maskPhone(trimmedPhone),
+      message: 'OTP Sended successfully.',
+      otp_token: row.token,
+      maskedMobile: maskMobile(trimmedMobile),
       resendSeconds: CONFIG.OTP.RESEND_SECONDS,
+      case: authCase,
     };
   },
 
   /**
-   * Verify OTP.
-   * Phone-first (citizen role on request): existing user → session; else needsSignup.
-   * Legacy roster OTP still returns session for school/college codes.
+   * Verify OTP by public otp_token.
+   * Existing account → session; unknown mobile → needsSignup (keep token for register/link).
    */
-  async verifyOtp({ id, otp, role, credential }) {
+  async verifyOtp({ otp_token, otp }) {
     const code = String(otp ?? '').trim();
     if (code.length !== CONFIG.OTP.LENGTH) {
       throw new AppError(ERROR_CODE.INVALID_OTP, `OTP ${CONFIG.OTP.LENGTH} અંકનો હોવો જોઈએ.`);
     }
 
-    const pending = await OtpModel.findActiveById(id);
-    const isDevBypass = CONFIG.NODE_ENV !== 'production' && code === CONFIG.OTP.DEV_BYPASS_CODE;
-    const phoneFirst = isCitizen(role) || !credential;
+    const pending = await OtpModel.findActiveByToken(otp_token);
+    const otpRow = pending || (await OtpModel.findByToken(otp_token));
+    const isDevBypass =
+      String(CONFIG.NODE_ENV || '').toLowerCase() !== 'production' &&
+      code === CONFIG.OTP.DEV_BYPASS_CODE;
 
-    if (phoneFirst) {
-      if (!pending) {
-        throw new AppError(ERROR_CODE.INVALID_OTP);
-      }
-      if (!isDevBypass && code !== pending.otp) {
-        throw new AppError(ERROR_CODE.INVALID_OTP);
-      }
-
-      const user = await UserModel.findByPhoneAny(pending.phone);
-
-      if (user) {
-        if (user.role === ROLE.CITIZEN && !hasCitizenProfile(user)) {
-          await OtpModel.markVerified(pending.id);
-          return { needsSignup: true, needsProfile: true, id: pending.id, phone: pending.phone };
-        }
-        await OtpModel.markVerified(pending.id);
-        await OtpModel.deleteById(pending.id);
-        const token = generateAccessToken({ id: user.id, role: user.role });
-        return { user, token, existing: true, needsProfile: false, needsSignup: false };
-      }
-
-      await OtpModel.markVerified(pending.id);
-      return { needsSignup: true, needsProfile: false, id: pending.id, phone: pending.phone };
+    if (otpRow?.mobile) {
+      await OtpModel.assertNotLocked(otpRow.mobile);
     }
+
+    const rejectInvalidOtp = async () => {
+      if (otpRow && !otpRow.consumedAt) {
+        await OtpModel.recordFailedVerify(otpRow.id);
+      }
+      throw new AppError(ERROR_CODE.INVALID_OTP);
+    };
 
     if (!pending) {
-      if (isDevBypass) {
-        const user = await resolveUser(role, credential);
-        return { user, token: generateAccessToken({ id: user.id, role: user.role }) };
-      }
-      throw new AppError(ERROR_CODE.INVALID_OTP);
+      await rejectInvalidOtp();
+    }
+    if (!isDevBypass && code !== pending.otp) {
+      await rejectInvalidOtp();
     }
 
-    if (!isDevBypass && code !== pending.otp) {
-      throw new AppError(ERROR_CODE.INVALID_OTP);
+    const user = await UserModel.findByMobileAny(pending.mobile);
+
+    if (user) {
+      if (user.role === ROLE.CITIZEN && !hasCitizenProfile(user)) {
+        await OtpModel.markVerified(pending.id);
+        return {
+          needsSignup: true,
+          needsProfile: true,
+          otp_token: pending.token,
+          mobile: pending.mobile,
+        };
+      }
+      await OtpModel.markVerified(pending.id);
+      await OtpModel.consumeById(pending.id);
+      const token = generateAccessToken({ id: user.id, role: user.role });
+      return { user, token, existing: true, needsProfile: false, needsSignup: false };
     }
 
     await OtpModel.markVerified(pending.id);
-    await OtpModel.deleteById(pending.id);
-
-    const user = await resolveUser(role, credential);
-    const token = generateAccessToken({ id: user.id, role: user.role });
-    return { user, token };
+    return {
+      needsSignup: true,
+      needsProfile: false,
+      otp_token: pending.token,
+      mobile: pending.mobile,
+    };
   },
 
-  /** After phone OTP signup: attach verified phone to a roster school/college identity. */
-  async linkRoster({ id, role, credential }) {
+  /** After mobile OTP signup: attach verified mobile to a roster school/college identity. */
+  async linkRoster({ otp_token, role, credential }) {
     if (!usesRosterIdentity(role)) {
       throw new AppError(ERROR_CODE.INVALID_REQUEST, 'અમાન્ય પ્રકાર.');
     }
 
-    const pending = await OtpModel.findVerifiedById(id);
+    const pending = await OtpModel.findVerifiedByToken(otp_token);
     if (!pending) {
       throw new AppError(ERROR_CODE.INVALID_OTP);
     }
 
     const user = await resolveUser(role, credential);
-    const phoneOwner = await UserModel.findByPhoneAny(pending.phone);
-    if (phoneOwner && phoneOwner.id !== user.id) {
+    const mobileOwner = await UserModel.findByMobileAny(pending.mobile);
+    if (mobileOwner && mobileOwner.id !== user.id) {
       throw new AppError(
         ERROR_CODE.INVALID_REQUEST,
         'આ મોબાઇલ નંબર પહેલેથી બીજા એકાઉન્ટ સાથે જોડાયેલો છે.'
       );
     }
 
-    const linked = await UserModel.updatePhone(user.id, pending.phone);
-    await OtpModel.deleteById(pending.id);
+    const linked = await UserModel.updateMobile(user.id, pending.mobile);
+    await OtpModel.consumeById(pending.id);
     const token = generateAccessToken({ id: linked.id, role: linked.role });
     return { user: linked, token };
   },
 
-  async registerCitizen({ id, name, district, taluka, districtId, talukaId }) {
-    const profileError = validateCitizenProfile({ name, district, taluka, districtId, talukaId });
+  async registerCitizen({
+    otp_token,
+    name,
+    surname,
+    districtId,
+    talukaId,
+    consentAccepted,
+    consentVersion,
+  }) {
+    if (consentAccepted !== true) {
+      throw new AppError(ERROR_CODE.INVALID_REQUEST, 'સંમતિ આપ્યા વગર સાઇન-અપ થઈ શકે નહીં.');
+    }
+    const version = String(consentVersion || '').trim();
+    if (!version || version !== CURRENT_CONSENT_VERSION) {
+      throw new AppError(ERROR_CODE.INVALID_REQUEST, 'સંમતિનું સંસ્કરણ અમાન્ય છે.');
+    }
+
+    const profileError = validateCitizenProfile({ name, surname, districtId, talukaId });
     if (profileError) throw new AppError(ERROR_CODE.INVALID_REQUEST, profileError);
 
-    const pending = await OtpModel.findVerifiedById(id);
+    const pending = await OtpModel.findVerifiedByToken(otp_token);
     if (!pending) {
       throw new AppError(ERROR_CODE.INVALID_OTP);
     }
     if (pending.role && pending.role !== ROLE.CITIZEN) {
       throw new AppError(ERROR_CODE.INVALID_OTP);
     }
+    if (!pending.mobile) {
+      throw new AppError(ERROR_CODE.INVALID_REQUEST, 'મોબાઇલ નંબર જરૂરી છે.');
+    }
 
-    let user = await UserModel.findByPhone(ROLE.CITIZEN, pending.phone);
-    const geoInput = { district, taluka, districtId, talukaId };
+    let user = await UserModel.findByMobile(ROLE.CITIZEN, pending.mobile);
+    const geoInput = { districtId, talukaId };
+    const profile = {
+      name: String(name).trim(),
+      surname: String(surname).trim(),
+      ...geoInput,
+    };
 
     if (user) {
-      user = await UserModel.updateCitizenProfile(user.id, { name, ...geoInput });
+      user = await UserModel.updateCitizenProfile(user.id, profile);
     } else {
       user = await UserModel.createCitizen({
-        name,
-        phone: pending.phone,
-        ...geoInput,
+        ...profile,
+        mobile: pending.mobile,
       });
     }
 
-    await OtpModel.deleteById(pending.id);
+    await UserModel.recordConsent(user.id, version);
+    await OtpModel.consumeById(pending.id);
     const token = generateAccessToken({ id: user.id, role: user.role });
     return { user, token };
   },

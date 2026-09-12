@@ -21,6 +21,7 @@
     "leaderboard:rebuild": "node scripts/rebuild-leaderboard-aggregates.js",
     "geography:sync": "node scripts/sync-gujarat-geography.js",
     "departments:normalize": "node scripts/normalize-departments.js",
+    "import:legacy-bank": "node scripts/import-legacy-bank.js",
     "import:students": "node scripts/import-students.js"
   },
   "prisma": {

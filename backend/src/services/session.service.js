@@ -5,6 +5,7 @@ import { AppError, ERROR_CODE } from '../utils/appError.js';
 import {
   QuizSessionModel,
   toGradingQuestion,
+  toQuestionReveal,
   toSessionMeta,
   toSessionPlayPayload,
   toSessionResult,
@@ -64,6 +65,17 @@ const selectedOptionForStorage = (questionType, answer) => {
   if (!selected) return null;
   return String(selected).trim().toUpperCase().slice(0, 1);
 };
+
+const stableAnswerKey = (value) => {
+  try {
+    return JSON.stringify(value ?? null);
+  } catch {
+    return String(value);
+  }
+};
+
+const isRowLocked = (row) =>
+  row?.selectedAnswer != null || row?.isCorrect != null || row?.selectedOption != null;
 
 const shuffle = (items) => {
   const arr = [...items];
@@ -127,7 +139,6 @@ async function fetchCandidateLight({
       OR JSON_EXTRACT(qv.payload, '$.answer') IS NOT NULL
       OR qv.type IN ('mcq', 'true_false', 'match_pairs', 'sequence', 'fill_blanks')
     )`,
-    // Leftover BETA-scoped bank rows stay out of live play.
     `${scopeExpr} <> 'BETA'`,
     'uqe.variant_id IS NULL',
   ];
@@ -310,7 +321,9 @@ export const sessionService = {
 
     const questionCount = count || CONFIG.QUIZ.QUESTION_COUNT;
     const lang = requestedLanguage;
-    const rowsForSession = await allocateBankQuestions(user, questionCount);
+    const bankRows = await allocateBankQuestions(user, questionCount);
+
+    let rowsForSession = bankRows;
 
     // Short lock: claim the "no in-progress session" slot and insert the shell only.
     const claim = await prisma.$transaction(async (tx) => {
@@ -364,6 +377,49 @@ export const sessionService = {
     return toSessionPlayPayload(session);
   },
 
+  /**
+   * Lock one answer mid-quiz and return the reveal for review UX.
+   * Ranked play never ships answers in the initial payload.
+   */
+  async lockQuestion({ userId, sessionId, queId, answer, timeSpentMs }) {
+    const session = await QuizSessionModel.findById(sessionId);
+    if (!session || session.userId !== userId) {
+      throw new AppError(ERROR_CODE.NOT_FOUND, 'Session not found.');
+    }
+    if (session.status !== 'in_progress') {
+      throw new AppError(ERROR_CODE.INVALID_REQUEST, 'Session is not active.');
+    }
+
+    const row = (session.questions || []).find((q) => q.queId === String(queId));
+    if (!row) {
+      throw new AppError(ERROR_CODE.NOT_FOUND, 'Question not found in this session.');
+    }
+
+    const gradingQuestion = toGradingQuestion(row, session.language);
+    const selectedAnswer = normalizeSubmittedAnswer(gradingQuestion, answer);
+    const elapsed = Math.max(0, Math.round(Number(timeSpentMs) || 0));
+
+    if (isRowLocked(row)) {
+      if (stableAnswerKey(row.selectedAnswer) !== stableAnswerKey(selectedAnswer)) {
+        throw new AppError(
+          ERROR_CODE.INVALID_REQUEST,
+          'This answer is already locked and cannot be changed.'
+        );
+      }
+      return toQuestionReveal(row, session.language);
+    }
+
+    const grade = gradeQuestion(gradingQuestion, selectedAnswer, elapsed);
+    const locked = await QuizSessionModel.lockQuestionRow(row, {
+      selectedOption: selectedOptionForStorage(gradingQuestion.type, selectedAnswer),
+      selectedAnswer: selectedAnswer ?? null,
+      isCorrect: Boolean(grade.correct),
+      timeSpentMs: elapsed,
+    });
+
+    return toQuestionReveal(locked, session.language);
+  },
+
   async submit({ userId, sessionId, answers, timings, startedAt, abandoned = false }) {
     const [session, user] = await Promise.all([
       QuizSessionModel.findById(sessionId),
@@ -399,6 +455,42 @@ export const sessionService = {
 
     const gradedRows = session.questions.map((q) => {
       const gradingQuestion = toGradingQuestion(q, session.language);
+      const locked = isRowLocked(q);
+
+      if (locked) {
+        return {
+          id: q.id,
+          userId,
+          queId: q.queId,
+          variantId: q.variantId,
+          rootId: rootByVariant.get(q.variantId),
+          selectedOption: q.selectedOption ?? selectedOptionForStorage(gradingQuestion.type, q.selectedAnswer),
+          selectedAnswer: q.selectedAnswer ?? null,
+          isCorrect: Boolean(q.isCorrect),
+          attempted: true,
+          timeSpentMs: Math.max(0, Math.round(Number(q.timeSpentMs) || 0)),
+          points: q.points,
+        };
+      }
+
+      // Completed (non-abandoned) submits only trust server-locked answers.
+      // Abandoned mid-quiz may still accept client payload for unlocked rows.
+      if (!abandoned) {
+        return {
+          id: q.id,
+          userId,
+          queId: q.queId,
+          variantId: q.variantId,
+          rootId: rootByVariant.get(q.variantId),
+          selectedOption: null,
+          selectedAnswer: null,
+          isCorrect: false,
+          attempted: false,
+          timeSpentMs: 0,
+          points: q.points,
+        };
+      }
+
       const selectedAnswer = normalizeSubmittedAnswer(gradingQuestion, answerMap[q.queId]);
       const attempted = Object.prototype.hasOwnProperty.call(timingMap, q.queId);
       const timeSpentMs = attempted

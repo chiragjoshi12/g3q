@@ -11,6 +11,7 @@ export const ERROR_CODE = {
   INVALID_REQUEST: 'INVALID_REQUEST',
   UNAUTHORIZED: 'UNAUTHORIZED',
   FORBIDDEN: 'FORBIDDEN',
+  RATE_LIMITED: 'RATE_LIMITED',
   UNKNOWN: 'UNKNOWN',
 };
 
@@ -22,6 +23,7 @@ const STATUS_BY_CODE = {
   [ERROR_CODE.INVALID_REQUEST]: 400,
   [ERROR_CODE.UNAUTHORIZED]: 401,
   [ERROR_CODE.FORBIDDEN]: 403,
+  [ERROR_CODE.RATE_LIMITED]: 429,
   [ERROR_CODE.UNKNOWN]: 500,
 };
 
@@ -33,6 +35,7 @@ export const ERROR_MESSAGE = {
   [ERROR_CODE.INVALID_REQUEST]: 'The request is invalid.',
   [ERROR_CODE.UNAUTHORIZED]: 'Sign in is required.',
   [ERROR_CODE.FORBIDDEN]: 'You do not have permission for this action.',
+  [ERROR_CODE.RATE_LIMITED]: 'Too many attempts. Please try again later.',
   [ERROR_CODE.UNKNOWN]: 'Something went wrong. Please try again.',
 };
 

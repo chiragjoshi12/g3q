@@ -23,4 +23,23 @@ export const SETTINGS = {
     defaultExpiry: '30d',
     defaultIssuer: 'gujarat-quiz',
   },
+  otp: {
+    /**
+     * When true, send OTP via Cogent SMS API (IP must be whitelisted).
+     * When false, OTP is stored/logged only — no SMS API call.
+     */
+    sendSms: false,
+    smsApiUrl: 'https://services.gujgov.edu.in/api/g3q/mobile',
+    /** Approved template text; `{otp}` is replaced with the code. */
+    smsTextTemplate: 'Your G3Q login OTP is {otp}. Do not share it. Thank you - G3Q',
+    /** Per-mobile limits (IP limits intentionally deferred). */
+    rateLimit: {
+      sendMaxPerWindow: 5,
+      sendWindowMinutes: 15,
+      sendMaxPerDay: 10,
+      sendDayHours: 24,
+      verifyMaxFailed: 5,
+      verifyLockMinutes: 15,
+    },
+  },
 };

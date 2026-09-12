@@ -36,8 +36,9 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json({ limit: '3mb' }));
-app.use(express.urlencoded({ extended: true, limit: '3mb' }));
+// Base64 photo payloads are ~4/3 of binary size; allow headroom for a 3 MB image.
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 app.use(cookieParser());
 app.use(morgan('tiny'));
 app.use(apiEnvelopeMiddleware);

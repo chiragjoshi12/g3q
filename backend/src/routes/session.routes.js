@@ -4,10 +4,12 @@ import { validateRequest } from '../middlewares/validation.middleware.js';
 import {
   startSessionSchema,
   submitSessionSchema,
+  lockSessionQuestionSchema,
 } from '../validators/session.validator.js';
 import {
   startSession,
   getSession,
+  lockSessionQuestion,
   submitSession,
   getSessionResult,
   listMySessions,
@@ -27,6 +29,11 @@ router.get('/current', myCurrentSession);
 router.get('/stats', mySessionStats);
 router.get('/:sessionId', getSession);
 router.get('/:sessionId/result', getSessionResult);
+router.post(
+  '/:sessionId/questions/:queId/lock',
+  validateRequest(lockSessionQuestionSchema),
+  lockSessionQuestion
+);
 router.post('/:sessionId/submit', validateRequest(submitSessionSchema), submitSession);
 
 export default router;

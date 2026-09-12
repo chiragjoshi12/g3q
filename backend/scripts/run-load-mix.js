@@ -1,6 +1,7 @@
 import { performance } from 'node:perf_hooks';
 import { prisma } from '../src/config/prisma.client.js';
 import { generateAccessToken } from '../src/utils/jwt.js';
+import { decryptMobile } from '../src/utils/mobileCrypto.js';
 
 const BASE_URL = process.env.LOAD_TEST_BASE_URL || 'http://localhost:4000';
 const SESSION_USER_LIMIT = Number(process.env.LOAD_TEST_SESSION_USERS || 2000);
@@ -104,17 +105,17 @@ async function runTimeboxedWorkers({ concurrency, seconds, work }) {
   return Math.round(performance.now() - started);
 }
 
-async function runOtpLoad(phones) {
+async function runOtpLoad(mobiles) {
   const stats = createStats('otp');
   const durationMs = await runTimeboxedWorkers({
     concurrency: OTP_CONCURRENCY,
     seconds: OTP_SECONDS,
     work: async (workerIndex) => {
-      const phone = phones[workerIndex % phones.length];
+      const mobile = mobiles[workerIndex % mobiles.length];
       const result = await requestJson(`${BASE_URL}/api/auth/otp/request`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ role: 'citizen', phone }),
+        body: JSON.stringify({ role: 'citizen', mobile }),
       });
       record(stats, {
         status: result.status,
@@ -228,7 +229,7 @@ async function main() {
     select: {
       id: true,
       role: true,
-      phone: true,
+      mobile: true,
     },
   });
 
@@ -236,9 +237,12 @@ async function main() {
     throw new Error('No load-test users found. Run prepare-load-test-data.js first.');
   }
 
-  const citizenPhones = users.filter((user) => user.role === 'citizen' && user.phone).map((user) => user.phone);
-  if (!citizenPhones.length) {
-    throw new Error('No load-test citizen phones found for OTP load.');
+  const citizenMobiles = users
+    .filter((user) => user.role === 'citizen' && user.mobile)
+    .map((user) => decryptMobile(user.mobile))
+    .filter(Boolean);
+  if (!citizenMobiles.length) {
+    throw new Error('No load-test citizen mobiles found for OTP load.');
   }
 
   const usersWithTokens = users.map((user) => ({
@@ -248,7 +252,7 @@ async function main() {
 
   const overallStarted = performance.now();
   const [otp, leaderboard, sessionFlow] = await Promise.all([
-    runOtpLoad(citizenPhones),
+    runOtpLoad(citizenMobiles),
     runLeaderboardLoad(),
     runSessionFlow(usersWithTokens),
   ]);

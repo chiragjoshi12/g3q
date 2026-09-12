@@ -11,3 +11,8 @@ export const submitSessionSchema = z.object({
   startedAt: z.coerce.number().int().positive(),
   abandoned: z.coerce.boolean().optional(),
 });
+
+export const lockSessionQuestionSchema = z.object({
+  answer: z.any(),
+  timeSpentMs: z.coerce.number().int().min(0).max(24 * 60 * 60 * 1000).default(0),
+});

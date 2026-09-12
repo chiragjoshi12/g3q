@@ -234,13 +234,15 @@ export const toPlayExplanation = (row, language = 'gu') => {
   };
 };
 
-/** Client-facing question — never includes correctOption. */
-export const toPlayQuestion = (row, language = 'gu') => {
+/**
+ * Client-facing question for ranked play — no answer, no spoiler explanation.
+ * Pass `{ includeAnswer: true }` for practice bundles only.
+ */
+export const toPlayQuestion = (row, language = 'gu', { includeAnswer = false } = {}) => {
   const lang = questionTextLanguage(language);
   const type = questionTypeOf(row);
-  const explanation = toPlayExplanation(row, lang);
   const targets = compactTargets(row, lang);
-  return {
+  const base = {
     id: row.queId,
     order: row.order,
     type,
@@ -250,13 +252,36 @@ export const toPlayQuestion = (row, language = 'gu') => {
     bg: questionContent(row, lang).backgroundImageUrl ?? null,
     options: compactOptions(row, lang),
     ...(targets ? { targets } : {}),
+  };
+  if (!includeAnswer) return base;
+
+  const explanation = toPlayExplanation(row, lang);
+  return {
+    ...base,
     answer: compactAnswer(row),
     explanation: explanation?.body || '',
   };
 };
 
+/** Reveal returned after an answer is locked (or on resume for already-locked rows). */
+export const toQuestionReveal = (row, language = 'gu') => {
+  const explanation = toPlayExplanation(row, language);
+  return {
+    questionId: row.queId,
+    correct: Boolean(row.isCorrect),
+    correctAnswer: compactAnswer(row),
+    explanation,
+  };
+};
+
+const isQuestionLocked = (row) =>
+  row?.selectedAnswer != null || row?.isCorrect != null || row?.selectedOption != null;
+
 export const toGradingQuestion = (row, language = 'gu') => ({
   ...toPlayQuestion(row, language),
+  id: row.queId,
+  type: questionTypeOf(row),
+  points: row.points,
   answer: questionAnswer(row),
 });
 
@@ -297,13 +322,17 @@ const toSessionHistoryEntry = (session) => {
   };
 };
 
-export const toSessionPlayPayload = (session) => ({
-  ...toSessionMeta(session),
-  questions: (session.questions || [])
-    .slice()
-    .sort((a, b) => a.order - b.order)
-    .map((q) => toPlayQuestion(q, session.language)),
-});
+export const toSessionPlayPayload = (session) => {
+  const questions = (session.questions || []).slice().sort((a, b) => a.order - b.order);
+  const reveals = Object.fromEntries(
+    questions.filter(isQuestionLocked).map((q) => [q.queId, toQuestionReveal(q, session.language)])
+  );
+  return {
+    ...toSessionMeta(session),
+    questions: questions.map((q) => toPlayQuestion(q, session.language)),
+    reveals,
+  };
+};
 
 export const toSessionResult = (session) => {
   const questions = (session.questions || []).slice().sort((a, b) => a.order - b.order);
@@ -668,6 +697,23 @@ export class QuizSessionModel {
     });
     await QuizSessionModel.insertQuestions(session.id, bankRows, tx);
     return session;
+  }
+
+  /**
+   * Persist one locked answer mid-session. Idempotent when the same answer
+   * is re-sent; rejects attempts to change an already-locked answer.
+   */
+  static async lockQuestionRow(row, { selectedOption, selectedAnswer, isCorrect, timeSpentMs }) {
+    const updated = await prisma.quizSessionQuestion.update({
+      where: { id: row.id },
+      data: {
+        selectedOption,
+        selectedAnswer,
+        isCorrect,
+        timeSpentMs,
+      },
+    });
+    return { ...row, ...updated };
   }
 
   /**

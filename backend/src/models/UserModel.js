@@ -2,33 +2,40 @@ import { prisma } from '../config/prisma.client.js';
 import { credentialFieldFor, ROLE } from '../config/roles.js';
 import { resolveAzureBlobUrl } from '../utils/azureStorage.js';
 import {
+  decryptMobile,
+  hashMobile,
+  maskMobile,
+  mobileStorageFields,
+  normalizeMobileDigits,
+} from '../utils/mobileCrypto.js';
+import {
   localizedName,
   resolveUserGeography,
 } from '../services/geography.service.js';
-
-function phoneDigits(value) {
-  return String(value ?? '').replace(/\D/g, '').slice(-10);
-}
 
 const USER_GEO_INCLUDE = {
   district: true,
   taluka: true,
 };
 
-/** Fields exposed to clients — mirrors roster + login identity. */
+/** Fields exposed to clients — mobile is always masked (never plaintext). */
 const toRaw = (user, lang = 'gu') => {
   if (!user) return null;
   const districtName = localizedName(user.district, lang);
   const talukaName = localizedName(user.taluka, lang);
+  const digits = decryptMobile(user.mobile);
+  const firstName = String(user.name ?? '').trim();
+  const surname = String(user.surname ?? '').trim();
   return {
     id: user.id,
     role: user.role,
-    name: user.name,
-    surname: user.surname ?? null,
+    // Display name: first + surname merged; columns stay separate in DB.
+    name: [firstName, surname].filter(Boolean).join(' '),
+    surname: surname || null,
     gender: user.gender ?? null,
     fatherName: user.fatherName ?? null,
     motherName: user.motherName ?? null,
-    institute: user.institute ?? '',
+    institute: user.institute ?? null,
     schoolId: user.schoolId ?? null,
     grade: user.grade ?? '',
     districtId: user.districtId ?? null,
@@ -38,17 +45,17 @@ const toRaw = (user, lang = 'gu') => {
     village: user.village ?? null,
     socialCategory: user.socialCategory ?? null,
     dateOfBirth: user.dateOfBirth ?? null,
-    phone: user.phone ?? '',
+    mobile: maskMobile(digits),
     profilePhoto: user.profilePhoto
       ? resolveAzureBlobUrl(user.profilePhoto) || user.profilePhoto
       : null,
-    udiseCode: user.udiseCode ?? undefined,
-    abcId: user.abcId ?? undefined,
+    ctsId: user.ctsId ?? undefined,
+    apparId: user.apparId ?? undefined,
   };
 };
 
 export class UserModel {
-  /** Looks a user up by their role-specific credential (CTS Number / ABC ID). */
+  /** Looks a user up by their role-specific credential (CTS ID / Appar ID). */
   static async findByCredential(role, credential) {
     const field = credentialFieldFor(role);
     const user = await prisma.user.findFirst({
@@ -83,7 +90,7 @@ export class UserModel {
     if (!user) return null;
     return {
       id: user.id,
-      institute: user.institute ?? '',
+      institute: user.institute ?? null,
       socialCategory: user.socialCategory ?? null,
       districtId: user.districtId ?? null,
       talukaId: user.talukaId ?? null,
@@ -116,57 +123,93 @@ export class UserModel {
     };
   }
 
-  static async findByPhone(role, phone) {
-    const digits = phoneDigits(phone);
-    if (!digits) return null;
+  static async findByMobile(role, mobile) {
+    const lookup = hashMobile(mobile);
+    if (!lookup) {
+      // Legacy rows may still hold plaintext digits in `mobile` before encrypt backfill.
+      const digits = normalizeMobileDigits(mobile);
+      if (!digits) return null;
+      const legacy = await prisma.user.findFirst({
+        where: { mobile: digits },
+        include: USER_GEO_INCLUDE,
+      });
+      if (!legacy) return null;
+      if (role && legacy.role !== role) return null;
+      return toRaw(legacy);
+    }
+
     const user = await prisma.user.findFirst({
-      where: { phone: digits },
+      where: { mobileHash: lookup },
       include: USER_GEO_INCLUDE,
     });
-    if (!user) return null;
+    if (!user) {
+      const digits = normalizeMobileDigits(mobile);
+      if (!digits) return null;
+      const legacy = await prisma.user.findFirst({
+        where: { mobile: digits },
+        include: USER_GEO_INCLUDE,
+      });
+      if (!legacy) return null;
+      if (role && legacy.role !== role) return null;
+      return toRaw(legacy);
+    }
     if (role && user.role !== role) return null;
     return toRaw(user);
   }
 
-  /** Phone-first login: resolve any role by mobile number. */
-  static async findByPhoneAny(phone) {
-    return this.findByPhone(null, phone);
+  /** Mobile-first login: resolve any role by mobile number. */
+  static async findByMobileAny(mobile) {
+    return this.findByMobile(null, mobile);
   }
 
-  static async updatePhone(id, phone) {
+  static async updateMobile(id, mobile) {
+    const stored = mobileStorageFields(mobile);
     const user = await prisma.user.update({
       where: { id },
-      data: { phone: phoneDigits(phone) },
+      data: stored,
       include: USER_GEO_INCLUDE,
     });
     return toRaw(user);
   }
 
-  static async createCitizen({ name, phone, districtId, talukaId, district, taluka }) {
-    const geo = await resolveUserGeography({ districtId, talukaId, district, taluka });
+  static async createCitizen({ name, surname, mobile, districtId, talukaId }) {
+    const geo = await resolveUserGeography({ districtId, talukaId });
+    if (geo.districtId == null || geo.talukaId == null) {
+      throw new Error('districtId and talukaId are required');
+    }
+    const stored = mobileStorageFields(mobile);
+    const first = String(name).trim();
+    const last = String(surname ?? '').trim();
     const user = await prisma.user.create({
       data: {
         role: ROLE.CITIZEN,
-        name: String(name).trim(),
+        name: first,
+        surname: last || null,
         districtId: geo.districtId,
         talukaId: geo.talukaId,
-        phone: phoneDigits(phone),
-        institute: 'નાગરિક સહભાગી',
+        ...stored,
+        institute: null,
       },
       include: USER_GEO_INCLUDE,
     });
     return toRaw(user);
   }
 
-  static async updateCitizenProfile(id, { name, districtId, talukaId, district, taluka }) {
-    const geo = await resolveUserGeography({ districtId, talukaId, district, taluka });
+  static async updateCitizenProfile(id, { name, surname, districtId, talukaId }) {
+    const geo = await resolveUserGeography({ districtId, talukaId });
+    if (geo.districtId == null || geo.talukaId == null) {
+      throw new Error('districtId and talukaId are required');
+    }
+    const first = String(name).trim();
+    const last = String(surname ?? '').trim();
     const user = await prisma.user.update({
       where: { id },
       data: {
-        name: String(name).trim(),
+        name: first,
+        surname: last || null,
         districtId: geo.districtId,
         talukaId: geo.talukaId,
-        institute: 'નાગરિક સહભાગી',
+        institute: null,
       },
       include: USER_GEO_INCLUDE,
     });
@@ -180,5 +223,14 @@ export class UserModel {
       include: USER_GEO_INCLUDE,
     });
     return toRaw(user);
+  }
+
+  static async recordConsent(userId, consentVersion) {
+    await prisma.userConsent.create({
+      data: {
+        userId: String(userId),
+        consentVersion: String(consentVersion).trim(),
+      },
+    });
   }
 }

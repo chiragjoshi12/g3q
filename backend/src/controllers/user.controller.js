@@ -3,7 +3,7 @@ import { asyncHandler } from '../middlewares/error.middleware.js';
 import { AppError, ERROR_CODE } from '../utils/appError.js';
 import { uploadAzureBlob } from '../utils/azureStorage.js';
 
-const MAX_PROFILE_BYTES = 2 * 1024 * 1024;
+const MAX_PROFILE_BYTES = 3 * 1024 * 1024;
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 function extensionForMime(mime) {
@@ -40,8 +40,14 @@ export const uploadProfilePhoto = asyncHandler(async (req, res) => {
     throw new AppError(ERROR_CODE.INVALID_REQUEST, 'Invalid imageBase64 payload.');
   }
 
-  if (!buffer.length || buffer.length > MAX_PROFILE_BYTES) {
+  if (!buffer.length) {
     throw new AppError(ERROR_CODE.INVALID_REQUEST, 'Could not process profile photo.');
+  }
+  if (buffer.length > MAX_PROFILE_BYTES) {
+    throw new AppError(
+      ERROR_CODE.INVALID_REQUEST,
+      'Profile photo must be under 3 MB.'
+    );
   }
 
   const ext = extensionForMime(mime);

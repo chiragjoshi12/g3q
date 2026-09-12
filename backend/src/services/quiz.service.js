@@ -61,7 +61,9 @@ export const quizService = {
         tags: ['practice', 'database'],
         week: CONFIG.QUIZ.CURRENT_WEEK,
       },
-      questions: questions.map((row) => toPlayQuestion(row, language)),
+      questions: questions.map((row) =>
+        toPlayQuestion(row, language, { includeAnswer: true })
+      ),
     };
   },
 };

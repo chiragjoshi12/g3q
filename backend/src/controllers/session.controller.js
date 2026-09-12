@@ -18,6 +18,17 @@ export const getSession = asyncHandler(async (req, res) => {
   return res.status(200).json(result);
 });
 
+export const lockSessionQuestion = asyncHandler(async (req, res) => {
+  const result = await sessionService.lockQuestion({
+    userId: req.user.id,
+    sessionId: req.params.sessionId,
+    queId: req.params.queId,
+    answer: req.body.answer,
+    timeSpentMs: req.body.timeSpentMs,
+  });
+  return res.status(200).json(result);
+});
+
 export const submitSession = asyncHandler(async (req, res) => {
   // `abandoned` lets the server persist a left-midway attempt separately from a completed one.
   const result = await sessionService.submit({

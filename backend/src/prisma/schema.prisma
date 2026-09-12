@@ -64,9 +64,11 @@ model User {
   profilePhoto    String?   @map("profile_photo") @db.VarChar(512)
   socialCategory  String?   @map("social_category") @db.VarChar(32)
   dateOfBirth     String?   @map("date_of_birth") @db.VarChar(32)
-  phone           String?
-  udiseCode       String?   @unique @map("udise_code")
-  abcId           String?   @unique @map("abc_id")
+  /// AES-GCM ciphertext (or legacy plaintext digits during migration).
+  mobile          String?   @db.VarChar(512)
+  mobileHash      String?   @unique @map("mobile_hash") @db.VarChar(64)
+  ctsId           String?   @unique @map("cts_id") @db.VarChar(32)
+  apparId         String?   @unique @map("appar_id") @db.VarChar(32)
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
@@ -77,14 +79,28 @@ model User {
   questionExposures UserQuestionExposure[]
   analyticsVisitors AnalyticsVisitor[]
   leaderboardAggregates LeaderboardAggregate[]
+  consents UserConsent[]
 
   @@index([schoolId])
   @@index([districtId])
   @@index([talukaId])
   @@index([institute])
-  @@index([phone])
-  @@index([role, phone])
+  @@index([mobileHash])
+  @@index([role, mobileHash])
   @@map("users")
+}
+
+model UserConsent {
+  id             Int      @id @default(autoincrement())
+  userId         String   @map("user_id")
+  consentVersion String   @map("consent_version") @db.VarChar(32)
+  acceptedAt     DateTime @default(now()) @map("accepted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([acceptedAt])
+  @@map("user_consents")
 }
 
 enum AnalyticsEventType {
@@ -192,14 +208,20 @@ model District {
   @@map("districts")
 }
 
+enum TalukaType {
+  taluka
+  municipal_corporation
+}
+
 model Taluka {
-  id         Int      @id @default(autoincrement())
-  districtId Int      @map("district_id")
-  nameEn     String   @map("name_en") @db.VarChar(128)
-  nameGu     String   @map("name_gu") @db.VarChar(128)
-  nameHi     String   @map("name_hi") @db.VarChar(128)
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id         Int        @id @default(autoincrement())
+  districtId Int        @map("district_id")
+  nameEn     String     @map("name_en") @db.VarChar(128)
+  nameGu     String     @map("name_gu") @db.VarChar(128)
+  nameHi     String     @map("name_hi") @db.VarChar(128)
+  type       TalukaType @default(taluka)
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
 
   district               District @relation(fields: [districtId], references: [id], onDelete: Cascade)
   users                  User[]
@@ -209,6 +231,7 @@ model Taluka {
   @@unique([districtId, nameEn])
   @@unique([districtId, nameGu])
   @@index([districtId])
+  @@index([type])
   @@map("talukas")
 }
 
@@ -275,7 +298,8 @@ model QuizSession {
   @@map("quiz_sessions")
 }
 
-/// Frozen snapshot of a variant inside a session (correctOption never sent until result).
+/// Frozen snapshot of a variant inside a session.
+/// Correct answers stay server-side until lock/reveal or final result.
 model QuizSessionQuestion {
   id            String  @id @default(cuid())
   sessionId     String  @map("session_id")
@@ -341,15 +365,21 @@ model UserQuestionExposure {
 /// One OTP challenge for a login attempt. created_at = requested; expires_at ≈ +10m;
 /// verified_at = OTP accepted. No user_id (signup often has no user yet).
 model OtpRequest {
-  id         Int       @id @default(autoincrement())
-  role       UserRole
-  phone      String    @db.VarChar(20)
-  otp        String    @db.VarChar(16)
-  expiresAt  DateTime  @map("expires_at")
-  verifiedAt DateTime? @map("verified_at")
-  createdAt  DateTime  @default(now()) @map("created_at")
+  id             Int       @id @default(autoincrement())
+  /// Opaque public handle returned as otp_token (never expose numeric id).
+  token          String    @unique @db.VarChar(32)
+  role           UserRole
+  mobile         String    @db.VarChar(20)
+  otp            String    @db.VarChar(16)
+  expiresAt      DateTime  @map("expires_at")
+  verifiedAt     DateTime? @map("verified_at")
+  failedAttempts Int       @default(0) @map("failed_attempts")
+  lockedUntil    DateTime? @map("locked_until")
+  consumedAt     DateTime? @map("consumed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
 
-  @@index([phone, createdAt])
+  @@index([mobile, createdAt])
+  @@index([mobile, lockedUntil])
   @@map("otp_requests")
 }
 

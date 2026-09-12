@@ -11,27 +11,27 @@ export const ROLE = {
 /** Per-role credential rules, driving both lookup and OTP request validation. */
 export const CREDENTIAL = {
   [ROLE.STUDENT]: {
-    key: 'udiseCode',
-    label: 'CTS Number',
-    // School CTS Number is 11 digits; student-level codes from roster are 18 digits.
+    key: 'ctsId',
+    label: 'CTS ID',
+    // School CTS ID is 11 digits; student-level codes from roster are 18 digits.
     pattern: /^\d{11}$|^\d{18}$/,
-    error: 'CTS Number 11 અથવા 18 અંકનો હોવો જોઈએ.',
+    error: 'CTS ID 11 અથવા 18 અંકનો હોવો જોઈએ.',
   },
   [ROLE.COLLEGE]: {
-    key: 'abcId',
-    label: 'ABC ID',
+    key: 'apparId',
+    label: 'Appar ID',
     pattern: /^\d{12}$/,
-    error: 'ABC ID 12 અંકનો હોવો જોઈએ.',
+    error: 'Appar ID 12 અંકનો હોવો જોઈએ.',
   },
   [ROLE.CITIZEN]: {
-    key: 'phone',
+    key: 'mobile',
     label: 'મોબાઈલ નંબર',
     pattern: /^[6-9]\d{9}$/,
     error: 'મોબાઇલ નંબર 10 અંકનો હોવો જોઈએ અને 6, 7, 8 અથવા 9 થી શરૂ થવો જોઈએ.',
   },
 };
 
-const PHONE_PATTERN = /^[6-9]\d{9}$/;
+const MOBILE_PATTERN = /^[6-9]\d{9}$/;
 
 export function isCitizen(role) {
   return role === ROLE.CITIZEN;
@@ -54,27 +54,31 @@ export function validateCredential(role, value) {
   return null;
 }
 
-export function validatePhone(value) {
+export function validateMobile(value) {
   const trimmed = String(value ?? '').trim();
   if (!trimmed) return 'મોબાઇલ નંબર દાખલ કરો.';
-  if (!PHONE_PATTERN.test(trimmed)) {
+  if (!MOBILE_PATTERN.test(trimmed)) {
     return 'મોબાઇલ નંબર 10 અંકનો હોવો જોઈએ અને 6, 7, 8 અથવા 9 થી શરૂ થવો જોઈએ.';
   }
   return null;
 }
 
-export function validateCitizenProfile({ name, district, taluka, districtId, talukaId }) {
-  const fullName = String(name ?? '').trim();
-  if (!fullName) return 'પૂરું નામ દાખલ કરો.';
-  if (fullName.length < 2) return 'પૂરું નામ ઓછામાં ઓછા 2 અક્ષરનું હોવું જોઈએ.';
-  const hasDistrict = districtId != null || String(district ?? '').trim();
-  const hasTaluka = talukaId != null || String(taluka ?? '').trim();
-  if (!hasDistrict) return 'જિલ્લો દાખલ કરો.';
-  if (!hasTaluka) return 'તાલુકો દાખલ કરો.';
+export function validateCitizenProfile({ name, surname, districtId, talukaId }) {
+  const first = String(name ?? '').trim();
+  if (!first) return 'નામ દાખલ કરો.';
+  if (first.length < 1) return 'નામ દાખલ કરો.';
+  const last = String(surname ?? '').trim();
+  if (!last) return 'અટક દાખલ કરો.';
+  if (districtId == null || !Number.isFinite(Number(districtId)) || Number(districtId) <= 0) {
+    return 'જિલ્લો પસંદ કરો.';
+  }
+  if (talukaId == null || !Number.isFinite(Number(talukaId)) || Number(talukaId) <= 0) {
+    return 'તાલુકો પસંદ કરો.';
+  }
   return null;
 }
 
 /** Which User column the credential is stored/looked-up in, per role. */
 export function credentialFieldFor(role) {
-  return role === ROLE.COLLEGE ? 'abcId' : 'udiseCode';
+  return role === ROLE.COLLEGE ? 'apparId' : 'ctsId';
 }
