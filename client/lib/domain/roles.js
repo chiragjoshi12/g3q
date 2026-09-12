@@ -9,7 +9,7 @@ export const ROLE = {
 export function getCredentialRules() {
   return {
     [ROLE.STUDENT]: {
-      key: "udiseCode",
+      key: "ctsId",
       label: translateCurrent("yourCtsNumber"),
       hint: translateCurrent("enterCtsCode"),
       placeholder: translateCurrent("yourCtsNumber"),
@@ -19,17 +19,17 @@ export function getCredentialRules() {
       error: translateCurrent("errorInvalidCtsNumber"),
     },
     [ROLE.COLLEGE]: {
-      key: "abcId",
-      label: translateCurrent("abcIdLabel"),
-      hint: translateCurrent("enterAbcId"),
-      placeholder: translateCurrent("abcIdPlaceholder"),
+      key: "apparId",
+      label: translateCurrent("apparIdLabel"),
+      hint: translateCurrent("enterApparId"),
+      placeholder: translateCurrent("apparIdPlaceholder"),
       length: 12,
       pattern: /^\d{12}$/,
       inputMode: "numeric",
-      error: translateCurrent("errorInvalidAbcId"),
+      error: translateCurrent("errorInvalidApparId"),
     },
     [ROLE.CITIZEN]: {
-      key: "phone",
+      key: "mobile",
       label: translateCurrent("mobileNumber"),
       hint: translateCurrent("enterMobileNumber"),
       placeholder: translateCurrent("mobileNumber"),
@@ -70,22 +70,38 @@ export function validateCredential(role, value) {
   return null;
 }
 
-const PHONE_PATTERN = /^[6-9]\d{9}$/;
+const MOBILE_PATTERN = /^[6-9]\d{9}$/;
 
-export function validatePhone(value) {
+/** Digits only, max 10, first digit must be 6–9. Invalid leading digits are dropped. */
+export function sanitizeMobileInput(value) {
+  let digits = String(value || "").replace(/\D/g, "");
+  while (digits && !/^[6-9]/.test(digits)) {
+    digits = digits.slice(1);
+  }
+  return digits.slice(0, 10);
+}
+
+export function validateMobile(value) {
   const trimmed = String(value || "").trim();
   if (!trimmed) return translateCurrent("mobileNumber");
-  if (!PHONE_PATTERN.test(trimmed)) return translateCurrent("errorInvalidPhone");
+  if (!MOBILE_PATTERN.test(trimmed)) return translateCurrent("errorInvalidPhone");
   return null;
 }
 
-export function validateCitizenProfile({ name, district, taluka, districtId, talukaId }) {
-  const fullName = String(name || "").trim();
-  if (!fullName) return translateCurrent("yourFullName");
-  if (fullName.length < 2) return translateCurrent("yourFullName");
-  const hasDistrict = districtId != null || String(district || "").trim();
-  const hasTaluka = talukaId != null || String(taluka || "").trim();
-  if (!hasDistrict) return translateCurrent("district");
-  if (!hasTaluka) return translateCurrent("taluka");
+/** @deprecated Prefer validateMobile / sanitizeMobileInput. */
+export const validatePhone = validateMobile;
+export const sanitizePhoneInput = sanitizeMobileInput;
+
+export function validateCitizenProfile({ name, surname, districtId, talukaId }) {
+  const first = String(name || "").trim();
+  if (!first) return translateCurrent("yourName");
+  const last = String(surname || "").trim();
+  if (!last) return translateCurrent("yourSurname");
+  if (districtId == null || !Number.isFinite(Number(districtId)) || Number(districtId) <= 0) {
+    return translateCurrent("district");
+  }
+  if (talukaId == null || !Number.isFinite(Number(talukaId)) || Number(talukaId) <= 0) {
+    return translateCurrent("taluka");
+  }
   return null;
 }

@@ -2,6 +2,7 @@ import { Archivo_Black, Noto_Sans } from "next/font/google";
 
 import { NativeAppBootstrap } from "@/components/native/NativeAppBootstrap";
 import { LanguageProvider } from "@/components/providers/LanguageProvider";
+import { SessionExpiryProvider } from "@/components/providers/SessionExpiryProvider";
 import "./globals.css";
 
 const notoSans = Noto_Sans({
@@ -60,8 +61,10 @@ export default function RootLayout({ children }) {
     <html lang="gu" className={`${notoSans.variable} ${archivoBlack.variable} h-full antialiased`}>
       <body className="min-h-full font-sans">
         <LanguageProvider>
-          <NativeAppBootstrap />
-          {children}
+          <SessionExpiryProvider>
+            <NativeAppBootstrap />
+            {children}
+          </SessionExpiryProvider>
         </LanguageProvider>
       </body>
     </html>

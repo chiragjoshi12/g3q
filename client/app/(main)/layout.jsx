@@ -6,7 +6,6 @@ import { Loader2 } from "@/components/icons";
 
 import { BottomNav } from "@/components/layout/BottomNav";
 import { DesktopAppShell } from "@/components/layout/DesktopAppShell";
-import { LoginToast } from "@/components/common/LoginToast";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 
 /**
@@ -20,12 +19,9 @@ export default function MainLayout({ children }) {
     <DesktopAppShell
       className="bg-[#F5F7F9]"
       footer={
-        <>
-          <LoginToast />
-          <Suspense fallback={null}>
-            <BottomNav />
-          </Suspense>
-        </>
+        <Suspense fallback={null}>
+          <BottomNav />
+        </Suspense>
       }
     >
       {ready ? (

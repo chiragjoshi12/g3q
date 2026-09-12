@@ -1,20 +1,20 @@
 "use client";
 
-import { BrandIcon } from "@/components/common/BrandIcon";
-import { BRAND_ICONS } from "@/lib/brand-icons";
+import { BackArrow } from "@/components/icons";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-/** Fixed hit target + soft fill used everywhere a back chevron appears. */
+/** Shared round hit target. Fill is set by `surface` on `BackButton`. */
 export const BACK_BUTTON_CLASS =
-  "grid size-10 shrink-0 place-items-center rounded-full bg-[#f5f5f5] transition-transform active:scale-95 disabled:opacity-50";
+  "inline-flex size-10 shrink-0 items-center justify-center rounded-full p-0 leading-none text-[#6B7280] transition-transform active:scale-95 disabled:opacity-50";
 
-export const BACK_ICON_CLASS = "size-3.5";
+export const BACK_ICON_CLASS = "block size-5 lg:size-6";
 
 /**
- * Global back control — same size, icon scale, and background on every screen.
+ * Global back control.
+ * `surface` is the colour behind the button: white → gray fill, muted → white fill.
  */
-export function BackButton({ onClick, label, className, ...props }) {
+export function BackButton({ onClick, label, className, surface = "white", ...props }) {
   const { t } = useI18n();
 
   return (
@@ -22,10 +22,14 @@ export function BackButton({ onClick, label, className, ...props }) {
       type="button"
       onClick={onClick}
       aria-label={label || t("back")}
-      className={cn(BACK_BUTTON_CLASS, className)}
+      className={cn(
+        BACK_BUTTON_CLASS,
+        surface === "muted" ? "bg-white" : "bg-[#f5f5f5]",
+        className
+      )}
       {...props}
     >
-      <BrandIcon src={BRAND_ICONS.back} alt="" className={BACK_ICON_CLASS} />
+      <BackArrow className={BACK_ICON_CLASS} />
     </button>
   );
 }

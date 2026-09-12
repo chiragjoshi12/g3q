@@ -11,23 +11,21 @@ export const authRepository = {
     return toUser(user);
   },
 
-  async requestOtp({ role, credential, phone }) {
-    return getDataSource().requestOtp({ role, credential, phone });
+  async requestOtp({ mobile }) {
+    return getDataSource().requestOtp({ mobile });
   },
 
-  async verifyOtp({ id, otp, role, credential }) {
+  async verifyOtp({ otp_token, otp }) {
     const result = await getDataSource().verifyOtp({
-      id,
+      otp_token,
       otp,
-      role,
-      credential,
     });
     if (result?.needsSignup || result?.needsProfile) {
       return {
         needsSignup: Boolean(result.needsSignup || result.needsProfile),
         needsProfile: Boolean(result.needsProfile),
-        id: result.id ?? id,
-        phone: result.phone || null,
+        otp_token: result.otp_token ?? otp_token,
+        mobile: result.mobile || null,
       };
     }
     return {
@@ -39,21 +37,30 @@ export const authRepository = {
     };
   },
 
-  async registerCitizen({ id, name, district, taluka, districtId, talukaId }) {
+  async registerCitizen({
+    otp_token,
+    name,
+    surname,
+    districtId,
+    talukaId,
+    consentAccepted,
+    consentVersion,
+  }) {
     const { user, token } = await getDataSource().registerCitizen({
-      id,
+      otp_token,
       name,
-      district,
-      taluka,
+      surname,
       districtId,
       talukaId,
+      consentAccepted,
+      consentVersion,
     });
     return { user: toUser(user), token };
   },
 
-  async linkRoster({ id, role, credential }) {
+  async linkRoster({ otp_token, role, credential }) {
     const { user, token } = await getDataSource().linkRoster({
-      id,
+      otp_token,
       role,
       credential,
     });

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { AUTH_BUTTON_CLASS } from "@/components/auth/AuthBrandHeader";
+import { AppButton } from "@/components/common/AppButton";
 import { AppShell } from "@/components/layout/AppShell";
 import { LANGUAGE_OPTIONS } from "@/config/languages";
 import { useI18n } from "@/lib/i18n";
@@ -47,7 +49,7 @@ export function LanguageSelectionScreen() {
                   option.cardGradient
                 )}
               >
-                <span className="ml-[-16px] grid h-25 w-23 shrink-0 place-items-center rounded-[1.75rem] text-[32px] font-medium text-white">
+                <span className="ml-[-16px] grid h-23 w-23 shrink-0 place-items-center rounded-[1.75rem] text-[32px] font-medium text-white">
                   <span
                     className={cn(
                       "grid size-full place-items-center rounded-[1.5rem]",
@@ -100,16 +102,16 @@ export function LanguageSelectionScreen() {
       <div className="relative hidden h-full min-h-0 w-full items-center justify-center overflow-hidden lg:flex">
         <div
           aria-hidden
-          className="absolute inset-0 scale-110 bg-[#f3efe6] bg-cover bg-center bg-no-repeat blur-[3px]"
+          className="absolute inset-0 scale-110 bg-[#f3efe6] bg-cover bg-center bg-no-repeat blur-[5px]"
           style={{ backgroundImage: `url('${SELECT_BG}')` }}
         />
 
-        <div className="relative z-10 w-[min(42rem,86vw)] rounded-[1.85rem] bg-white px-10 pt-9 pb-8 shadow-[0_24px_80px_rgb(0_0_0/0.28)]">
+        <div className="relative z-10 flex min-h-[30rem] w-[min(42rem,86vw)] flex-col rounded-[1.85rem] bg-white px-10 pt-6 pb-9">
           <h1 className="text-center font-sans text-[1.65rem] font-bold tracking-tight text-black">
             Select Language / भाषा चुनें
           </h1>
 
-          <div className="mt-8 grid grid-cols-2 gap-4">
+          <div className="mt-6 grid grid-cols-2 gap-4">
             {LANGUAGE_OPTIONS.map((option) => {
               const active = selected === option.id;
               return (
@@ -119,24 +121,24 @@ export function LanguageSelectionScreen() {
                   onClick={() => setSelected(option.id)}
                   aria-pressed={active}
                   className={cn(
-                    "flex overflow-hidden rounded-[1.15rem] text-left transition-transform active:scale-[0.99]",
+                    "flex min-h-[6.25rem] overflow-hidden rounded-[1.15rem] text-left transition-transform active:scale-[0.99]",
                     option.panelBg,
-                    active ? "ring-2 ring-black ring-offset-2" : "ring-0"
+                    active ? "border border-[2.5px] border-[#2d689d]" : "ring-0"
                   )}
                 >
                   <span
                     className={cn(
-                      "grid size-[4.75rem] shrink-0 place-items-center text-[2.05rem] font-medium text-white",
+                      "grid w-[5.5rem] shrink-0 place-items-center self-stretch text-[2.15rem] font-medium text-white",
                       option.iconBg
                     )}
                   >
                     {option.glyph}
                   </span>
-                  <span className="flex min-w-0 flex-1 flex-col justify-center px-3.5 py-3">
-                    <span className="block text-[1.05rem] font-bold leading-tight text-black">
+                  <span className="flex min-w-0 flex-1 flex-col justify-center px-4 py-4">
+                    <span className="block text-[1.2rem] font-bold leading-tight text-black">
                       {option.nativeLabel}
                     </span>
-                    <span className="mt-1 block text-[0.95rem] font-medium leading-tight text-black">
+                    <span className="mt-2 block text-[0.95rem] font-medium leading-tight text-black">
                       {option.englishLabel}
                     </span>
                   </span>
@@ -145,15 +147,14 @@ export function LanguageSelectionScreen() {
             })}
           </div>
 
-          <div className="flex justify-center pt-8">
-            <button
-              type="button"
+          <div className="mt-auto flex justify-center pt-10">
+            <AppButton
               onClick={handleNext}
               disabled={!selected}
-              className="ease-emphasized relative inline-flex h-12 w-[13.5rem] select-none items-center justify-center rounded-full border-0 bg-black px-5 font-canva text-[1.05rem] font-bold text-white shadow-none outline-none transition-[transform,background-color] duration-200 hover:bg-black/90 active:scale-[0.97] disabled:pointer-events-none disabled:bg-[#e5e5e5] disabled:text-[#8a8a8a] disabled:opacity-100"
+              className={cn(AUTH_BUTTON_CLASS, "!w-[16rem]")}
             >
-              Next
-            </button>
+              {t("next")}
+            </AppButton>
           </div>
         </div>
       </div>

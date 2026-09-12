@@ -23,6 +23,16 @@ function extractQuestionExplanations(rawQuestions = []) {
   );
 }
 
+function normalizeReveal(raw, questionId) {
+  if (!raw) return null;
+  const explanation = toExplanation(raw.explanation);
+  return {
+    correct: Boolean(raw.correct),
+    correctAnswer: raw.correctAnswer?.value ?? raw.correctAnswer ?? null,
+    explanation: explanation ? { ...explanation, questionId } : null,
+  };
+}
+
 function normalizeLiveSession(session) {
   if (!session) return null;
   const rawQuestions = session.questions ?? [];
@@ -37,10 +47,21 @@ function normalizeLiveSession(session) {
       })
       .filter(Boolean)
   );
+
+  const reveals = {};
+  const revealExplanations = {};
+  for (const [id, raw] of Object.entries(session.reveals ?? {})) {
+    const reveal = normalizeReveal(raw, id);
+    if (!reveal) continue;
+    reveals[id] = { correct: reveal.correct, correctAnswer: reveal.correctAnswer };
+    if (reveal.explanation) revealExplanations[id] = reveal.explanation;
+  }
+
   return {
     ...session,
     questions,
-    explanations: { ...apiExplanations, ...questionLevelExplanations },
+    explanations: { ...apiExplanations, ...questionLevelExplanations, ...revealExplanations },
+    reveals,
   };
 }
 
@@ -73,6 +94,21 @@ export const quizController = {
   async loadSession(sessionId) {
     if (appConfig.dataSource !== DATA_SOURCE.REST) return null;
     return normalizeLiveSession(await getDataSource().getSession(sessionId));
+  },
+
+  /**
+   * Ranked play: lock the answer server-side and receive correct/explanation.
+   * Practice / JSON mode grades locally and never calls this.
+   */
+  async lockAnswer({ sessionId, queId, answer, timeSpentMs }) {
+    if (appConfig.dataSource !== DATA_SOURCE.REST) return null;
+    const raw = await getDataSource().lockSessionQuestion({
+      sessionId,
+      queId,
+      answer,
+      timeSpentMs,
+    });
+    return normalizeReveal(raw, queId);
   },
 
   /** Grades the session, persists the attempt, and returns the result. */

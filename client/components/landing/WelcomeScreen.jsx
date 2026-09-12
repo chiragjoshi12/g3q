@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 
 import { BrandGlyph, BrandIcon } from "@/components/common/BrandIcon";
+import { LanguageMenu } from "@/components/common/LanguageMenu";
 import { ErrorState } from "@/components/common/StateViews";
 import { BannerSlider } from "@/components/landing/BannerSlider";
 import { LeaderboardPreviewCard } from "@/components/landing/LeaderboardList";
@@ -19,6 +20,7 @@ import { useStoreHydrated } from "@/hooks/useStoreHydrated";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { getDataSource } from "@/lib/data/sources";
 import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import { formatTalukaLabel } from "@/lib/format-taluka";
 import { formatWeekLabel } from "@/lib/domain/format";
 import { useAuthStore } from "@/store/auth.store";
@@ -54,7 +56,7 @@ function practiceSubtitle(language) {
   return "Practice 5 questions";
 }
 
-export function WelcomeScreen() {
+export function WelcomeScreen({ backdrop = false }) {
   const router = useRouter();
   const { language, t, appName } = useI18n();
   const hydrated = useStoreHydrated(useAuthStore);
@@ -93,13 +95,15 @@ export function WelcomeScreen() {
     onPlayQuiz: () => go(ROUTES.home),
   };
 
-  return (
-    <AppShell
-      fullOnDesktop
-      className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F2F2F2] lg:bg-transparent"
-    >
+  const mobilePane = (
       <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[26.5rem] flex-col bg-[#F2F2F2] md:max-w-none lg:hidden">
-        <BrandHeader priority />
+        <BrandHeader
+          priority
+          trailingClassName="justify-items-end -mr-1"
+          trailing={
+            <LanguageMenu buttonClassName="border-0 size-11" iconClassName="size-6" />
+          }
+        />
 
         <main className="no-scrollbar relative z-0 min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <div className="flex flex-col gap-2.5 px-2.5 pt-3.5 pb-32">
@@ -187,8 +191,10 @@ export function WelcomeScreen() {
           </div>
         </div>
       </div>
+  );
 
-      <div className="relative hidden h-full min-h-0 w-full flex-col bg-[#f5f5f5] lg:flex">
+  const desktopPane = (
+      <div className={cn("relative h-full min-h-0 w-full flex-col bg-[#f5f5f5]", backdrop ? "flex" : "hidden lg:flex")}>
         <DesktopPageWash />
 
         <header className="relative z-20 shrink-0 px-12 pt-7 pb-5 xl:px-20">
@@ -210,6 +216,7 @@ export function WelcomeScreen() {
               <BrandGlyph src={BRAND_ICONS.leaderboard} color="#111111" className="size-5" />
               {t("liveLeaderboard")}
             </button>
+            <LanguageMenu buttonClassName="border-0 size-11" iconClassName="size-6" />
           </div>
         </header>
 
@@ -289,11 +296,28 @@ export function WelcomeScreen() {
         </main>
 
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-12 pb-8 pt-4">
-          <div className="pointer-events-auto relative flex justify-center">
+          <div className={cn("relative flex justify-center", !backdrop && "pointer-events-auto")}>
             <PlayQuizButton label={t("playQuiz")} onClick={navHandlers.onPlayQuiz} />
           </div>
         </div>
       </div>
+  );
+
+  if (backdrop) {
+    return (
+      <div className="h-full min-h-0 w-full overflow-hidden" aria-hidden inert>
+        {desktopPane}
+      </div>
+    );
+  }
+
+  return (
+    <AppShell
+      fullOnDesktop
+      className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F2F2F2] lg:bg-transparent"
+    >
+      {mobilePane}
+      {desktopPane}
     </AppShell>
   );
 }
@@ -303,14 +327,14 @@ function LandingQuickActionCard({ iconSrc, title, subtitle, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-[5.75rem] w-full items-start gap-4 rounded-[2rem] bg-white px-6 pt-5 pb-5 text-left shadow-none transition-transform active:scale-[0.99] active:bg-[#fafafa]"
+      className="flex min-h-[5.75rem] w-full items-start gap-4 rounded-[1.7rem] bg-white px-6 pt-5 pb-5 text-left shadow-none transition-transform active:scale-[0.99] active:bg-[#fafafa]"
     >
       <BrandGlyph src={iconSrc} color="#2d689d" className="size-9 shrink-0" />
       <div className="min-w-0 flex-1">
         <p className="font-heading text-[1.35rem] font-bold leading-tight text-[#2d689d]">{title}</p>
         <p className="mt-1 font-heading text-[15px] leading-snug text-black">{subtitle}</p>
       </div>
-      <ChevronRightIcon className="size-5 shrink-0 text-[#111]" />
+      <ChevronRightIcon className="size-6 shrink-0 text-[#111]" />
     </button>
   );
 }
@@ -341,7 +365,7 @@ function PlayQuizButton({ label, onClick }) {
   );
 }
 
-function ChevronRightIcon({ className }) {
+export function ChevronRightIcon({ className }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
       <path

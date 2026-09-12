@@ -9,10 +9,11 @@ import {
   downloadCertificatePng,
   shareCertificatePng,
 } from "@/components/certificate/draw-certificate";
+import { BackButton } from "@/components/common/BackButton";
 import { EmptyState, LoadingState } from "@/components/common/StateViews";
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { DesktopAppShell } from "@/components/layout/DesktopAppShell";
-import { Loader2, X } from "@/components/icons";
+import { Loader2 } from "@/components/icons";
 import { ROUTES } from "@/config/routes";
 import { profileController } from "@/controllers/profile.controller";
 import { useAsyncData } from "@/hooks/useAsyncData";
@@ -64,14 +65,12 @@ export default function CertificatesPage() {
     <DesktopAppShell className="bg-[#F2F2F2]">
       <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[#F2F2F2] lg:bg-transparent">
       <header className="relative z-10 flex shrink-0 items-center justify-center px-4 pt-7 pb-7 lg:px-10 lg:pt-8 lg:pb-4">
-          <button
-            type="button"
+          <BackButton
+            className="absolute left-4 lg:left-10"
+            label={t("close")}
+            surface="muted"
             onClick={() => router.push(ROUTES.profile)}
-            aria-label={t("close")}
-            className="absolute left-4 grid size-10 place-items-center rounded-full bg-white transition-transform active:scale-95 lg:left-10"
-          >
-            <X className="size-4 text-[#111]" strokeWidth={2.2} />
-          </button>
+          />
           <h1 className="font-heading text-[1.25rem] font-bold text-[#111] lg:text-[2rem] lg:text-[#2d689d]">
             {t("certificates")}
           </h1>

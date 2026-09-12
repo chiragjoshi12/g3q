@@ -35,6 +35,8 @@ const blankSession = {
   currentIndex: 0,
   answers: {},
   timings: {},
+  /** Server reveals for ranked play: { [questionId]: { correct } } */
+  verdicts: {},
   phase: QUIZ_PHASE.ANSWERING,
   contentLanguage: null,
   accumulatedMs: 0,
@@ -170,7 +172,11 @@ export const useQuizStore = create()(
                   week: null,
                 },
                 questions,
-                explanations: session?.explanations ?? {},
+                explanations: {
+                  ...(session?.explanations ?? {}),
+                  ...state.explanations,
+                },
+                verdicts: { ...(session?.reveals ?? {}), ...state.verdicts },
                 loading: false,
                 answers: withSeededAnswer(state.answers, questions[state.currentIndex]),
                 contentLanguage: session?.language ?? null,
@@ -201,6 +207,7 @@ export const useQuizStore = create()(
               startedAt: session.startedAt ?? Date.now(),
               contentLanguage: session?.language ?? null,
               runningSince: Date.now(),
+              verdicts: session?.reveals ?? {},
             });
             return;
           }
@@ -263,12 +270,48 @@ export const useQuizStore = create()(
       },
 
       /** Locks the answer, freezes the timer, and reveals the explanation. */
-      submitAnswer: () => {
+      submitAnswer: async ({ practice = false } = {}) => {
         const state = get();
         const question = state.currentQuestion();
         if (!question || !state.canSubmit()) return false;
 
         const elapsed = state.readElapsedMs();
+        const useServerLock =
+          appConfig.dataSource === DATA_SOURCE.REST && !practice && Boolean(state.attemptId);
+
+        if (useServerLock) {
+          set({ loading: true, error: null });
+          try {
+            const reveal = await quizController.lockAnswer({
+              sessionId: state.attemptId,
+              queId: question.id,
+              answer: state.answers[question.id],
+              timeSpentMs: elapsed,
+            });
+            set({
+              loading: false,
+              phase: QUIZ_PHASE.REVIEWING,
+              runningSince: null,
+              accumulatedMs: elapsed,
+              timings: { ...state.timings, [question.id]: elapsed },
+              verdicts: {
+                ...state.verdicts,
+                [question.id]: {
+                  correct: Boolean(reveal?.correct),
+                  correctAnswer: reveal?.correctAnswer ?? null,
+                },
+              },
+              explanations: reveal?.explanation
+                ? { ...state.explanations, [question.id]: reveal.explanation }
+                : state.explanations,
+            });
+            return true;
+          } catch (error) {
+            set({ loading: false, error: toMessage(error) });
+            return false;
+          }
+        }
+
         set({
           phase: QUIZ_PHASE.REVIEWING,
           runningSince: null,
@@ -348,6 +391,7 @@ export const useQuizStore = create()(
         currentIndex: state.currentIndex,
         answers: state.answers,
         timings: state.timings,
+        verdicts: state.verdicts,
         phase: state.phase,
         contentLanguage: state.contentLanguage,
         accumulatedMs: state.accumulatedMs,
@@ -356,7 +400,12 @@ export const useQuizStore = create()(
       onRehydrateStorage: () => (state) => {
         // A persisted running span is meaningless across reloads; loadQuiz
         // restarts it once content is available.
-        if (state) state.runningSince = null;
+        if (state) {
+          state.runningSince = null;
+          if (!state.verdicts || typeof state.verdicts !== "object") {
+            state.verdicts = {};
+          }
+        }
       },
     }
   )

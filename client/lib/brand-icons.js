@@ -10,6 +10,7 @@ export const BRAND_ICONS = {
   aboutAbhinyan: "/icons/about-abhinyan.png",
   helpline: "/icons/helpline.png",
   language: "/icons/language_ic.png",
+  helpLogin: "/icons/help-login.png",
   correct: "/icons/correct.png",
   incorrect: "/icons/incorrect.png",
   time: "/icons/time.png",

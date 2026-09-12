@@ -56,12 +56,15 @@ export function AbhiyanScreen() {
   const prize = PRIZES[prizeLevel];
 
   return (
-    <DesktopAppShell className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F3F3F3]">
+    <DesktopAppShell
+      showSidebar={Boolean(hydrated && isAuthenticated)}
+      className="items-center bg-[#E8E8E8] md:items-stretch md:bg-[#F3F3F3]"
+    >
       <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[26.5rem] flex-col bg-[#F3F3F3] md:max-w-none lg:max-w-none lg:bg-transparent">
         <header className="relative z-20 shrink-0 bg-white px-3 py-3 shadow-[0_1px_0_rgb(15_23_42/0.08)] lg:bg-transparent lg:px-10 lg:pt-8 lg:pb-2 lg:shadow-none">
           <div className="flex items-center gap-1 lg:justify-center">
             <BackButton
-              className="lg:hidden"
+              className="lg:absolute lg:left-10 lg:bg-white"
               onClick={() => {
                 if (typeof window !== "undefined") {
                   try {

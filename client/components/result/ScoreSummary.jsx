@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ParticipationCertificate } from "@/components/certificate/ParticipationCertificate";
@@ -18,6 +18,7 @@ import {
   attemptEarnsCertificate,
   buildCertificatePayload,
   certificateFileName,
+  CERT_NATIVE,
 } from "@/lib/domain/certificate";
 import { formatDuration, formatWeekLabel } from "@/lib/domain/format";
 import { scorePraise } from "@/lib/domain/scoring";
@@ -32,15 +33,17 @@ const ROW_CLASS = cn(
   ROW_GRID,
   "rounded-[1.5rem] bg-white active:bg-[#fafafa]",
 );
+const CERT_PREVIEW_DELAY_MS = 1000;
 
 /** Headline score card, certificate row, and leaderboard shortcut. */
 export function ScoreSummary({ attempt, quiz }) {
   const router = useRouter();
   const { language, t } = useI18n();
   const user = useAuthStore((state) => state.user);
-  const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(null);
   const canOpenCertificate = attemptEarnsCertificate(attempt);
+  const [open, setOpen] = useState(canOpenCertificate);
+  const [previewReady, setPreviewReady] = useState(false);
+  const [busy, setBusy] = useState(null);
   const payload = useMemo(
     () => buildCertificatePayload(user, attempt, { week: quiz?.week }),
     [user, attempt, quiz?.week]
@@ -48,6 +51,16 @@ export function ScoreSummary({ attempt, quiz }) {
   const talukaLabel = formatTalukaLabel(user?.taluka || attempt?.taluka, language);
   const week = Number.isFinite(appConfig.certificate.week) ? appConfig.certificate.week : 5;
   const fileName = certificateFileName(payload);
+
+  useEffect(() => {
+    if (!open || !canOpenCertificate) {
+      setPreviewReady(false);
+      return undefined;
+    }
+    setPreviewReady(false);
+    const timer = window.setTimeout(() => setPreviewReady(true), CERT_PREVIEW_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [open, canOpenCertificate, attempt?.id]);
 
   const runCertAction = async (action, work) => {
     setBusy(action);
@@ -136,52 +149,56 @@ export function ScoreSummary({ attempt, quiz }) {
           <div className="overflow-hidden">
             <div className="px-4 pb-4">
               <div className="relative overflow-hidden rounded-[1rem] bg-white">
-                <ParticipationCertificate payload={payload} />
-                {open ? (
-                  <div className="absolute right-2.5 bottom-2.5 flex items-center gap-2">
-                    <CertActionButton
-                      label={t("download")}
-                      disabled={Boolean(busy)}
-                      onClick={() =>
-                        runCertAction("download", async () => {
-                          await downloadCertificatePng(payload, fileName);
-                          void trackAnalyticsEvent({
-                            eventType: "certificate_download",
-                          });
-                        })
-                      }
-                    >
-                      {busy === "download" ? (
-                        <Loader2 className="size-4 animate-spin text-white" />
-                      ) : (
-                        <BrandIcon
-                          src={BRAND_ICONS.downloadCertificate}
-                          alt=""
-                          className="size-[18px] brightness-0 invert"
-                        />
-                      )}
-                    </CertActionButton>
-                    <CertActionButton
-                      label={t("share")}
-                      disabled={Boolean(busy)}
-                      onClick={() =>
-                        runCertAction("share", () =>
-                          shareCertificatePng(payload, fileName, attempt.quizTitle)
-                        )
-                      }
-                    >
-                      {busy === "share" ? (
-                        <Loader2 className="size-4 animate-spin text-white" />
-                      ) : (
-                        <BrandIcon
-                          src={BRAND_ICONS.shareQuiz}
-                          alt=""
-                          className="size-[18px] brightness-0 invert"
-                        />
-                      )}
-                    </CertActionButton>
-                  </div>
-                ) : null}
+                {!previewReady ? (
+                  <CertificatePreviewSkeleton />
+                ) : (
+                  <>
+                    <ParticipationCertificate payload={payload} />
+                    <div className="absolute right-2.5 bottom-2.5 flex items-center gap-2">
+                      <CertActionButton
+                        label={t("download")}
+                        disabled={Boolean(busy)}
+                        onClick={() =>
+                          runCertAction("download", async () => {
+                            await downloadCertificatePng(payload, fileName);
+                            void trackAnalyticsEvent({
+                              eventType: "certificate_download",
+                            });
+                          })
+                        }
+                      >
+                        {busy === "download" ? (
+                          <Loader2 className="size-4 animate-spin text-white" />
+                        ) : (
+                          <BrandIcon
+                            src={BRAND_ICONS.downloadCertificate}
+                            alt=""
+                            className="size-[18px] brightness-0 invert"
+                          />
+                        )}
+                      </CertActionButton>
+                      <CertActionButton
+                        label={t("share")}
+                        disabled={Boolean(busy)}
+                        onClick={() =>
+                          runCertAction("share", () =>
+                            shareCertificatePng(payload, fileName, attempt.quizTitle)
+                          )
+                        }
+                      >
+                        {busy === "share" ? (
+                          <Loader2 className="size-4 animate-spin text-white" />
+                        ) : (
+                          <BrandIcon
+                            src={BRAND_ICONS.shareQuiz}
+                            alt=""
+                            className="size-[18px] brightness-0 invert"
+                          />
+                        )}
+                      </CertActionButton>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -207,6 +224,26 @@ export function ScoreSummary({ attempt, quiz }) {
         </span>
       </button>
     </section>
+  );
+}
+
+function CertificatePreviewSkeleton() {
+  return (
+    <div
+      className="relative w-full overflow-hidden bg-[#F3F5F8]"
+      style={{ aspectRatio: `${CERT_NATIVE.width} / ${CERT_NATIVE.height}` }}
+      aria-busy="true"
+      aria-label="Loading certificate"
+    >
+      <div className="absolute inset-0 flex flex-col justify-center gap-3 px-[8%] py-6">
+        <span className="mx-auto h-3 w-[28%] animate-pulse rounded-md bg-[#E0E6EE]" />
+        <span className="mx-auto mt-2 h-3.5 w-[55%] animate-pulse rounded-md bg-[#E0E6EE]" />
+        <span className="mx-auto h-3 w-[70%] animate-pulse rounded-md bg-[#E0E6EE]" />
+        <span className="mx-auto h-3 w-[64%] animate-pulse rounded-md bg-[#E0E6EE]" />
+        <span className="mx-auto h-3 w-[48%] animate-pulse rounded-md bg-[#E0E6EE]" />
+        <span className="mx-auto mt-4 h-8 w-[36%] animate-pulse rounded-md bg-[#E0E6EE]" />
+      </div>
+    </div>
   );
 }
 

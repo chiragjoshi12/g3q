@@ -5,6 +5,7 @@ export const ERROR_CODE = {
   INVALID_CREDENTIAL: "INVALID_CREDENTIAL",
   INVALID_PHONE: "INVALID_PHONE",
   INVALID_OTP: "INVALID_OTP",
+  UNAUTHORIZED: "UNAUTHORIZED",
   NETWORK: "NETWORK",
   UNKNOWN: "UNKNOWN",
 };
@@ -28,6 +29,7 @@ export const ERROR_MESSAGE = {
   [ERROR_CODE.INVALID_CREDENTIAL]: () => translateCurrent("errorInvalidCredential"),
   [ERROR_CODE.INVALID_PHONE]: () => translateCurrent("errorInvalidPhone"),
   [ERROR_CODE.INVALID_OTP]: () => translateCurrent("errorInvalidOtp"),
+  [ERROR_CODE.UNAUTHORIZED]: () => translateCurrent("loggedOutToast"),
   [ERROR_CODE.NETWORK]: () => translateCurrent("errorNetwork"),
   [ERROR_CODE.UNKNOWN]: () => translateCurrent("somethingWentWrong"),
 };

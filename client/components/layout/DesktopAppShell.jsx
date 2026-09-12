@@ -14,6 +14,7 @@ export const DESKTOP_MAIN =
 export function DesktopAppShell({
   children,
   className,
+  contentClassName,
   showSidebar = true,
   showWash = false,
   footer = null,
@@ -22,7 +23,7 @@ export function DesktopAppShell({
     <AppShell fullOnDesktop className={cn(className, "lg:bg-transparent")}>
       <div className="flex h-full min-h-0 w-full flex-1">
         {showSidebar ? <DesktopSidebar /> : null}
-        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:bg-[#f5f5f5]">
+        <div className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:bg-[#f5f5f5]", contentClassName)}>
           {showWash ? (
             <div className="hidden lg:block">
               <DesktopPageWash />

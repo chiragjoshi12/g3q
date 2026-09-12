@@ -29,25 +29,27 @@ export function OtpStep({
 
   return (
     <div className="animate-screen-in space-y-7">
-      <div className="space-y-4">
-        <h2 className="text-left text-[16px] font-bold text-[#111] lg:text-[1.65rem]">
+      <div className="lg:flex lg:flex-col lg:items-center">
+        <h2 className="mb-4 text-left text-[16px] font-bold text-[#111] lg:mb-2 lg:text-center lg:text-[21.6px]">
           {t("enterOtp")}
         </h2>
 
-        <OtpInput
-          length={appConfig.auth.otpLength}
-          value={otp}
-          onChange={onOtpChange}
-          onComplete={onVerify}
-          invalid={Boolean(error)}
-          autoFocus
-        />
-        <div className="text-sm">
+        <div className="mb-4 lg:w-[20rem]">
+          <OtpInput
+            length={appConfig.auth.otpLength}
+            value={otp}
+            onChange={onOtpChange}
+            onComplete={onVerify}
+            invalid={Boolean(error)}
+            autoFocus
+          />
+        </div>
+        <div className="text-sm lg:text-center lg:text-[1.05rem]">
           {resendIn > 0 ? (
             <span className="text-muted-foreground">{t("resendOtp")} · {resendIn}s</span>
           ) : (
             <AuthLink
-              className="text-foreground no-underline hover:text-primary-700 hover:underline"
+              className="text-foreground no-underline hover:text-primary-700 hover:underline lg:text-[1.05rem]"
               onClick={() => setResendIn(appConfig.auth.resendSeconds)}
             >
               {t("resendOtp")}
@@ -75,7 +77,9 @@ export function OtpStep({
           </AppButton>
         </div>
         <div className="text-center text-color-[#000000]">
-          <AuthLink onClick={onBack}>{t("changeMobileNumber")}</AuthLink>
+          <AuthLink className="lg:text-[1.05rem]" onClick={onBack}>
+            {t("changeMobileNumber")}
+          </AuthLink>
         </div>
       </div>
     </div>

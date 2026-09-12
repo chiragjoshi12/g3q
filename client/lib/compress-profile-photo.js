@@ -1,14 +1,37 @@
+/** Max accepted source file size before compression (3 MB). */
+export const MAX_PROFILE_PHOTO_BYTES = 3 * 1024 * 1024;
+
+const ALLOWED_TYPES = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
+
 /**
  * Compress / resize a profile image in the browser before upload.
- * Always returns a JPEG data URL sized for avatar use.
+ * Always returns a JPEG data URL sized for avatar use (~450 KB target).
  */
-export async function compressProfilePhoto(file, {
-  maxEdge = 1024,
-  maxBytes = 450 * 1024,
-  mimeType = "image/jpeg",
-} = {}) {
+export async function compressProfilePhoto(
+  file,
+  {
+    maxInputBytes = MAX_PROFILE_PHOTO_BYTES,
+    maxEdge = 1024,
+    maxBytes = 450 * 1024,
+    mimeType = "image/jpeg",
+  } = {}
+) {
   if (!(file instanceof Blob)) {
     throw new Error("Invalid image file.");
+  }
+
+  const type = String(file.type || "").toLowerCase();
+  // Some mobile pickers omit MIME; allow those and let createImageBitmap decide.
+  if (type && !ALLOWED_TYPES.has(type)) {
+    const err = new Error("PHOTO_TYPE");
+    err.code = "PHOTO_TYPE";
+    throw err;
+  }
+
+  if (file.size > maxInputBytes) {
+    const err = new Error("PHOTO_TOO_LARGE");
+    err.code = "PHOTO_TOO_LARGE";
+    throw err;
   }
 
   const bitmap = await createImageBitmap(file);
@@ -36,7 +59,6 @@ export async function compressProfilePhoto(file, {
       bytes = estimateDataUrlBytes(dataUrl);
     }
 
-    // Still large? shrink canvas once more and re-encode.
     if (bytes > maxBytes) {
       const shrink = Math.sqrt(maxBytes / bytes);
       const nextWidth = Math.max(1, Math.round(width * Math.min(1, shrink)));
@@ -47,6 +69,13 @@ export async function compressProfilePhoto(file, {
       ctx.fillRect(0, 0, nextWidth, nextHeight);
       ctx.drawImage(bitmap, 0, 0, nextWidth, nextHeight);
       dataUrl = canvas.toDataURL(mimeType, 0.72);
+      bytes = estimateDataUrlBytes(dataUrl);
+    }
+
+    if (bytes > MAX_PROFILE_PHOTO_BYTES) {
+      const err = new Error("PHOTO_TOO_LARGE");
+      err.code = "PHOTO_TOO_LARGE";
+      throw err;
     }
 
     return {

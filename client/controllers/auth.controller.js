@@ -2,19 +2,19 @@ import { appConfig } from "@/config/app.config";
 import { authRepository } from "@/lib/data/repositories/auth.repository";
 import { AppError, ERROR_CODE, ERROR_MESSAGE } from "@/lib/core/errors";
 import {
-  isCitizen,
   usesRosterIdentity,
   validateCitizenProfile,
   validateCredential,
-  validatePhone,
+  validateMobile,
 } from "@/lib/domain/roles";
+import { translateCurrent } from "@/lib/i18n";
 
 /**
  * Authentication use cases. No React, no store, no storage — just validation
  * plus repository orchestration, so this is portable to any UI or to a test.
  */
 export const authController = {
-  /** Step 1 → 2: resolve the CTS Number/ABC code to a name, before any phone or OTP is involved. */
+  /** Step 1 → 2: resolve CTS ID / Appar ID to a name, before mobile or OTP. */
   async lookupIdentity({ role, credential }) {
     if (!usesRosterIdentity(role)) {
       throw new AppError(ERROR_CODE.INVALID_CREDENTIAL, "અમાન્ય પ્રકાર.");
@@ -26,37 +26,17 @@ export const authController = {
     return authRepository.lookupIdentity({ role, credential: String(credential).trim() });
   },
 
-  /** School/college: code + phone. Citizen: mobile only. */
-  async sendOtp({ role, credential, phone }) {
-    if (isCitizen(role)) {
-      const otpPhone = String(phone || credential || "").trim();
-      const invalidPhone = validatePhone(otpPhone);
-      if (invalidPhone) {
-        throw new AppError(ERROR_CODE.INVALID_PHONE, invalidPhone);
-      }
-      return authRepository.requestOtp({
-        role,
-        credential: otpPhone,
-        phone: otpPhone,
-      });
+  /** Mobile-only OTP request. */
+  async sendOtp({ mobile }) {
+    const otpMobile = String(mobile || "").trim();
+    const invalidMobile = validateMobile(otpMobile);
+    if (invalidMobile) {
+      throw new AppError(ERROR_CODE.INVALID_PHONE, invalidMobile);
     }
-
-    const invalidCredential = validateCredential(role, credential);
-    if (invalidCredential) {
-      throw new AppError(ERROR_CODE.INVALID_CREDENTIAL, invalidCredential);
-    }
-    const invalidPhone = validatePhone(phone);
-    if (invalidPhone) {
-      throw new AppError(ERROR_CODE.INVALID_PHONE, invalidPhone);
-    }
-    return authRepository.requestOtp({
-      role,
-      credential: String(credential).trim(),
-      phone: String(phone).trim(),
-    });
+    return authRepository.requestOtp({ mobile: otpMobile });
   },
 
-  async verifyOtp({ id, otp, role, credential }) {
+  async verifyOtp({ otp_token, otp }) {
     const code = String(otp || "").trim();
     if (code.length !== appConfig.auth.otpLength) {
       throw new AppError(
@@ -65,17 +45,15 @@ export const authController = {
       );
     }
     const result = await authRepository.verifyOtp({
-      id,
+      otp_token,
       otp: code,
-      role,
-      credential: String(credential || "").trim(),
     });
     if (result.needsSignup || result.needsProfile) {
       return {
         needsSignup: true,
         needsProfile: Boolean(result.needsProfile),
-        id: result.id ?? id,
-        phone: result.phone || null,
+        otp_token: result.otp_token ?? otp_token,
+        mobile: result.mobile || null,
       };
     }
     if (!result.user) {
@@ -90,21 +68,33 @@ export const authController = {
     };
   },
 
-  async registerCitizen({ id, name, district, taluka, districtId, talukaId }) {
-    const invalid = validateCitizenProfile({ name, district, taluka, districtId, talukaId });
+  async registerCitizen({
+    otp_token,
+    name,
+    surname,
+    districtId,
+    talukaId,
+    consentAccepted,
+    consentVersion,
+  }) {
+    if (consentAccepted !== true) {
+      throw new AppError(ERROR_CODE.INVALID_CREDENTIAL, translateCurrent("signupConsentRequired"));
+    }
+    const invalid = validateCitizenProfile({ name, surname, districtId, talukaId });
     if (invalid) {
       throw new AppError(ERROR_CODE.INVALID_CREDENTIAL, invalid);
     }
-    if (!id) {
+    if (!otp_token) {
       throw new AppError(ERROR_CODE.INVALID_OTP, ERROR_MESSAGE[ERROR_CODE.INVALID_OTP]);
     }
     const { user, token } = await authRepository.registerCitizen({
-      id,
+      otp_token,
       name: String(name).trim(),
-      district: district != null ? String(district).trim() : undefined,
-      taluka: taluka != null ? String(taluka).trim() : undefined,
-      districtId: districtId != null ? Number(districtId) : undefined,
-      talukaId: talukaId != null ? Number(talukaId) : undefined,
+      surname: String(surname).trim(),
+      districtId: Number(districtId),
+      talukaId: Number(talukaId),
+      consentAccepted: true,
+      consentVersion: String(consentVersion || appConfig.auth.consentVersion).trim(),
     });
     if (!user) {
       throw new AppError(ERROR_CODE.UNKNOWN, ERROR_MESSAGE[ERROR_CODE.UNKNOWN]);
@@ -112,7 +102,7 @@ export const authController = {
     return { user, token };
   },
 
-  async linkRoster({ id, role, credential }) {
+  async linkRoster({ otp_token, role, credential }) {
     if (!usesRosterIdentity(role)) {
       throw new AppError(ERROR_CODE.INVALID_CREDENTIAL, "અમાન્ય પ્રકાર.");
     }
@@ -120,11 +110,11 @@ export const authController = {
     if (invalid) {
       throw new AppError(ERROR_CODE.INVALID_CREDENTIAL, invalid);
     }
-    if (!id) {
+    if (!otp_token) {
       throw new AppError(ERROR_CODE.INVALID_OTP, ERROR_MESSAGE[ERROR_CODE.INVALID_OTP]);
     }
     const { user, token } = await authRepository.linkRoster({
-      id,
+      otp_token,
       role,
       credential: String(credential).trim(),
     });

@@ -3,8 +3,15 @@
 import { LanguageSelectionScreen } from "@/components/landing/LanguageSelectionScreen";
 import { WelcomeScreen } from "@/components/landing/WelcomeScreen";
 import { AppShell } from "@/components/layout/AppShell";
+import { LANGUAGE_INFO } from "@/config/languages";
 import { useStoreHydrated } from "@/hooks/useStoreHydrated";
+import { STORAGE_KEYS, storage } from "@/lib/storage/storage";
 import { useLanguageStore } from "@/store/language.store";
+
+function hasSavedLanguagePreference() {
+  const saved = storage.get(STORAGE_KEYS.languagePreference, null);
+  return Boolean(saved && LANGUAGE_INFO[saved]);
+}
 
 export default function RootPage() {
   const hydrated = useStoreHydrated(useLanguageStore);
@@ -19,6 +26,6 @@ export default function RootPage() {
     );
   }
 
-  if (!hasChosenLanguage) return <LanguageSelectionScreen />;
+  if (!hasChosenLanguage && !hasSavedLanguagePreference()) return <LanguageSelectionScreen />;
   return <WelcomeScreen />;
 }

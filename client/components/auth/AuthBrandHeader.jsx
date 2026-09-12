@@ -1,7 +1,7 @@
 "use client";
 
 import { ACTION_BUTTON_CLASS } from "@/components/common/AppButton";
-import { BackButton } from "@/components/common/BackButton";
+import { BACK_BUTTON_CLASS, BackButton } from "@/components/common/BackButton";
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { useI18n } from "@/lib/i18n";
 import { BRAND_ICONS } from "@/lib/brand-icons";
@@ -33,16 +33,16 @@ export function AuthLink({ children, className, ...props }) {
 
 /**
  * Auth header: global BackButton + page title (login / register).
- * Matches production login mockups.
+ * Optional `onHelp` shows circled ? (login) or a મદદ pill (register).
  */
-export function AuthBrandHeader({ onBack, title }) {
+export function AuthBrandHeader({ onBack, title, onHelp, helpVariant = "icon" }) {
   const { t, appName } = useI18n();
   const heading = title || appName;
 
   return (
-    <header className="relative z-20 flex shrink-0 items-center gap-3 bg-transparent px-4 py-8 lg:px-8 lg:py-5">
+    <header className="relative z-20 flex shrink-0 items-center gap-3 bg-transparent px-4 py-8 lg:mt-3 lg:px-8 lg:py-5">
       {onBack ? (
-        <BackButton onClick={onBack} className="relative z-10 bg-white" />
+        <BackButton onClick={onBack} surface="muted" className="relative z-10" />
       ) : (
         <BrandIcon
           src={BRAND_ICONS.logo}
@@ -54,6 +54,26 @@ export function AuthBrandHeader({ onBack, title }) {
       <h1 className="min-w-0 flex-1 truncate font-heading text-[1.35rem] leading-[1.45] font-bold tracking-tight text-[#111] lg:text-[1.75rem]">
         {heading || t("login")}
       </h1>
+      {onHelp ? (
+        helpVariant === "label" ? (
+          <button
+            type="button"
+            onClick={onHelp}
+            className="relative z-10 shrink-0 rounded-full bg-white px-4 py-2.5 text-[15px] font-medium text-[#111] transition-transform active:scale-95"
+          >
+            {t("help")}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onHelp}
+            aria-label={t("help")}
+            className={cn(BACK_BUTTON_CLASS, "relative z-10 bg-white")}
+          >
+            <BrandIcon src={BRAND_ICONS.helpLogin} alt="" className="size-5" />
+          </button>
+        )
+      ) : null}
     </header>
   );
 }

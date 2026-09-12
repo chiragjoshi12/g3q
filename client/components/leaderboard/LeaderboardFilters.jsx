@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { ChoiceSheet } from "@/components/auth/ChoiceSheet";
+import { SheetCloseButton } from "@/components/common/SheetCloseButton";
 import { ChevronDown } from "@/components/icons";
 import { DESKTOP_OVERLAY, DESKTOP_OVERLAY_CARD } from "@/components/layout/desktop-overlay";
 import { PLATFORM_WEEKS } from "@/config/platformWeeks";
@@ -18,19 +19,19 @@ function FilterChip({ label, placeholder, onClick, className }) {
       type="button"
       onClick={onClick}
       className={cn(
-        "mt-2 inline-flex w-fit max-w-full flex-nowrap items-center gap-1 rounded-[1rem] border-[0.5px] border-[#737373] px-5 py-2 text-left transition-colors active:bg-[#FAFAFA]",
+        "mt-2 inline-flex w-fit max-w-full flex-nowrap items-center gap-1 rounded-[0.8rem] border-[0.5px] border-[#737373] px-3.5 py-2 text-left transition-colors active:bg-[#FAFAFA]",
         className
       )}
     >
       <span
         className={cn(
-          "max-w-[12rem] truncate text-[15px] font-medium leading-[1.45] sm:max-w-[16rem]",
+          "max-w-[9.5rem] truncate text-[15px] font-medium leading-[1.45] sm:max-w-[13rem]",
           empty ? "text-[#737373]" : "text-[#111]"
         )}
       >
         {label || placeholder}
       </span>
-      <ChevronDown className="size-4 shrink-0 text-[#667085]" strokeWidth={2.25} />
+      <ChevronDown className="size-5 shrink-0 text-[#667085]" strokeWidth={2.25} />
     </button>
   );
 }
@@ -153,12 +154,15 @@ export function LeaderboardLocationSheet({
           "lg:w-[min(28rem,90vw)]"
         )}
       >
-        <h3
-          id="leaderboard-location-title"
-          className="text-center text-[16px] leading-snug text-[#000000]"
-        >
-          {t("leaderboardLocationHint")}
-        </h3>
+        <SheetCloseButton onClick={onClose} />
+        <div className="relative flex items-start justify-center">
+          <h3
+            id="leaderboard-location-title"
+            className="px-10 text-center text-[16px] leading-snug text-[#000000]"
+          >
+            {t("leaderboardLocationHint")}
+          </h3>
+        </div>
 
         <div className="mt-8 flex flex-col gap-4">
           <div>
@@ -226,12 +230,12 @@ export function LeaderboardWeekChip({ week, onClick, className }) {
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex max-w-[10.5rem] items-center gap-1.5 rounded-full bg-[#ECEFF3] px-3.5 py-2 text-[13px] font-semibold text-[#111] transition-colors active:bg-[#E2E6EC]",
+        "inline-flex max-w-[10.5rem] items-center gap-1.5 rounded-[0.8rem] bg-[#ECEFF3] px-3.5 py-2 text-[13px] font-semibold text-[#111] transition-colors active:bg-[#E2E6EC]",
         className
       )}
     >
       <span className="truncate leading-[1.45]">{formatWeekChipLabel(week, language)}</span>
-      <ChevronDown className="size-3.5 shrink-0 text-[#667085]" strokeWidth={2.5} />
+      <ChevronDown className="size-5 shrink-0 text-[#667085]" strokeWidth={2.5} />
     </button>
   );
 }

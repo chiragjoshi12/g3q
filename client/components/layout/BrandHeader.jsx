@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
  * G3Q mark left, title centered, matching-size slot on the right.
  * White bar on landing; `plain` sits on the aurora wash on Home / Profile.
  */
-export function BrandHeader({ trailing = null, priority = false, plain = false }) {
+export function BrandHeader({ trailing = null, trailingClassName, priority = false, plain = false }) {
   const { appName } = useI18n();
 
   return (
@@ -24,7 +24,7 @@ export function BrandHeader({ trailing = null, priority = false, plain = false }
           src={BRAND_ICONS.logo}
           alt="G3Q 3.0"
           priority={priority}
-          className="size-12 shrink-0"
+          className="size-14 shrink-0"
         />
         <h1
           className={cn(
@@ -35,7 +35,12 @@ export function BrandHeader({ trailing = null, priority = false, plain = false }
           {appName}
         </h1>
         {trailing ? (
-          <div className="relative z-30 grid size-12 shrink-0 place-items-center overflow-visible">
+          <div
+            className={cn(
+              "relative z-30 grid size-12 shrink-0 place-items-center overflow-visible",
+              trailingClassName
+            )}
+          >
             {trailing}
           </div>
         ) : (

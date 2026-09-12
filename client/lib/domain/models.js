@@ -12,15 +12,22 @@ import { QUESTION_TYPE } from "@/config/question-types";
 export function toUser(raw) {
   if (!raw) return null;
   const role = Object.values(ROLE).includes(raw.role) ? raw.role : ROLE.STUDENT;
-  const phoneDigits = String(raw.phone ?? "").replace(/\D/g, "").slice(-10);
-  const credential = raw.udiseCode ?? raw.abcId ?? phoneDigits;
-  const institute =
-    raw.institute || (role === ROLE.CITIZEN ? "નાગરિક સહભાગી" : "") || "";
+  const mobileDigits = String(raw.mobile ?? raw.phone ?? "")
+    .replace(/\D/g, "")
+    .slice(-10);
+  const credential = raw.ctsId ?? raw.apparId ?? raw.udiseCode ?? raw.abcId ?? mobileDigits;
+  const firstName = String(raw.name ?? "").trim();
+  const surname = String(raw.surname ?? "").trim();
+  // Backend already merges for REST; JSON fixtures may still store first/surname separately.
+  const alreadyMerged =
+    !surname || firstName === surname || firstName.endsWith(` ${surname}`);
+  const displayName = alreadyMerged ? firstName : [firstName, surname].filter(Boolean).join(" ");
   return {
     id: raw.id,
     role,
-    name: raw.name,
-    institute,
+    name: displayName,
+    surname: surname || null,
+    institute: raw.institute ?? null,
     grade:
       raw.grade ||
       (role === ROLE.CITIZEN
@@ -31,8 +38,10 @@ export function toUser(raw) {
     taluka: raw.taluka ?? "",
     districtId: raw.districtId != null ? Number(raw.districtId) : null,
     talukaId: raw.talukaId != null ? Number(raw.talukaId) : null,
-    phone: raw.phone ?? "",
+    mobile: raw.mobile ?? raw.phone ?? "",
     profilePhoto: raw.profilePhoto || raw.profile_photo || null,
+    ctsId: raw.ctsId ?? null,
+    apparId: raw.apparId ?? null,
     credential,
     credentialLabel: getCredentialRule(role)?.label ?? "",
   };
@@ -130,7 +139,7 @@ export function toQuestion(raw) {
     bank: raw.type === QUESTION_TYPE.DRAG_INTO_BLANKS ? options : raw.bank ?? null,
     backgroundImageUrl: raw.bg ?? raw.backgroundImageUrl ?? null,
     backgroundStyle: raw.backgroundStyle ?? null,
-    answer: normalizedAnswer,
+    answer: normalizedAnswer ?? null,
     explanation: raw.explanation ?? null,
     acceptable: raw.acceptable ?? null,
   };

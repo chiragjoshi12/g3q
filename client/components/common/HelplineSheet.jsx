@@ -5,8 +5,8 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 
 import { BrandIcon } from "@/components/common/BrandIcon";
+import { SheetCloseButton } from "@/components/common/SheetCloseButton";
 import { DESKTOP_OVERLAY, DESKTOP_OVERLAY_CARD } from "@/components/layout/desktop-overlay";
-import { X } from "@/components/icons";
 import { appConfig } from "@/config/app.config";
 import { ROUTES } from "@/config/routes";
 import { BRAND_ICONS } from "@/lib/brand-icons";
@@ -51,21 +51,14 @@ export function HelplineSheet({ open, onClose }) {
           "lg:w-[min(22rem,90vw)] lg:px-7 lg:pt-6 lg:pb-8"
         )}
       >
+        <SheetCloseButton onClick={onClose} />
         <div className="relative flex items-center justify-center">
           <h3
             id="helpline-sheet-title"
-            className="font-heading text-[18px] font-bold text-[#111]"
+            className="px-10 text-center font-heading text-[18px] font-bold text-[#111]"
           >
             {t("helpline")}
           </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t("close")}
-            className="absolute right-[-10px] top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-[#F1F5F9] text-[#6B7280] transition-transform active:scale-95"
-          >
-            <X className="size-5" strokeWidth={2.2} />
-          </button>
         </div>
 
         <div className="mt-10 mb-3 flex items-start justify-center gap-16">

@@ -21,7 +21,19 @@ import { useI18n } from "@/lib/i18n";
 import { unlockQuizSounds } from "@/lib/quiz-sounds";
 import { QUIZ_PHASE, useQuizStore } from "@/store/quiz.store";
 
-const QUIZ_PLAY_BG_FALLBACK = "/quiz/play-bg.png";
+const QUIZ_PLAY_BG = "/quiz/play-bg.png";
+const QUIZ_QUESTION_BGS = [
+  QUIZ_PLAY_BG,
+  "/quiz-bg/q2.jpeg",
+  "/quiz-bg/q3.jpeg",
+  "/quiz-bg/q4.jpeg",
+  "/quiz-bg/q5.jpeg",
+  "/quiz-bg/q6.jpeg",
+];
+
+function quizPlayBackground(index) {
+  return QUIZ_QUESTION_BGS[index] ?? QUIZ_PLAY_BG;
+}
 
 /**
  * Quiz runner — glass header, illustrated backdrop, one question at a time.
@@ -60,6 +72,7 @@ function QuizScreen({ params }) {
   const questions = useQuizStore((state) => state.questions);
   const explanations = useQuizStore((state) => state.explanations);
   const answers = useQuizStore((state) => state.answers);
+  const verdicts = useQuizStore((state) => state.verdicts);
   const currentIndex = useQuizStore((state) => state.currentIndex);
   const phase = useQuizStore((state) => state.phase);
   const loading = useQuizStore((state) => state.loading);
@@ -83,6 +96,9 @@ function QuizScreen({ params }) {
 
   const value = question ? answers[question.id] : null;
   const answered = Boolean(question) && isAnswered(question, value);
+  const serverVerdict = question ? verdicts[question.id] : null;
+  const questionCorrect =
+    serverVerdict != null ? Boolean(serverVerdict.correct) : Boolean(question) && isCorrect(question, value);
 
   useEffect(() => {
     const reset = (revealed) => {
@@ -93,9 +109,9 @@ function QuizScreen({ params }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [question?.id]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     unlockQuizSounds();
-    if (submitAnswer()) setExplanationOpen(true);
+    if (await submitAnswer({ practice })) setExplanationOpen(true);
   };
 
   const handleNext = async () => {
@@ -127,7 +143,7 @@ function QuizScreen({ params }) {
     );
   }
 
-  const playBg = question?.backgroundImageUrl || QUIZ_PLAY_BG_FALLBACK;
+  const playBg = question?.backgroundImageUrl || quizPlayBackground(currentIndex);
 
   return (
     <AppShell fullOnDesktop className="font-canva">
@@ -225,7 +241,7 @@ function QuizScreen({ params }) {
       {reviewing && explanationOpen && question ? (
         <AiExplanationSheet
           explanation={explanations[question.id]}
-          correct={isCorrect(question, value)}
+          correct={questionCorrect}
           isLast={isLast}
           onDone={() => setVerdictRevealed(true)}
           onDismiss={() => {
@@ -261,7 +277,7 @@ function QuizAction({ answering, answered, isLast, loading, onSubmit, onNext }) 
     return (
       <ActionButtonRow>
         <AppButton
-          className={`${ACTION_BUTTON_CLASS} disabled:bg-[#e5ebf8] disabled:text-[#595858]`}
+          className={`${ACTION_BUTTON_CLASS} disabled:bg-[#e5ebf8] disabled:text-[#595858] lg:!w-[14rem]`}
           onClick={onSubmit}
           disabled={!answered}
         >
@@ -274,7 +290,7 @@ function QuizAction({ answering, answered, isLast, loading, onSubmit, onNext }) 
   return (
     <ActionButtonRow>
       <AppButton
-        className={ACTION_BUTTON_CLASS}
+        className={`${ACTION_BUTTON_CLASS} lg:!w-[14rem]`}
         onClick={onNext}
         loading={loading}
       >

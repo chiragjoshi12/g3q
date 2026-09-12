@@ -31,10 +31,7 @@ export function TopAppBar({
     >
       <ContentWidth className="flex items-center gap-2 px-3 py-3 sm:px-6 lg:px-8">
         {onBack ? (
-          <BackButton
-            onClick={onBack}
-            className={onPrimary ? "bg-white/20" : undefined}
-          />
+          <BackButton onClick={onBack} />
         ) : (
           <span className="w-2" />
         )}

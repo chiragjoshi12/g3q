@@ -67,12 +67,12 @@ export function FeaturedQuizCard({ quiz, onStart, score = null, wide = false, sh
               {quiz.title}
             </h3>
             {quiz.subtitle ? (
-              <p className="mt-2.5 font-heading text-[1.05rem] leading-snug text-[#111]">
+              <p className="mt-5 font-heading text-[1.05rem] leading-snug text-[#111]">
                 {quiz.subtitle}
               </p>
             ) : null}
 
-            <p className="mt-7 flex items-center gap-2.5 font-heading text-[15px] font-medium text-[#111]">
+            <p className="mt-5 flex items-center gap-2.5 font-heading text-[15px] font-medium text-[#111]">
               <BrandIcon
                 src={BRAND_ICONS.questionsCount}
                 alt=""

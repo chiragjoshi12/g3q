@@ -6,7 +6,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { authController } from "@/controllers/auth.controller";
 import { appConfig, DATA_SOURCE } from "@/config/app.config";
 import { toMessage } from "@/lib/core/errors";
-import { isCitizen, ROLE } from "@/lib/domain/roles";
+import { isCitizen, ROLE, sanitizeMobileInput } from "@/lib/domain/roles";
 import { STORAGE_KEYS, zustandStorage } from "@/lib/storage/storage";
 
 /** Steps of the login flow, in order. */
@@ -27,20 +27,23 @@ const initialFlow = {
   role: ROLE.CITIZEN,
   credential: "",
   identity: null,
-  phone: "",
+  mobile: "",
   otp: "",
-  otpId: null,
-  maskedPhone: "",
+  otpToken: null,
+  authCase: null,
+  maskedMobile: "",
   pendingUser: null,
   pendingToken: null,
   needsSignup: false,
   profileFirstName: "",
   profileLastName: "",
   profileName: "",
+  profileSurname: "",
   profileDistrict: "",
   profileTaluka: "",
   profileDistrictId: null,
   profileTalukaId: null,
+  consentAccepted: false,
   loading: false,
   error: null,
 };
@@ -65,8 +68,7 @@ export const useAuthStore = create()(
 
       setCredential: (credential) => set({ credential, error: null }),
 
-      setPhone: (phone) =>
-        set({ phone: phone.replace(/\D/g, "").slice(0, appConfig.auth.phoneLength), error: null }),
+      setMobile: (mobile) => set({ mobile: sanitizeMobileInput(mobile), error: null }),
 
       setOtp: (otp) => set({ otp, error: null }),
 
@@ -75,6 +77,10 @@ export const useAuthStore = create()(
       setProfileLastName: (profileLastName) => set({ profileLastName, error: null }),
 
       setProfileName: (profileName) => set({ profileName, error: null }),
+
+      setProfileSurname: (profileSurname) => set({ profileSurname, error: null }),
+
+      setConsentAccepted: (consentAccepted) => set({ consentAccepted: Boolean(consentAccepted), error: null }),
 
       setProfileDistrict: (profileDistrict, profileDistrictId = null) =>
         set({
@@ -102,24 +108,23 @@ export const useAuthStore = create()(
 
       /** Production step 1: send OTP to the entered mobile number. */
       requestPhoneOtp: async () => {
-        const { phone } = get();
+        const { mobile } = get();
         set({ loading: true, error: null });
         try {
-          const { id, maskedPhone } = await authController.sendOtp({
-            role: ROLE.CITIZEN,
-            credential: phone,
-            phone,
+          const { otp_token, maskedMobile, case: authCase } = await authController.sendOtp({
+            mobile,
           });
           set({
             loading: false,
             step: AUTH_STEP.OTP,
             welcomeSourceStep: null,
             role: ROLE.CITIZEN,
-            credential: phone,
-            otpId: id,
-            maskedPhone,
+            credential: mobile,
+            otpToken: otp_token,
+            authCase: authCase || null,
+            maskedMobile,
             otp: "",
-            needsSignup: false,
+            needsSignup: authCase === "signup",
             pendingUser: null,
             pendingToken: null,
           });
@@ -130,7 +135,7 @@ export const useAuthStore = create()(
         }
       },
 
-      /** Step 1 → 2 (legacy / signup roster): validate CTS/ABC and show confirm card. */
+      /** Step 1 → 2 (legacy / signup roster): validate CTS/Appar and show confirm card. */
       lookupIdentity: async () => {
         const { role, credential } = get();
         set({ loading: true, error: null });
@@ -144,24 +149,21 @@ export const useAuthStore = create()(
         }
       },
 
-      /** School/college legacy path still used after category → credential. */
+      /** Resend OTP for the same mobile (mobile-only API). */
       requestOtp: async () => {
-        const { role, credential, phone } = get();
-        const otpPhone = isCitizen(role) ? credential || phone : phone;
+        const { mobile } = get();
         set({ loading: true, error: null });
         try {
-          const { id, maskedPhone } = await authController.sendOtp({
-            role,
-            credential,
-            phone: otpPhone,
+          const { otp_token, maskedMobile, case: authCase } = await authController.sendOtp({
+            mobile,
           });
           set({
             loading: false,
             step: AUTH_STEP.OTP,
             welcomeSourceStep: null,
-            phone: otpPhone,
-            otpId: id,
-            maskedPhone,
+            otpToken: otp_token,
+            authCase: authCase || null,
+            maskedMobile,
             otp: "",
           });
           return true;
@@ -172,23 +174,22 @@ export const useAuthStore = create()(
       },
 
       /**
-       * Verify OTP for phone-first login.
+       * Verify OTP for mobile-first login.
        * Existing user → confirm screen. New number → category / profile signup.
        */
       verifyOtp: async () => {
-        const { otpId, otp, role, credential } = get();
+        const { otpToken, otp } = get();
         set({ loading: true, error: null });
         try {
           const result = await authController.verifyOtp({
-            id: otpId,
+            otp_token: otpToken,
             otp,
-            role: ROLE.CITIZEN,
-            credential: credential || get().phone,
           });
           if (result.needsSignup) {
             set({
               loading: false,
               otp: "",
+              otpToken: result.otp_token || otpToken,
               needsSignup: true,
               step: result.needsProfile ? AUTH_STEP.PROFILE : AUTH_STEP.CATEGORY,
               role: result.needsProfile ? ROLE.CITIZEN : null,
@@ -224,13 +225,13 @@ export const useAuthStore = create()(
         return true;
       },
 
-      /** After category pick for new users. */
+      /** After category pick for new users. Citizen stays here until Next. */
       selectSignupRole: (role) => {
         if (isCitizen(role)) {
           set({
             role,
-            credential: get().phone,
-            step: AUTH_STEP.PROFILE,
+            credential: get().mobile,
+            step: AUTH_STEP.CATEGORY,
             error: null,
           });
           return;
@@ -244,13 +245,23 @@ export const useAuthStore = create()(
         });
       },
 
-      /** Confirm roster identity and attach verified phone. */
+      /** Citizen chose Next on the category screen → name / place form. */
+      continueCitizenSignup: () => {
+        set({
+          role: ROLE.CITIZEN,
+          credential: get().mobile,
+          step: AUTH_STEP.PROFILE,
+          error: null,
+        });
+      },
+
+      /** Confirm roster identity and attach verified mobile. */
       confirmRosterLink: async () => {
-        const { otpId, role, credential } = get();
+        const { otpToken, role, credential } = get();
         set({ loading: true, error: null });
         try {
           const { user, token } = await authController.linkRoster({
-            id: otpId,
+            otp_token: otpToken,
             role,
             credential,
           });
@@ -271,22 +282,23 @@ export const useAuthStore = create()(
 
       completeCitizenProfile: async () => {
         const {
-          otpId,
+          otpToken,
           profileName,
-          profileDistrict,
-          profileTaluka,
+          profileSurname,
           profileDistrictId,
           profileTalukaId,
+          consentAccepted,
         } = get();
         set({ loading: true, error: null });
         try {
           const { user, token } = await authController.registerCitizen({
-            id: otpId,
+            otp_token: otpToken,
             name: profileName,
-            district: profileDistrict,
-            taluka: profileTaluka,
+            surname: profileSurname,
             districtId: profileDistrictId,
             talukaId: profileTalukaId,
+            consentAccepted,
+            consentVersion: appConfig.auth.consentVersion,
           });
           set({
             loading: false,
@@ -323,7 +335,8 @@ export const useAuthStore = create()(
           identity: null,
           otp: "",
           error: null,
-          otpId: null,
+          otpToken: null,
+          authCase: null,
           needsSignup: false,
           pendingUser: null,
           pendingToken: null,
@@ -331,10 +344,12 @@ export const useAuthStore = create()(
           profileFirstName: "",
           profileLastName: "",
           profileName: "",
+          profileSurname: "",
           profileDistrict: "",
           profileTaluka: "",
           profileDistrictId: null,
           profileTalukaId: null,
+          consentAccepted: false,
         }),
 
       backToCategory: () =>

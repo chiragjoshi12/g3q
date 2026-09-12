@@ -1,5 +1,6 @@
 import { appConfig } from "@/config/app.config";
 import { AppError, ERROR_CODE, ERROR_MESSAGE } from "@/lib/core/errors";
+import { expireSession } from "@/lib/session-expiry";
 import { storage, STORAGE_KEYS } from "@/lib/storage/storage";
 
 const inflightGetRequests = new Map();
@@ -98,6 +99,18 @@ async function request(path, { method = "GET", body, signal } = {}) {
 
       const payload = await response.json().catch(() => null);
 
+      if (response.status === 401) {
+        if (headers.Authorization) expireSession();
+        throw new AppError(
+          ERROR_CODE.UNAUTHORIZED,
+          payload?.message ||
+            (typeof ERROR_MESSAGE[ERROR_CODE.UNAUTHORIZED] === "function"
+              ? ERROR_MESSAGE[ERROR_CODE.UNAUTHORIZED]()
+              : ERROR_MESSAGE[ERROR_CODE.UNAUTHORIZED]),
+          payload
+        );
+      }
+
       if (!response.ok || payload?.success === false) {
         throw new AppError(
           payload?.code || (response.status === 404 ? ERROR_CODE.NOT_FOUND : ERROR_CODE.UNKNOWN),
@@ -172,25 +185,41 @@ export const httpSource = {
   lookupIdentity: ({ role, credential }) =>
     request("/auth/identity/lookup", { method: "POST", body: { role, credential } }),
 
-  requestOtp: ({ role, credential, phone }) =>
-    request("/auth/otp/request", { method: "POST", body: { role, credential, phone } }),
+  requestOtp: ({ mobile }) =>
+    request("/auth/otp/request", { method: "POST", body: { mobile } }),
 
-  verifyOtp: ({ id, otp, role, credential }) =>
+  verifyOtp: ({ otp_token, otp }) =>
     request("/auth/otp/verify", {
       method: "POST",
-      body: { id, otp, role, credential },
+      body: { otp_token, otp },
     }),
 
-  registerCitizen: ({ id, name, district, taluka, districtId, talukaId }) =>
+  registerCitizen: ({
+    otp_token,
+    name,
+    surname,
+    districtId,
+    talukaId,
+    consentAccepted,
+    consentVersion,
+  }) =>
     request("/auth/citizen/register", {
       method: "POST",
-      body: { id, name, district, taluka, districtId, talukaId },
+      body: {
+        otp_token,
+        name,
+        surname,
+        districtId,
+        talukaId,
+        consentAccepted,
+        consentVersion,
+      },
     }),
 
-  linkRoster: ({ id, role, credential }) =>
+  linkRoster: ({ otp_token, role, credential }) =>
     request("/auth/roster/link", {
       method: "POST",
-      body: { id, role, credential },
+      body: { otp_token, role, credential },
     }),
 
   getGeographyDistricts: ({ lang } = {}) => {
@@ -251,6 +280,12 @@ export const httpSource = {
     }),
 
   getSession: (sessionId) => request(`/sessions/${sessionId}`),
+
+  lockSessionQuestion: ({ sessionId, queId, answer, timeSpentMs }) =>
+    request(`/sessions/${sessionId}/questions/${encodeURIComponent(queId)}/lock`, {
+      method: "POST",
+      body: { answer, timeSpentMs },
+    }),
 
   submitSession: ({ sessionId, answers, timings, startedAt, abandoned }) =>
     request(`/sessions/${sessionId}/submit`, {

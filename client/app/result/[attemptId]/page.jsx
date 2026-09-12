@@ -2,9 +2,8 @@
 
 import { Suspense, use } from "react";
 import { useRouter } from "next/navigation";
-import { X } from "@/components/icons";
-
 import { ACTION_BUTTON_CLASS, AppButton } from "@/components/common/AppButton";
+import { BackButton } from "@/components/common/BackButton";
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { ErrorState, LoadingState } from "@/components/common/StateViews";
 import { DesktopAppShell } from "@/components/layout/DesktopAppShell";
@@ -82,14 +81,12 @@ function ResultScreen({ params }) {
 
           <header className="relative z-10 shrink-0 px-5 pt-4 pb-8 sm:px-6 lg:px-10 lg:pt-8 lg:pb-4">
             <div className="mx-auto flex w-full max-w-[26.5rem] items-center gap-3 md:max-w-none lg:max-w-[40rem]">
-              <button
-                type="button"
+              <BackButton
+                className="lg:hidden"
+                label={t("close")}
+                surface="muted"
                 onClick={() => router.replace(leaveTo)}
-                aria-label={t("close")}
-                className="grid size-10 shrink-0 place-items-center rounded-full bg-white shadow-[0_2px_8px_rgb(15_23_42/0.08)] transition-transform active:scale-95 lg:hidden"
-              >
-                <X className="size-4 text-[#111]" strokeWidth={2.2} />
-              </button>
+              />
               <div className="min-w-0 lg:text-center lg:w-full">
                 <h1 className="font-canva text-[1.25rem] leading-tight font-bold text-[#111] lg:text-[2rem] lg:text-[#2d689d]">
                   {t("resultScore")}
@@ -110,7 +107,7 @@ function ResultScreen({ params }) {
               {status === "ready" && attempt ? (
                 <>
                   <ScoreSummary attempt={attempt} quiz={bundle?.quiz} />
-                  <div className="mt-6 hidden items-center justify-center gap-3 lg:flex">
+                  <div className="mt-13 hidden items-center justify-center gap-3 lg:flex">
                     <AppButton
                       className={cn(
                         ACTION_BUTTON_CLASS,

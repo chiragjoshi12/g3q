@@ -6,10 +6,11 @@
  * starts talking to the HTTP source instead of the bundled JSON — no component,
  * controller or store changes required.
  *
- * API calls default to same-origin `/api`, which Next rewrites to:
- * - local: http://localhost:4000
- * - production: https://g3q-backend.azurewebsites.net
- * Override with NEXT_PUBLIC_API_BASE_URL or BACKEND_ORIGIN as needed.
+ * API routing (see `client/.env.example`):
+ * - Set `BACKEND_ORIGIN` — Next rewrites `/api/*` to that Express host.
+ * - Local default: http://localhost:4000
+ * - Production: set the Azure App Service URL in Vercel env (or `.env.local`).
+ * - Optional `NEXT_PUBLIC_API_BASE_URL` calls the backend directly (skips rewrite).
  */
 
 import { resolveApiBaseUrl } from "@/config/backend-origin.mjs";
@@ -40,8 +41,10 @@ export const appConfig = {
     // Mirrors backend OTP defaults for dev/test flows.
     staticOtp: "1234",
     otpLength: 4,
-    resendSeconds: 30,
-    phoneLength: 10,
+    resendSeconds: 0,
+    mobileLength: 10,
+    /** Must match backend CURRENT_CONSENT_VERSION. */
+    consentVersion: "v1",
   },
 
   storage: {

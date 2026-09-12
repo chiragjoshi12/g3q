@@ -7,14 +7,15 @@ import { httpSource } from "@/lib/data/sources/http.source";
  *
  * DataSource contract — both implementations satisfy it exactly:
  *   lookupIdentity({ role, credential })         -> User (raw)
- *   requestOtp({ role, credential, phone })      -> { id, maskedPhone, resendSeconds }
- *   verifyOtp({ id, otp, role, ... })            -> { user, token } | { needsProfile }
- *   registerCitizen({ id, name, ... })           -> { user, token }
+ *   requestOtp({ mobile })                       -> { otp_token, maskedMobile, resendSeconds, case }
+ *   verifyOtp({ otp_token, otp })                -> { user, token } | { needsSignup, otp_token, mobile }
+ *   registerCitizen({ otp_token, name, surname, ... })  -> { user, token }
  *   getPracticeBundle({ quizId, language })      -> { quiz, questions }
  *   getLandingSummary()                          -> { totalPlays, weeklyPlays, featuredQuizId }
  *   getMe()                                      -> User
  *   startSession({ count, language })            -> SessionMeta
  *   getSession(sessionId)                        -> SessionPlayPayload | SessionResult
+ *   lockSessionQuestion({ sessionId, queId, answer, timeSpentMs }) -> QuestionReveal
  *   submitSession({ sessionId, answers, ... })   -> SessionResult
  *   getSessionResult(sessionId)                  -> SessionResult
  *   listMySessions()                             -> { participatedWeeks, currentWeek, quizSessions }

@@ -1,6 +1,4 @@
 import { HugeiconsIcon } from "@hugeicons/react";
-import { BrandIcon } from "@/components/common/BrandIcon";
-import { BRAND_ICONS } from "@/lib/brand-icons";
 import {
   Loading03Icon,
   Sparkles as SparklesSrc,
@@ -111,6 +109,27 @@ export const Trash2 = createIcon(Trash2Src, "Trash2");
 export const Smartphone = createIcon(SmartPhone01Icon, "Smartphone");
 export const Download = createIcon(Download04Icon, "Download");
 
+/** Shared popup close mark. Use `SheetCloseButton` in sheets. */
+export function Cross({ className, strokeWidth = 2.2, ...props }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden
+      {...props}
+    >
+      <path
+        d="M6.5 6.5l11 11M17.5 6.5l-11 11"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 /** Straight `>` chevron for list rows. Not the back-button icon. */
 export function LineArrowRight({ className, ...props }) {
   return (
@@ -133,7 +152,24 @@ export function LineArrowRight({ className, ...props }) {
   );
 }
 
-/** App back chevron from `public/icons/Back Button Icon.png`. Prefer `BackButton`. */
-export function BackArrow({ className }) {
-  return <BrandIcon src={BRAND_ICONS.back} alt="" className={className || "size-3.5"} />;
+/** App back chevron. Prefer `BackButton`. Path is optically centered in the viewBox. */
+export function BackArrow({ className, ...props }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden
+      {...props}
+    >
+      <path
+        d="M15 6L9 12l6 6"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }

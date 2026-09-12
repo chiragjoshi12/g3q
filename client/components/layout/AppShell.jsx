@@ -1,4 +1,7 @@
+"use client";
+
 import { cn } from "@/lib/utils";
+import { AuthToasts } from "@/components/common/AuthToasts";
 
 /**
  * Full-viewport application frame.
@@ -27,6 +30,7 @@ export function AppShell({ children, className, fullOnDesktop = false }) {
         )}
       >
         {children}
+        <AuthToasts />
       </div>
     </div>
   );

@@ -1,7 +1,8 @@
 "use client";
 
-import { Pause, X } from "@/components/icons";
+import { Pause } from "@/components/icons";
 
+import { BackButton } from "@/components/common/BackButton";
 import { BrandIcon } from "@/components/common/BrandIcon";
 import { formatClock } from "@/lib/domain/format";
 import { BRAND_ICONS } from "@/lib/brand-icons";
@@ -15,7 +16,7 @@ import { cn } from "@/lib/utils";
 export function QuizHeader({ index, total, elapsedMs, paused, onExit }) {
   const { t } = useI18n();
   return (
-    <header className="relative z-30 shrink-0 px-3.5 pt-[max(0.55rem,env(safe-area-inset-top))] pb-1.5 sm:px-5">
+    <header className="relative z-30 shrink-0 px-3.5 pt-[max(0.55rem,env(safe-area-inset-top))] pb-1.5 sm:px-5 lg:pt-[max(1.35rem,env(safe-area-inset-top))] lg:pb-3">
       <div
         className={cn(
           "relative mx-auto flex w-fit items-center gap-[3.5rem] overflow-hidden rounded-full px-4.5 py-2.5",
@@ -30,15 +31,11 @@ export function QuizHeader({ index, total, elapsedMs, paused, onExit }) {
           className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/55 to-transparent"
         />
 
-        <button
-          type="button"
+        <BackButton
+          className="relative ml-[-5px]"
+          label={t("leaveQuizTitle")}
           onClick={onExit}
-          aria-label={t("leaveQuizTitle")}
-          // move close button to left side
-          className="relative grid size-10 shrink-0 place-items-center rounded-full bg-white transition-transform active:scale-95 ml-[-5px]"
-        >
-          <X className="size-[18px] text-[#111]" strokeWidth={2.1} />
-        </button>
+        />
 
         <StatBlock
           icon={<BrandIcon src={BRAND_ICONS.questionsCount} alt="" className="size-5" />}

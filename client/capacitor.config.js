@@ -33,6 +33,7 @@ const config = {
     allowNavigation: [
       "g3q.vercel.app",
       "*.vercel.app",
+      "g3q-backend-staging.azurewebsites.net",
       "g3q-backend.azurewebsites.net",
     ],
   },

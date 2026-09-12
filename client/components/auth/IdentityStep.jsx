@@ -7,21 +7,21 @@ import { AUTH_BUTTON_CLASS, AUTH_FIELD_CLASS, AuthLink } from "@/components/auth
 import { AppButton } from "@/components/common/AppButton";
 import { appConfig } from "@/config/app.config";
 import { BRAND_ICONS } from "@/lib/brand-icons";
-import { validatePhone } from "@/lib/domain/roles";
+import { sanitizeMobileInput, validateMobile } from "@/lib/domain/roles";
 import { useI18n } from "@/lib/i18n";
 
-/** Step 2: the code resolved to this person — confirm it, then add a phone for the OTP. */
+/** Step 2: the code resolved to this person — confirm it, then add a mobile for the OTP. */
 export function IdentityStep({
   identity,
-  phone,
+  mobile,
   error,
   loading,
-  onPhoneChange,
+  onMobileChange,
   onSubmit,
   onBack,
 }) {
   const { t } = useI18n();
-  const validPhone = !validatePhone(phone);
+  const validMobile = !validateMobile(mobile);
   if (!identity) return null;
 
   return (
@@ -55,14 +55,16 @@ export function IdentityStep({
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="phone" className="block text-[18px] font-bold text-[#000000]">
+        <label htmlFor="auth-mobile-identity" className="block text-[18px] font-bold text-[#000000]">
           {t("mobileNumber")}
         </label>
         <input
-          id="phone"
-          value={phone}
-          onChange={(event) => onPhoneChange(event.target.value)}
+          id="auth-mobile-identity"
+          value={mobile}
+          onChange={(event) => onMobileChange(sanitizeMobileInput(event.target.value))}
           inputMode="numeric"
+          maxLength={10}
+          pattern="[6-9][0-9]{9}"
           placeholder={t("mobileNumber")}
           autoComplete="tel"
           autoFocus
@@ -85,7 +87,7 @@ export function IdentityStep({
           <AppButton
             type="submit"
             loading={loading}
-            disabled={!validPhone || phone.length !== appConfig.auth.phoneLength}
+            disabled={!validMobile}
             className={AUTH_BUTTON_CLASS}
           >
             {t("sendOtp")}

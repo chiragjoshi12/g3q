@@ -308,7 +308,7 @@ export default function LeaderboardPage() {
       <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[26.5rem] flex-col bg-[#F5F6F8] md:max-w-none lg:w-[50rem] lg:max-w-[50rem] lg:self-center lg:bg-transparent">
         <header className="relative z-20 flex shrink-0 items-center gap-3 bg-white px-4 py-3.5 lg:bg-transparent lg:px-8 lg:pt-8 lg:pb-3">
           <BackButton
-            className="shrink-0"
+            className="shrink-0 lg:bg-white"
             label={t("close")}
             onClick={() => {
               const historyIndex =

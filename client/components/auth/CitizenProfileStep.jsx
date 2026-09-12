@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertCircle, ChevronDown } from "@/components/icons";
 
 import { AUTH_BUTTON_CLASS, AUTH_FIELD_CLASS } from "@/components/auth/AuthBrandHeader";
@@ -12,21 +12,26 @@ import { cn } from "@/lib/utils";
 
 const FIELD_CLASS = cn(AUTH_FIELD_CLASS, "border border-[#d9d9d9]");
 
-/** After OTP: નાગરિક fills name, then picks district and taluka. */
+/** After OTP: નાગરિક fills name + surname, then picks district and taluka. */
 export function CitizenProfileStep({
   name,
+  surname,
   district,
   taluka,
   districtId,
   talukaId,
+  consentAccepted,
   error,
   loading,
   onNameChange,
+  onSurnameChange,
   onDistrictChange,
   onTalukaChange,
+  onConsentChange,
   onSubmit,
 }) {
   const { t, language } = useI18n();
+  const nameRef = useRef(null);
   const [picker, setPicker] = useState(null);
   const geo = useGeographyChoices(language);
   const selectedDistrict = geo.mode === "id" ? districtId : district;
@@ -34,11 +39,16 @@ export function CitizenProfileStep({
   const districtOptions = geo.districtOptions;
   const talukaOptions = geo.talukaOptionsFor(selectedDistrict);
   const ready = Boolean(
-    name.trim() &&
-      (geo.mode === "id"
-        ? districtId != null && talukaId != null
-        : district.trim() && taluka.trim())
+    String(name || "").trim() &&
+      String(surname || "").trim() &&
+      districtId != null &&
+      talukaId != null &&
+      consentAccepted
   );
+
+  useEffect(() => {
+    nameRef.current?.focus();
+  }, []);
 
   return (
     <form
@@ -51,15 +61,30 @@ export function CitizenProfileStep({
       <div className="space-y-5">
         <div className="space-y-2">
           <label htmlFor="citizen-name" className="block text-[16px] font-bold text-[#000000] translate-y-3">
-            {t("yourFullName")}
+            {t("yourName")}
           </label>
           <input
             id="citizen-name"
+            ref={nameRef}
             value={name}
             onChange={(event) => onNameChange(event.target.value)}
-            placeholder={t("yourFullName")}
-            autoComplete="name"
+            placeholder={t("yourName")}
+            autoComplete="given-name"
             autoFocus
+            className={FIELD_CLASS}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="citizen-surname" className="block text-[16px] font-bold text-[#000000] translate-y-3">
+            {t("yourSurname")}
+          </label>
+          <input
+            id="citizen-surname"
+            value={surname}
+            onChange={(event) => onSurnameChange(event.target.value)}
+            placeholder={t("yourSurname")}
+            autoComplete="family-name"
             className={FIELD_CLASS}
           />
         </div>
@@ -118,6 +143,17 @@ export function CitizenProfileStep({
           </button>
         </div>
       </div>
+
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl px-3 py-3">
+        <input
+          id="citizen-consent"
+          type="checkbox"
+          checked={Boolean(consentAccepted)}
+          onChange={(event) => onConsentChange(event.target.checked)}
+          className="mt-1 size-4 shrink-0 accent-[#0b6b3a]"
+        />
+        <span className="text-[14px] leading-snug text-[#222]">{t("signupConsent")}</span>
+      </label>
 
       {error ? (
         <div className="animate-shake flex items-start gap-2 rounded-xl bg-error/10 px-3 py-2.5 text-sm text-error">

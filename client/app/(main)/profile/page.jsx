@@ -1,35 +1,36 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { LineArrowRight, LogOut, User } from "@/components/icons";
 
 import { ConfirmSheet } from "@/components/common/ConfirmSheet";
 import { HelplineSheet } from "@/components/common/HelplineSheet";
 import { BrandIcon } from "@/components/common/BrandIcon";
+import { LanguageMenu } from "@/components/common/LanguageMenu";
+import { ProfilePhotoImage } from "@/components/common/ProfilePhotoImage";
 import { AuroraWash } from "@/components/layout/AuroraWash";
 import { BrandHeader } from "@/components/layout/BrandHeader";
-import { LANGUAGE_OPTIONS } from "@/config/languages";
 import { appConfig, DATA_SOURCE } from "@/config/app.config";
 import { ROUTES } from "@/config/routes";
 import { profileController } from "@/controllers/profile.controller";
 import { toMessage } from "@/lib/core/errors";
 import { BRAND_ICONS } from "@/lib/brand-icons";
-import { compressProfilePhoto } from "@/lib/compress-profile-photo";
+import {
+  compressProfilePhoto,
+  MAX_PROFILE_PHOTO_BYTES,
+} from "@/lib/compress-profile-photo";
 import { useI18n } from "@/lib/i18n";
 import { resolveProfilePhotoSrc } from "@/lib/profile-photo";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
-import { useLanguageStore } from "@/store/language.store";
 import { useQuizStore } from "@/store/quiz.store";
 
 const COLUMN = "mx-auto w-full max-w-[26.5rem] md:max-w-[32rem]";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { t, language } = useI18n();
-  const setLanguage = useLanguageStore((state) => state.setLanguage);
+  const { t } = useI18n();
   const sessionUser = useAuthStore((state) => state.user);
   const patchUser = useAuthStore((state) => state.patchUser);
   const logout = useAuthStore((state) => state.logout);
@@ -63,24 +64,6 @@ export default function ProfilePage() {
     };
   }, [patchUser]);
 
-  useEffect(() => {
-    if (!languageOpen) return undefined;
-    const onPointerDown = (event) => {
-      if (!event.target.closest("[data-language-menu]")) {
-        setLanguageOpen(false);
-      }
-    };
-    const onKey = (event) => {
-      if (event.key === "Escape") setLanguageOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [languageOpen]);
-
   const handleLogout = () => {
     resetSession();
     logout();
@@ -102,6 +85,10 @@ export default function ProfilePage() {
       setUploadError(t("photoTypeError"));
       return;
     }
+    if (file.size > MAX_PROFILE_PHOTO_BYTES) {
+      setUploadError(t("photoSizeError"));
+      return;
+    }
 
     setUploading(true);
     setUploadError(null);
@@ -110,25 +97,19 @@ export default function ProfilePage() {
       const updated = await profileController.uploadPhoto(compressed);
       if (updated) patchUser(updated);
     } catch (error) {
-      setUploadError(toMessage(error) || t("photoUploadFailed"));
+      if (error?.code === "PHOTO_TOO_LARGE") {
+        setUploadError(t("photoSizeError"));
+      } else if (error?.code === "PHOTO_TYPE") {
+        setUploadError(t("photoTypeError"));
+      } else {
+        setUploadError(toMessage(error) || t("photoUploadFailed"));
+      }
     } finally {
       setUploading(false);
     }
   };
 
-  const languageMenu = (
-    <LanguageMenu
-      open={languageOpen}
-      onToggle={() => setLanguageOpen((open) => !open)}
-      language={language}
-      onSelect={(id) => {
-        setLanguage(id);
-        setLanguageOpen(false);
-      }}
-      label={t("language")}
-      selectLabel={t("selectLanguage")}
-    />
-  );
+  const languageMenu = <LanguageMenu onOpenChange={setLanguageOpen} />;
 
   return (
     <>
@@ -150,18 +131,7 @@ export default function ProfilePage() {
       </div>
 
       <header className="relative z-20 hidden shrink-0 justify-end px-10 pt-8 lg:flex">
-        <LanguageMenu
-          open={languageOpen}
-          onToggle={() => setLanguageOpen((open) => !open)}
-          language={language}
-          onSelect={(id) => {
-            setLanguage(id);
-            setLanguageOpen(false);
-          }}
-          label={t("language")}
-          selectLabel={t("selectLanguage")}
-          buttonClassName="size-11 shadow-[0_8px_24px_rgb(15_23_42/0.08)]"
-        />
+        <LanguageMenu buttonClassName="size-11 shadow-[0_8px_24px_rgb(15_23_42/0.08)]" />
       </header>
 
       <div className={cn("relative -mt-[3.75rem] px-5 pb-8 sm:px-6 lg:mt-2 lg:max-w-[36rem] lg:px-0", COLUMN, languageOpen && "z-0")}>
@@ -169,13 +139,11 @@ export default function ProfilePage() {
           <div className="relative z-10">
             <div className="grid size-[7.5rem] place-items-center overflow-hidden rounded-full bg-[#d8dde3] ring-[3px] ring-white lg:size-[8.75rem] lg:ring-[4px]">
               {photoSrc ? (
-                <Image
+                <ProfilePhotoImage
                   src={photoSrc}
                   alt={user?.name ?? ""}
                   width={240}
                   height={240}
-                  priority
-                  unoptimized={photoSrc.startsWith("http")}
                   className="size-full object-cover object-[center_18%]"
                 />
               ) : (
@@ -202,7 +170,7 @@ export default function ProfilePage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/jpg"
               className="hidden"
               onChange={handlePhotoSelected}
             />
@@ -222,7 +190,7 @@ export default function ProfilePage() {
             </p>
           ) : null}
           {user?.grade ? (
-            <p className="mt-1.5 font-heading text-[16px] text-[#000000]">{user.grade}</p>
+            <p className="mt-1.5 font-heading text-[16px] text-[#000000] lg:text-[18px]">{user.grade}</p>
           ) : null}
         </div>
 
@@ -278,76 +246,13 @@ export default function ProfilePage() {
   );
 }
 
-function LanguageMenu({
-  open,
-  onToggle,
-  language,
-  onSelect,
-  label,
-  selectLabel,
-  buttonClassName,
-}) {
-  return (
-    <div data-language-menu className="relative z-50">
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-label={label}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        className={cn(
-          "grid size-10 place-items-center rounded-full border border-[#E8ECF0] bg-white text-[#111] transition-transform active:scale-95",
-          buttonClassName
-        )}
-      >
-        <BrandIcon src={BRAND_ICONS.language} alt="" className="size-5" />
-      </button>
-
-      {open ? (
-        <div
-          role="menu"
-          aria-label={selectLabel}
-          className="absolute top-[calc(100%+0.55rem)] right-0 z-50 w-[14.5rem] rounded-[1.35rem] bg-white p-3 shadow-[0_14px_36px_rgb(15_23_42/0.18)]"
-        >
-          {LANGUAGE_OPTIONS.map((option) => {
-            const active = language === option.id;
-            return (
-              <button
-                key={option.id}
-                type="button"
-                role="menuitemradio"
-                aria-checked={active}
-                onClick={() => onSelect(option.id)}
-                className={cn(
-                  "flex w-full items-center gap-3.5 rounded-2xl px-3.5 py-3 text-left transition-colors",
-                  active ? "bg-[#E8E8E8]" : "hover:bg-[#F3F3F3]"
-                )}
-              >
-                <BrandIcon src={BRAND_ICONS.language} alt="" className="size-6 shrink-0" />
-                <span
-                  className={cn(
-                    "font-heading text-[16px] tracking-[0.03em] text-[#111] uppercase",
-                    active ? "font-bold" : "font-medium"
-                  )}
-                >
-                  {option.englishLabel}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 function MenuRow({ iconSrc, icon, iconBg, label, onClick, last = false }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-3 px-4 py-[1.2rem] text-left transition-colors hover:bg-[#FAFAFA]",
+        "flex w-full items-center gap-3 px-4 py-[1.2rem] text-left transition-colors hover:bg-[#FAFAFA] lg:px-7",
         !last && "border-b border-[#F3F4F6]"
       )}
     >

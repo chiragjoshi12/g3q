@@ -24,6 +24,7 @@ export const PLAY_QUIZ_ID = "quiz_g3q_play";
 
 const POST_AUTH_KEY = "ggq:post-auth";
 const LOGIN_TOAST_KEY = "ggq:login-toast";
+const LOGOUT_TOAST_KEY = "ggq:logout-toast";
 
 export function setPostAuthPath(path) {
   if (typeof window === "undefined") return;
@@ -50,6 +51,21 @@ export function hasLoginToast() {
 export function clearLoginToast() {
   if (typeof window === "undefined") return;
   sessionStorage.removeItem(LOGIN_TOAST_KEY);
+}
+
+export function markLogoutToast() {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(LOGOUT_TOAST_KEY, "1");
+}
+
+export function hasLogoutToast() {
+  if (typeof window === "undefined") return false;
+  return sessionStorage.getItem(LOGOUT_TOAST_KEY) === "1";
+}
+
+export function clearLogoutToast() {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(LOGOUT_TOAST_KEY);
 }
 
 /** Routes that require an authenticated session. */

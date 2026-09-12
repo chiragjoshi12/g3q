@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 
+import { SheetCloseButton } from "@/components/common/SheetCloseButton";
 import { DESKTOP_OVERLAY, DESKTOP_OVERLAY_CARD } from "@/components/layout/desktop-overlay";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -59,12 +60,15 @@ export function ChoiceSheet({ open, title, options, value, onSelect, onClose }) 
           "lg:w-[min(28rem,90vw)] lg:max-h-[min(32rem,78dvh)]"
         )}
       >
-        <h3
-          id="choice-sheet-title"
-          className="shrink-0 px-6 text-center font-heading text-[1.25rem] font-bold text-[#111]"
-        >
-          {title}
-        </h3>
+        <SheetCloseButton onClick={onClose} />
+        <div className="relative flex shrink-0 items-center justify-center px-14">
+          <h3
+            id="choice-sheet-title"
+            className="text-center font-heading text-[1.25rem] font-bold text-[#111]"
+          >
+            {title}
+          </h3>
+        </div>
         <div
           role="radiogroup"
           aria-labelledby="choice-sheet-title"

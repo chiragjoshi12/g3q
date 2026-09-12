@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { ChatMarkdown, decodeAiLineBreaks } from "@/components/g3q-ai/ChatMarkdown";
+import { BackButton } from "@/components/common/BackButton";
 import { BrandGlyph, BrandIcon } from "@/components/common/BrandIcon";
 import { DesktopAppShell } from "@/components/layout/DesktopAppShell";
 import { useSpeechToText } from "@/hooks/useSpeechToText";
@@ -229,32 +230,37 @@ export default function G3qAiPage() {
           className="pointer-events-none object-cover object-top opacity-90"
         />
 
-        <header className="relative z-10 flex shrink-0 items-center justify-between px-4 pb-3 pt-[max(0.9rem,env(safe-area-inset-top))] lg:px-8 lg:pt-5 lg:pb-3">
-            <RoundIconButton label={t("close")} onClick={() => router.back()} className="lg:invisible">
-            <CloseIcon className={AI_ICON_SIZE} />
-          </RoundIconButton>
+        <header className="relative z-10 flex shrink-0 items-center px-4 pb-3 pt-[max(0.9rem,env(safe-area-inset-top))] lg:px-8 lg:pt-5 lg:pb-3">
+          <div className="mx-auto grid w-full max-w-[44rem] grid-cols-[2.5rem_1fr_2.5rem] items-center">
+            <BackButton
+              className="lg:invisible"
+              label={t("close")}
+              surface="muted"
+              onClick={() => router.back()}
+            />
 
-          <h1 className="flex select-none items-baseline gap-[0.22em] font-canva text-[1.4rem] font-bold tracking-tight lg:text-[1.65rem]">
-            <span
-              style={{
-                backgroundImage: TITLE_G3Q,
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent",
-              }}
+            <h1 className="justify-self-center flex select-none items-baseline gap-[0.22em] font-canva text-[1.4rem] font-bold tracking-tight lg:text-[1.65rem]">
+              <span
+                style={{
+                  backgroundImage: TITLE_G3Q,
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  color: "transparent",
+                }}
+              >
+                G3Q AI
+              </span>
+            </h1>
+
+            <button
+              type="button"
+              aria-label={t("newChat")}
+              onClick={resetChat}
+              className="justify-self-end grid size-10 place-items-center rounded-full bg-[#ffffff] active:opacity-80"
             >
-              G3Q AI
-            </span>
-          </h1>
-
-          <button
-            type="button"
-            aria-label={t("newChat")}
-            onClick={resetChat}
-            className="grid size-10 place-items-center rounded-full bg-[#ffffff] active:opacity-80"
-          >
-            <BrandIcon src={BRAND_ICONS.aiNewChat} alt="" className={AI_ICON_SIZE_MATCH} />
-          </button>
+              <BrandIcon src={BRAND_ICONS.aiNewChat} alt="" className={AI_ICON_SIZE_MATCH} />
+            </button>
+          </div>
         </header>
 
         <main
@@ -435,9 +441,14 @@ export default function G3qAiPage() {
 
 function EmptyWelcome({ onPick }) {
   return (
-    <div className="flex min-h-full flex-col lg:mx-auto lg:max-w-[44rem] lg:justify-center lg:gap-10">
-      <WelcomeHero />
-      <SuggestionList onPick={onPick} className="mt-auto pb-2 lg:mt-0 lg:max-w-[28rem] lg:self-center lg:w-full" />
+    <div className="flex min-h-full flex-col lg:mx-auto lg:max-w-[44rem]">
+      <div className="flex flex-1 flex-col justify-center lg:justify-start lg:pt-10">
+        <WelcomeHero />
+      </div>
+      <SuggestionList
+        onPick={onPick}
+        className="mt-auto pb-2 lg:w-full lg:max-w-[44rem] lg:self-start lg:pl-3 lg:pb-0"
+      />
     </div>
   );
 }
@@ -445,17 +456,17 @@ function EmptyWelcome({ onPick }) {
 function WelcomeHero() {
   const { appName, t } = useI18n();
   return (
-    <div className="flex flex-col items-center px-4 pt-2 text-center">
+    <div className="flex flex-col items-center px-4 pt-2 text-center lg:pt-14">
       <BrandIcon
         src={BRAND_ICONS.logo}
         alt="G3Q 3.0"
         priority
-        className="size-[5.25rem] lg:size-[6.25rem]"
+        className="size-[5.25rem] lg:size-[8rem]"
       />
       {/* <h2 className="mt-2 font-heading text-[1.5rem] font-bold leading-none tracking-tight text-[#2d689d] lg:mt-4 lg:text-[2rem]">
         {appName}
       </h2> */}
-      <p className="mt-[-10px] max-w-[20rem] font-heading text-[14px] leading-[1.75] text-[#000000] lg:max-w-[28rem] lg:text-[15px]">
+      <p className="mt-[-10px] max-w-[20rem] whitespace-normal font-heading text-[14px] leading-[1.75] text-[#000000] lg:mt-[-6px] lg:max-w-[30rem] lg:whitespace-pre-line lg:text-[15px]">
         {t("aiWelcomeBody")}
       </p>
     </div>
@@ -484,35 +495,6 @@ function SuggestionList({ onPick, className }) {
         </li>
       ))}
     </ul>
-  );
-}
-
-function RoundIconButton({ label, onClick, children, className }) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
-      className={cn(
-        "grid size-10 place-items-center rounded-full bg-[#ffffff] text-[#000000] active:scale-95",
-        className
-      )}
-    >
-      {children}
-    </button>
-  );
-}
-
-function CloseIcon({ className }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden>
-      <path
-        d="M6 6l12 12M18 6L6 18"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-    </svg>
   );
 }
 

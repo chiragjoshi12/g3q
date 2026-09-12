@@ -3,7 +3,8 @@
 import Image from "next/image";
 
 import { BrandGlyph, BrandIcon } from "@/components/common/BrandIcon";
-import { LineArrowRight, User } from "@/components/icons";
+import { User } from "@/components/icons";
+import { ChevronRightIcon } from "@/components/landing/WelcomeScreen";
 import { BRAND_ICONS } from "@/lib/brand-icons";
 import { formatWeekLabel } from "@/lib/domain/format";
 import { useI18n } from "@/lib/i18n";
@@ -145,7 +146,7 @@ export function LeaderboardPreviewCard({ talukaLabel, week, onClick, iconColor =
       type="button"
       onClick={onClick}
       className={cn(
-        "flex min-h-[5.75rem] w-full items-start gap-4 rounded-[2rem] bg-white px-6 pt-5 pb-5 active:bg-[#fafafa]",
+        "flex min-h-[5.75rem] w-full items-start gap-4 rounded-[1.7rem] bg-white px-6 pt-5 pb-5 active:bg-[#fafafa]",
         className
       )}
     >
@@ -166,7 +167,7 @@ export function LeaderboardPreviewCard({ talukaLabel, week, onClick, iconColor =
               : `${talukaLabel} Taluka - ${formatWeekLabel(week, language)}`}
         </p>
       </div>
-      <LineArrowRight className="size-5 shrink-0 text-black" />
+      <ChevronRightIcon className="size-6 shrink-0 text-[#111]" />
     </button>
   );
 }

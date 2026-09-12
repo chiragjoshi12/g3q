@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { ParticipationCertificate } from "@/components/certificate/ParticipationCertificate";
 import { downloadCertificatePng } from "@/components/certificate/draw-certificate";
 import { ACTION_BUTTON_CLASS, ActionButtonRow, AppButton } from "@/components/common/AppButton";
-import { X } from "@/components/icons";
+import { BackButton } from "@/components/common/BackButton";
 import { certificateFileName } from "@/lib/domain/certificate";
 import { trackAnalyticsEvent } from "@/lib/analytics-client";
 import { useI18n } from "@/lib/i18n";
@@ -41,14 +41,7 @@ export function CertificateViewer({ open, payload, onClose }) {
     <div className="fixed inset-0 z-[80] flex flex-col bg-[#F5F7F9] lg:items-center lg:justify-center lg:bg-black/40 lg:p-8">
       <div className="flex min-h-0 flex-1 flex-col lg:h-auto lg:max-h-[90dvh] lg:w-full lg:max-w-[56rem] lg:overflow-hidden lg:rounded-[1.5rem] lg:bg-[#F5F7F9] lg:shadow-[0_24px_80px_rgb(15_23_42/0.25)]">
       <header className="flex shrink-0 items-center gap-3 px-4 py-3 md:px-6">
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={t("close")}
-          className="grid size-10 shrink-0 place-items-center rounded-full bg-white shadow-[0_2px_8px_rgb(15_23_42/0.08)] transition-transform active:scale-95"
-        >
-          <X className="size-4 text-[#111]" strokeWidth={2.2} />
-        </button>
+        <BackButton label={t("close")} surface="muted" onClick={onClose} />
         <div className="min-w-0 flex-1">
           <h2 className="font-heading text-base font-bold text-[#111] md:text-lg">
             {t("certificate")}

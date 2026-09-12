@@ -30,7 +30,7 @@ function digits(value) {
 }
 
 function credentialFieldFor(role) {
-  return role === ROLE.COLLEGE ? "abcId" : "udiseCode";
+  return role === ROLE.COLLEGE ? "apparId" : "ctsId";
 }
 
 function poolFor(role) {
@@ -45,18 +45,19 @@ function findUser(role, credential) {
   return poolFor(role).find((user) => user[field] === normalized) || null;
 }
 
-function findCitizenByPhone(phone) {
-  const normalized = digits(phone);
+function findCitizenByMobile(mobile) {
+  const normalized = digits(mobile);
   if (!normalized) return null;
-  return poolFor(ROLE.CITIZEN).find((user) => digits(user.phone) === normalized) || null;
+  return poolFor(ROLE.CITIZEN).find((user) => digits(user.mobile) === normalized) || null;
 }
 
 function hasCitizenProfile(user) {
   return Boolean(
     user &&
       String(user.name || "").trim() &&
-      String(user.district || "").trim() &&
-      String(user.taluka || "").trim()
+      String(user.surname || "").trim() &&
+      (user.districtId != null || String(user.district || "").trim()) &&
+      (user.talukaId != null || String(user.taluka || "").trim())
   );
 }
 
@@ -67,7 +68,7 @@ function today() {
 export const jsonSource = {
   name: "json",
 
-  /** Resolves the code to a user so the UI can show a name before asking for a phone. */
+  /** Resolves the code to a user so the UI can show a name before asking for a mobile. */
   async lookupIdentity({ role, credential }) {
     await delay();
     if (role === ROLE.CITIZEN) {
@@ -83,43 +84,32 @@ export const jsonSource = {
     return clone(user);
   },
 
-  /** OTP goes to the phone number the user just entered, not the one on file. */
-  async requestOtp({ role, credential, phone }) {
+  /** Mobile-only OTP request (login vs signup inferred from stored users). */
+  async requestOtp({ mobile }) {
     await delay();
-    if (role === ROLE.CITIZEN) {
-      const trimmedPhone = String(phone || credential || "").trim();
-      const existing = findCitizenByPhone(trimmedPhone);
-      const id = ++otpSeq;
-      otpRequests.set(id, {
-        role,
-        phone: trimmedPhone,
-        userId: existing?.id ?? null,
-        verified: false,
-      });
-      return {
-        id,
-        maskedPhone: trimmedPhone.replace(/\d(?=\d{4})/g, "•"),
-        resendSeconds: appConfig.auth.resendSeconds,
-      };
-    }
-
-    const user = findUser(role, credential);
-    if (!user) {
-      throw new AppError(
-        ERROR_CODE.INVALID_CREDENTIAL,
-        ERROR_MESSAGE[ERROR_CODE.INVALID_CREDENTIAL]
+    const trimmedMobile = String(mobile || "").trim();
+    const existing =
+      findCitizenByMobile(trimmedMobile) ||
+      [...(usersJson.students || []), ...(usersJson.colleges || [])].find(
+        (item) => digits(item.mobile) === digits(trimmedMobile)
       );
-    }
-    const id = ++otpSeq;
-    otpRequests.set(id, { userId: user.id, role, phone });
+    const otp_token = (++otpSeq).toString(16).padStart(10, "0");
+    otpRequests.set(otp_token, {
+      role: existing?.role || ROLE.CITIZEN,
+      mobile: trimmedMobile,
+      userId: existing?.id ?? null,
+      verified: false,
+    });
     return {
-      id,
-      maskedPhone: String(phone).replace(/\d(?=\d{4})/g, "•"),
+      message: "OTP Sended successfully.",
+      otp_token,
+      maskedMobile: trimmedMobile.replace(/\d(?=\d{4})/g, "•"),
       resendSeconds: appConfig.auth.resendSeconds,
+      case: existing ? "login" : "signup",
     };
   },
 
-  async verifyOtp({ id, otp, role, credential }) {
+  async verifyOtp({ otp_token, otp }) {
     await delay();
     if (String(otp) !== appConfig.auth.staticOtp) {
       throw new AppError(
@@ -128,63 +118,62 @@ export const jsonSource = {
       );
     }
 
-    const pending = otpRequests.get(Number(id));
+    const pending = otpRequests.get(String(otp_token || ""));
+    if (!pending) {
+      throw new AppError(ERROR_CODE.INVALID_OTP, ERROR_MESSAGE[ERROR_CODE.INVALID_OTP]);
+    }
 
-    if (role === ROLE.CITIZEN || pending?.role === ROLE.CITIZEN || !credential) {
-      const phone = pending?.phone || credential;
-      const user =
-        (pending?.userId
-          ? [...(usersJson.students || []), ...(usersJson.colleges || []), ...poolFor(ROLE.CITIZEN)].find(
-              (item) => item.id === pending.userId
-            )
-          : null) ||
-        findCitizenByPhone(phone) ||
-        [...(usersJson.students || []), ...(usersJson.colleges || [])].find(
-          (item) => digits(item.phone) === digits(phone)
-        );
+    const mobile = pending.mobile;
+    const user =
+      (pending.userId
+        ? [...(usersJson.students || []), ...(usersJson.colleges || []), ...poolFor(ROLE.CITIZEN)].find(
+            (item) => item.id === pending.userId
+          )
+        : null) ||
+      findCitizenByMobile(mobile) ||
+      [...(usersJson.students || []), ...(usersJson.colleges || [])].find(
+        (item) => digits(item.mobile) === digits(mobile)
+      );
 
-      if (user && (user.role !== ROLE.CITIZEN || hasCitizenProfile(user))) {
-        otpRequests.delete(Number(id));
-        return {
-          user: clone(user),
-          token: `static.${user.id}.token`,
-          existing: true,
-          needsProfile: false,
-          needsSignup: false,
-        };
-      }
-
-      otpRequests.set(Number(id), {
-        role: ROLE.CITIZEN,
-        phone,
-        userId: user?.id ?? pending?.userId ?? null,
-        verified: true,
-      });
+    if (user && (user.role !== ROLE.CITIZEN || hasCitizenProfile(user))) {
+      otpRequests.delete(String(otp_token));
       return {
-        needsSignup: true,
-        needsProfile: Boolean(user && user.role === ROLE.CITIZEN && !hasCitizenProfile(user)),
-        id: Number(id),
-        phone,
+        user: clone(user),
+        token: `static.${user.id}.token`,
+        existing: true,
+        needsProfile: false,
+        needsSignup: false,
       };
     }
 
-    const user = pending
-      ? poolFor(pending.role).find((item) => item.id === pending.userId)
-      : findUser(role, credential);
-
-    if (!user) {
-      throw new AppError(
-        ERROR_CODE.INVALID_CREDENTIAL,
-        ERROR_MESSAGE[ERROR_CODE.INVALID_CREDENTIAL]
-      );
-    }
-    otpRequests.delete(Number(id));
-    return { user: clone(user), token: `static.${user.id}.token` };
+    otpRequests.set(String(otp_token), {
+      role: ROLE.CITIZEN,
+      mobile,
+      userId: user?.id ?? pending.userId ?? null,
+      verified: true,
+    });
+    return {
+      needsSignup: true,
+      needsProfile: Boolean(user && user.role === ROLE.CITIZEN && !hasCitizenProfile(user)),
+      otp_token: String(otp_token),
+      mobile,
+    };
   },
 
-  async registerCitizen({ id, name, district, taluka, districtId, talukaId }) {
+  async registerCitizen({
+    otp_token,
+    name,
+    surname,
+    districtId,
+    talukaId,
+    consentAccepted,
+    consentVersion,
+  }) {
     await delay();
-    const pending = otpRequests.get(Number(id));
+    if (consentAccepted !== true) {
+      throw new AppError(ERROR_CODE.INVALID_CREDENTIAL, "Consent is required.");
+    }
+    const pending = otpRequests.get(String(otp_token || ""));
     if (!pending?.verified || pending.role !== ROLE.CITIZEN) {
       throw new AppError(
         ERROR_CODE.INVALID_OTP,
@@ -194,40 +183,48 @@ export const jsonSource = {
 
     const existing = pending.userId
       ? poolFor(ROLE.CITIZEN).find((item) => item.id === pending.userId)
-      : findCitizenByPhone(pending.phone);
+      : findCitizenByMobile(pending.mobile);
 
+    const first = String(name || "").trim();
+    const last = String(surname || "").trim();
     let user = existing;
     if (user) {
-      user.name = name;
-      user.district = district;
-      user.taluka = taluka;
+      user.name = first;
+      user.surname = last || null;
       user.districtId = districtId ?? null;
       user.talukaId = talukaId ?? null;
-      user.institute = "નાગરિક સહભાગી";
-      user.phone = digits(pending.phone);
+      user.institute = null;
+      user.mobile = digits(pending.mobile);
+      user.consentVersion = consentVersion;
     } else {
       user = {
         id: `cit_${Date.now()}`,
         role: ROLE.CITIZEN,
-        name,
-        district,
-        taluka,
+        name: first,
+        surname: last || null,
         districtId: districtId ?? null,
         talukaId: talukaId ?? null,
-        phone: digits(pending.phone),
-        institute: "નાગરિક સહભાગી",
+        mobile: digits(pending.mobile),
+        institute: null,
         grade: "",
+        consentVersion,
       };
       extraCitizens.push(user);
     }
 
-    otpRequests.delete(Number(id));
-    return { user: clone(user), token: `static.${user.id}.token` };
+    otpRequests.delete(String(otp_token));
+    return {
+      user: clone({
+        ...user,
+        name: [first, last].filter(Boolean).join(" "),
+      }),
+      token: `static.${user.id}.token`,
+    };
   },
 
-  async linkRoster({ id, role, credential }) {
+  async linkRoster({ otp_token, role, credential }) {
     await delay();
-    const pending = otpRequests.get(Number(id));
+    const pending = otpRequests.get(String(otp_token || ""));
     if (!pending?.verified) {
       throw new AppError(ERROR_CODE.INVALID_OTP, ERROR_MESSAGE[ERROR_CODE.INVALID_OTP]);
     }
@@ -238,8 +235,8 @@ export const jsonSource = {
         ERROR_MESSAGE[ERROR_CODE.INVALID_CREDENTIAL]
       );
     }
-    user.phone = digits(pending.phone);
-    otpRequests.delete(Number(id));
+    user.mobile = digits(pending.mobile);
+    otpRequests.delete(String(otp_token));
     return { user: clone(user), token: `static.${user.id}.token` };
   },
 

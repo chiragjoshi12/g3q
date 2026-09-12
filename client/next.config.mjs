@@ -28,7 +28,7 @@ const nextConfig = {
   },
   async rewrites() {
     // Local (`next dev`) → http://localhost:4000
-    // Production (Vercel build) → https://g3q-backend.azurewebsites.net
+    // Production (Vercel build) → https://g3q-backend-staging.azurewebsites.net (staging Azure)
     // Override anytime with BACKEND_ORIGIN.
     const backend = resolveBackendOrigin();
     return [

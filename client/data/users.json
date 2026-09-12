@@ -3,25 +3,25 @@
     {
       "id": "stu_1",
       "role": "student",
-      "udiseCode": "24010100101",
+      "ctsId": "24010100101",
       "name": "રિયા પટેલ",
       "institute": "શ્રી સરસ્વતી વિદ્યાલય, અમદાવાદ",
       "grade": "ધોરણ 10",
       "district": "અમદાવાદ",
       "taluka": "Sanand",
-      "phone": "+91 98765 43210",
+      "mobile": "9876543210",
       "joinedOn": "2025-06-12"
     },
     {
       "id": "stu_2",
       "role": "student",
-      "udiseCode": "24020200202",
+      "ctsId": "24020200202",
       "name": "હાર્દિક ચૌધરી",
       "institute": "સરકારી માધ્યમિક શાળા, મહેસાણા",
       "grade": "ધોરણ 12",
       "district": "મહેસાણા",
       "taluka": "Mehsana",
-      "phone": "+91 91234 56780",
+      "mobile": "9123456780",
       "joinedOn": "2025-07-02"
     }
   ],
@@ -29,25 +29,25 @@
     {
       "id": "col_1",
       "role": "college",
-      "abcId": "123456789012",
+      "apparId": "123456789012",
       "name": "મીરા શાહ",
       "institute": "સરકારી વિનયન કૉલેજ, ગાંધીનગર",
       "grade": "બી.એ. — સેમેસ્ટર 4",
       "district": "ગાંધીનગર",
       "taluka": "Gandhinagar",
-      "phone": "+91 99887 76655",
+      "mobile": "9988776655",
       "joinedOn": "2025-05-20"
     },
     {
       "id": "col_2",
       "role": "college",
-      "abcId": "987654321098",
+      "apparId": "987654321098",
       "name": "કરણ ઠક્કર",
       "institute": "એલ. ડી. ઇજનેરી કૉલેજ, અમદાવાદ",
       "grade": "બી.ઈ. — સેમેસ્ટર 6",
       "district": "અમદાવાદ",
       "taluka": "Ahmedabad City",
-      "phone": "+91 90909 10101",
+      "mobile": "9090910101",
       "joinedOn": "2025-08-01"
     }
   ],
@@ -55,11 +55,12 @@
     {
       "id": "cit_1",
       "role": "citizen",
-      "name": "અમિત દેસાઈ",
-      "institute": "નાગરિક સહભાગી",
+      "name": "અમિત",
+      "surname": "દેસાઈ",
+      "institute": null,
       "district": "અમદાવાદ",
       "taluka": "Sanand",
-      "phone": "9876543210",
+      "mobile": "9876501234",
       "joinedOn": "2026-09-01"
     }
   ]
