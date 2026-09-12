@@ -59,17 +59,4 @@ export const authRepository = {
     });
     return { user: toUser(user), token };
   },
-
-  async betaLogin({ firstName, lastName, district, taluka, districtId, talukaId, phone }) {
-    const { user, token } = await getDataSource().betaLogin({
-      firstName,
-      lastName,
-      district,
-      taluka,
-      districtId,
-      talukaId,
-      phone,
-    });
-    return { user: toUser(user), token };
-  },
 };

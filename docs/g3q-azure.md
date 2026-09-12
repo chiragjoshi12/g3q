@@ -2,6 +2,26 @@
 
 This file is the quick reference for the live G3Q setup on Azure.
 
+## Staging vs production (target topology)
+
+Same codebase and schema. Environments differ only by branch, App Service, and database.
+
+| Layer | Staging | Production |
+| --- | --- | --- |
+| Git branch | `staging` | `main` |
+| Backend App Service | `g3q-backend-staging` (create later) | `g3q-backend` |
+| MySQL database | `g3q_backend_staging` (create later) | `g3q_backend` |
+| Client / admin | Vercel staging / Preview (configure later) | Vercel production |
+
+GitHub Actions (`.github/workflows/deploy-backend.yml`):
+
+- Push to `main` → migrate + deploy with `AZURE_DATABASE_URL` / `AZURE_WEBAPP_PUBLISH_PROFILE`
+- Push to `staging` → migrate + deploy with `AZURE_DATABASE_URL_STAGING` / `AZURE_WEBAPP_PUBLISH_PROFILE_STAGING`
+
+Staging secrets and Azure resources are **not** provisioned by the repo; add them before the staging job can succeed.
+
+Quiz session knobs and other non-secret app defaults live in `backend/src/config/settings.js`, not in App Service env.
+
 ## Azure Access
 
 - Sign in with Azure CLI:
@@ -18,7 +38,7 @@ az account show
 - Main resource group:
   - `edutor-resource-group`
 
-## Live Services
+## Live Services (production)
 
 ### Backend API
 
@@ -45,28 +65,26 @@ az account show
 - Engine: MySQL Flexible Server
 - Version: `8.0.21`
 - SKU: `Standard_B2s`
-- G3Q database name: `g3q_backend`
+- G3Q production database name: `g3q_backend`
 
 ## What Runs Where
 
 - `backend/`
-  - Deployed to Azure App Service: `g3q-backend`
-  - Source repo: `main` branch of this repository
+  - Production: Azure App Service `g3q-backend` from `main`
+  - Staging (when wired): Azure App Service `g3q-backend-staging` from `staging`
   - GitHub Actions deploys the `backend/` folder
 
 - `client/`
-  - Public quiz app
-  - Frontend is deployed on Vercel
-  - To use live backend:
+  - Public quiz app on Vercel
+  - Production backend:
     - `NEXT_PUBLIC_DATA_SOURCE=rest`
-    - `NEXT_PUBLIC_API_BASE_URL=https://g3q-backend.azurewebsites.net/api`
+    - `BACKEND_ORIGIN=https://g3q-backend.azurewebsites.net` (or `NEXT_PUBLIC_API_BASE_URL=.../api`)
+  - Staging: set `BACKEND_ORIGIN` to the staging App Service URL when that env exists
 
-- `admin/frontend/`
-  - Admin app
-  - Local API URL:
-    - `http://127.0.0.1:4000`
-  - Production API URL:
-    - `https://g3q-backend.azurewebsites.net`
+- `admin/`
+  - Admin app on Vercel
+  - Local API URL: `http://127.0.0.1:4000`
+  - Production API URL: `https://g3q-backend.azurewebsites.net`
 
 ## Deployment
 
@@ -79,10 +97,9 @@ az account show
 
 - Workflow file:
   - `.github/workflows/deploy-backend.yml`
-- Trigger:
-  - Push to `main` when `backend/**` changes
-- Deployment target:
-  - Azure App Service `g3q-backend`
+- Triggers:
+  - Push to `main` when `backend/**` changes → production
+  - Push to `staging` when `backend/**` changes → staging (needs staging secrets)
 
 ## Important App Settings
 
@@ -141,5 +158,5 @@ az mysql flexible-server db list --server-name edutor-mysql --resource-group edu
 ## Notes
 
 - Local MySQL and Azure MySQL are separate.
-- The live Azure DB for G3Q is `g3q_backend`.
+- The live Azure DB for G3Q production is `g3q_backend`.
 - Avoid putting passwords, publish profiles, or raw secrets into this file.

@@ -37,17 +37,3 @@ export const linkRoster = asyncHandler(async (req, res) => {
   const result = await authService.linkRoster({ id, role, credential });
   return res.status(200).json(result);
 });
-
-export const betaLogin = asyncHandler(async (req, res) => {
-  const { firstName, lastName, district, taluka, districtId, talukaId, phone } = req.body;
-  const result = await authService.betaLogin({
-    firstName,
-    lastName,
-    district,
-    taluka,
-    districtId,
-    talukaId,
-    phone,
-  });
-  return res.status(200).json(result);
-});

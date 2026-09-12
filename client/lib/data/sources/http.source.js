@@ -193,12 +193,6 @@ export const httpSource = {
       body: { id, role, credential },
     }),
 
-  betaLogin: ({ firstName, lastName, district, taluka, districtId, talukaId, phone }) =>
-    request("/auth/beta/login", {
-      method: "POST",
-      body: { firstName, lastName, district, taluka, districtId, talukaId, phone },
-    }),
-
   getGeographyDistricts: ({ lang } = {}) => {
     const params = new URLSearchParams();
     if (lang) params.set("lang", lang);

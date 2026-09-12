@@ -11,9 +11,7 @@ import {
 } from '../models/QuizSessionModel.js';
 import { flattenVariantRow } from '../models/BankQuestionModel.js';
 import { UserModel } from '../models/UserModel.js';
-import { resolveBetaDepartment } from '../config/beta-departments.js';
 import { gradeQuestion } from './grading.service.js';
-import { resolveAzureBlobUrl } from '../utils/azureStorage.js';
 
 const normalizeChoiceAnswer = (value) => {
   if (value == null) return null;
@@ -37,23 +35,6 @@ const normalizeOrderedAnswer = (value) => {
   return value
     .map((item) => String(item ?? '').trim())
     .filter(Boolean);
-};
-
-const parseJson = (value) => {
-  if (value == null) return null;
-  if (typeof value === 'string') {
-    try {
-      return JSON.parse(value);
-    } catch {
-      return null;
-    }
-  }
-  return value;
-};
-
-const pickRandom = (items) => {
-  if (!Array.isArray(items) || !items.length) return null;
-  return items[Math.floor(Math.random() * items.length)] ?? null;
 };
 
 const normalizeSubmittedAnswer = (question, rawAnswer) => {
@@ -124,150 +105,8 @@ const takeUnique = (pools, count) => {
   return picked;
 };
 
-function isBetaUser(user) {
-  return Boolean(user?.isBeta || user?.betaProfile);
-}
-
 function normalizeSessionLanguage(language) {
   return ['gu', 'en', 'hi'].includes(language) ? language : CONFIG.QUIZ.DEFAULT_LANGUAGE;
-}
-
-function betaRootCode(queId) {
-  const match = String(queId || '').match(/^BETA_Q_\d{3}/);
-  return match ? match[0] : String(queId || '');
-}
-
-function betaVariantKind(row) {
-  return betaRootCode(row?.queId) === String(row?.queId) ? 'original' : 'enhanced';
-}
-
-function pickBestBetaCandidate(candidates, usedDepartments, usedTypes, usedKinds) {
-  const ranked = candidates
-    .map((candidate) => {
-      const department = String(candidate.departmentGu || candidate.departmentEn || '').trim();
-      let score = Math.random();
-      if (department && !usedDepartments.has(department)) score += 4;
-      if (candidate.type && !usedTypes.has(candidate.type)) score += 3;
-      const kind = betaVariantKind(candidate);
-      if (!usedKinds.has(kind)) score += 2;
-      return { candidate, score };
-    })
-    .sort((left, right) => right.score - left.score);
-  return ranked[0]?.candidate ?? null;
-}
-
-function mixBetaQuestions(pool, count) {
-  const grouped = new Map();
-  for (const row of shuffle(pool)) {
-    const rootCode = betaRootCode(row.queId);
-    if (!grouped.has(rootCode)) grouped.set(rootCode, []);
-    grouped.get(rootCode).push(row);
-  }
-
-  const roots = shuffle([...grouped.keys()]);
-  const usedDepartments = new Set();
-  const usedTypes = new Set();
-  const usedKinds = new Set();
-  const picked = [];
-
-  for (const rootCode of roots) {
-    if (picked.length >= count) break;
-    const candidate = pickBestBetaCandidate(
-      grouped.get(rootCode) || [],
-      usedDepartments,
-      usedTypes,
-      usedKinds
-    );
-    if (!candidate) continue;
-    picked.push(candidate);
-    const department = String(candidate.departmentGu || candidate.departmentEn || '').trim();
-    if (department) usedDepartments.add(department);
-    if (candidate.type) usedTypes.add(candidate.type);
-    usedKinds.add(betaVariantKind(candidate));
-  }
-
-  if (picked.length < count) {
-    const leftovers = shuffle(
-      pool.filter((row) => !picked.some((selected) => selected.queId === row.queId))
-    );
-    for (const row of leftovers) {
-      if (picked.length >= count) break;
-      picked.push(row);
-    }
-  }
-
-  return picked.slice(0, count);
-}
-
-function betaDepartmentIdForRow(row) {
-  const fromName = resolveBetaDepartment(row.departmentEn || row.departmentGu);
-  if (fromName?.id) return fromName.id;
-
-  const fromKey = resolveBetaDepartment(row.departmentRef?.key);
-  if (fromKey?.id) return fromKey.id;
-
-  // Legacy import path stored beta_department.id on department_id.
-  const rawId = Number(row.departmentId);
-  return Number.isFinite(rawId) ? rawId : null;
-}
-
-async function attachBetaQuestionBackgrounds(bankRows) {
-  const withBetaDept = bankRows
-    .map((row) => ({ row, betaDepartmentId: betaDepartmentIdForRow(row) }))
-    .filter((entry) => Number.isFinite(entry.betaDepartmentId));
-
-  if (!withBetaDept.length) {
-    return { bankRows, backgroundStyle: null };
-  }
-
-  const betaDepartmentIds = [
-    ...new Set(withBetaDept.map((entry) => entry.betaDepartmentId)),
-  ];
-  const imageRows = await prisma.betaDepartmentQuizImage.findMany({
-    where: {
-      betaDepartmentId: { in: betaDepartmentIds },
-      isActive: true,
-    },
-    select: {
-      betaDepartmentId: true,
-      imageUrl: true,
-    },
-  });
-
-  if (!imageRows.length) {
-    return { bankRows, backgroundStyle: null };
-  }
-
-  const byBetaDepartment = new Map();
-  for (const row of imageRows) {
-    if (!byBetaDepartment.has(row.betaDepartmentId)) {
-      byBetaDepartment.set(row.betaDepartmentId, []);
-    }
-    byBetaDepartment.get(row.betaDepartmentId).push(row);
-  }
-
-  const betaIdByQueId = new Map(
-    withBetaDept.map((entry) => [entry.row.queId, entry.betaDepartmentId])
-  );
-
-  return {
-    backgroundStyle: null,
-    bankRows: bankRows.map((row) => {
-      const betaDepartmentId = betaIdByQueId.get(row.queId);
-      if (!Number.isFinite(betaDepartmentId)) return row;
-      const chosenImage = pickRandom(byBetaDepartment.get(betaDepartmentId) || []);
-      if (!chosenImage?.imageUrl) return row;
-      const content = parseJson(row.content) || {};
-      return {
-        ...row,
-        content: {
-          ...content,
-          backgroundImageUrl: resolveAzureBlobUrl(chosenImage.imageUrl),
-          backgroundStyle: null,
-        },
-      };
-    }),
-  };
 }
 
 async function fetchCandidateLight({
@@ -276,7 +115,6 @@ async function fetchCandidateLight({
   districtId,
   casteRaw,
   personalized,
-  betaOnly,
 }) {
   const params = [userId];
   const scopeExpr = "UPPER(COALESCE(qr.scope, 'GENERAL'))";
@@ -289,7 +127,8 @@ async function fetchCandidateLight({
       OR JSON_EXTRACT(qv.payload, '$.answer') IS NOT NULL
       OR qv.type IN ('mcq', 'true_false', 'match_pairs', 'sequence', 'fill_blanks')
     )`,
-    betaOnly ? `${scopeExpr} = 'BETA'` : `${scopeExpr} <> 'BETA'`,
+    // Leftover BETA-scoped bank rows stay out of live play.
+    `${scopeExpr} <> 'BETA'`,
     'uqe.variant_id IS NULL',
   ];
 
@@ -387,27 +226,6 @@ async function hydrateVariants(variantIds) {
  * Shortfalls fall back to later pools so the session can still start.
  */
 async function allocateBankQuestions(user, count) {
-  if (isBetaUser(user)) {
-    const betaPool = await fetchCandidateLight({
-      userId: user.id,
-      limit: Math.max(count * 10, 40),
-      districtId: null,
-      casteRaw: null,
-      personalized: false,
-      betaOnly: true,
-    });
-
-    if (betaPool.length < count) {
-      throw new AppError(
-        ERROR_CODE.INVALID_REQUEST,
-        `Only ${betaPool.length} unseen beta questions left (need ${count}).`
-      );
-    }
-
-    const pickedLight = mixBetaQuestions(betaPool, count);
-    return hydrateVariants(pickedLight.map((q) => q.variantId));
-  }
-
   const districtId = user.districtId != null ? Number(user.districtId) : null;
   const caste = (user.socialCategory || '').trim().toUpperCase();
   const casteRaw = (user.socialCategory || '').trim();
@@ -422,7 +240,6 @@ async function allocateBankQuestions(user, count) {
           districtId,
           casteRaw,
           personalized: true,
-          betaOnly: false,
         })
       : Promise.resolve([]),
     fetchCandidateLight({
@@ -431,7 +248,6 @@ async function allocateBankQuestions(user, count) {
       districtId,
       casteRaw,
       personalized: false,
-      betaOnly: false,
     }),
   ]);
 
@@ -494,13 +310,7 @@ export const sessionService = {
 
     const questionCount = count || CONFIG.QUIZ.QUESTION_COUNT;
     const lang = requestedLanguage;
-    const bankRows = await allocateBankQuestions(user, questionCount);
-
-    let rowsForSession = bankRows;
-    if (isBetaUser(user)) {
-      const betaBackgrounds = await attachBetaQuestionBackgrounds(rowsForSession);
-      rowsForSession = betaBackgrounds.bankRows;
-    }
+    const rowsForSession = await allocateBankQuestions(user, questionCount);
 
     // Short lock: claim the "no in-progress session" slot and insert the shell only.
     const claim = await prisma.$transaction(async (tx) => {

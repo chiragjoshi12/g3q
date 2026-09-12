@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-import { BETA_DEPARTMENTS } from '../config/beta-departments.js';
 import { DEPARTMENTS } from '../config/departments.js';
 import { GUJARAT_DISTRICTS } from '../config/gujarat-geography.js';
 
@@ -138,26 +137,6 @@ async function seedDepartments() {
     });
   }
   console.log(`Seeded ${DEPARTMENTS.length} departments.`);
-}
-
-async function seedBetaDepartments() {
-  for (const department of BETA_DEPARTMENTS) {
-    await prisma.betaDepartment.upsert({
-      where: { id: department.id },
-      update: {
-        key: department.key,
-        nameEn: department.nameEn,
-        nameGu: department.nameGu,
-      },
-      create: {
-        id: department.id,
-        key: department.key,
-        nameEn: department.nameEn,
-        nameGu: department.nameGu,
-      },
-    });
-  }
-  console.log(`Seeded ${BETA_DEPARTMENTS.length} beta departments.`);
 }
 
 async function resolveSeedGeography(districtKey, talukaKey) {
@@ -360,7 +339,6 @@ async function main() {
   await seedDistricts();
   await seedSeedTalukas();
   await seedDepartments();
-  await seedBetaDepartments();
   await seedUsers();
   await seedAdminAndBank();
   // Roster sample from admin/students.json (30 students).

@@ -243,23 +243,6 @@ export const jsonSource = {
     return { user: clone(user), token: `static.${user.id}.token` };
   },
 
-  async betaLogin({ firstName, lastName, district, taluka, districtId, talukaId, phone }) {
-    await delay();
-    const user = {
-      id: `beta_${Date.now()}`,
-      role: ROLE.STUDENT,
-      name: [String(firstName || "").trim(), String(lastName || "").trim()].filter(Boolean).join(" "),
-      district: String(district || "").trim(),
-      taluka: String(taluka || "").trim(),
-      districtId: districtId ?? null,
-      talukaId: talukaId ?? null,
-      phone: digits(phone),
-      grade: "",
-    };
-    extraStudents.push(user);
-    return { user: clone(user), token: `static.${user.id}.token`, beta: true };
-  },
-
   async getMe() {
     await delay();
     throw new AppError(ERROR_CODE.UNAUTHORIZED, "Login required.");

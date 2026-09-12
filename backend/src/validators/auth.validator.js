@@ -86,15 +86,3 @@ export const linkRosterSchema = z.object({
   role: rosterRoleSchema,
   credential: z.string().min(1),
 });
-
-export const betaLoginSchema = z
-  .object({
-    firstName: z.string().trim().min(1).max(128),
-    lastName: z.string().trim().min(1).max(128),
-    districtId: optionalPositiveInt,
-    talukaId: optionalPositiveInt,
-    district: optionalName,
-    taluka: optionalName,
-    phone: phoneSchema,
-  })
-  .superRefine(refineGeography);

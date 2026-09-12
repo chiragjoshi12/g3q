@@ -9,7 +9,6 @@ import {
   ROLE,
 } from '../config/roles.js';
 import { UserModel } from '../models/UserModel.js';
-import { BetaUserModel } from '../models/BetaUserModel.js';
 import { OtpModel } from '../models/OtpModel.js';
 import { generateAccessToken } from '../utils/jwt.js';
 import { AppError, ERROR_CODE } from '../utils/appError.js';
@@ -216,44 +215,5 @@ export const authService = {
     await OtpModel.deleteById(pending.id);
     const token = generateAccessToken({ id: user.id, role: user.role });
     return { user, token };
-  },
-
-  async betaLogin({ firstName, lastName, district, taluka, districtId, talukaId, phone }) {
-    if (!CONFIG.BETA.ENABLED) {
-      throw new AppError(ERROR_CODE.INVALID_REQUEST, 'Beta login is not enabled.');
-    }
-
-    const fullName = [String(firstName ?? '').trim(), String(lastName ?? '').trim()]
-      .filter(Boolean)
-      .join(' ')
-      .trim();
-    const profileError = validateCitizenProfile({
-      name: fullName,
-      district,
-      taluka,
-      districtId,
-      talukaId,
-    });
-    if (profileError) throw new AppError(ERROR_CODE.INVALID_REQUEST, profileError);
-
-    const phoneError = validatePhone(phone);
-    if (phoneError) throw new AppError(ERROR_CODE.INVALID_PHONE, phoneError);
-
-    const user = await BetaUserModel.upsertLoginProfile({
-      firstName,
-      lastName,
-      district,
-      taluka,
-      districtId,
-      talukaId,
-      phone,
-    });
-
-    const token = generateAccessToken({ id: user.id, role: user.role, beta: true });
-    return {
-      user: await UserModel.findById(user.id),
-      token,
-      beta: true,
-    };
   },
 };

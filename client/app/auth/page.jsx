@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { AuthBrandHeader } from "@/components/auth/AuthBrandHeader";
-import { BetaLoginStep } from "@/components/auth/BetaLoginStep";
 import { CategoryStep } from "@/components/auth/CategoryStep";
 import { CitizenProfileStep } from "@/components/auth/CitizenProfileStep";
 import { ConfirmIdentityStep } from "@/components/auth/ConfirmIdentityStep";
@@ -13,7 +12,6 @@ import { PhoneStep } from "@/components/auth/PhoneStep";
 import { RosterCredentialStep } from "@/components/auth/RosterCredentialStep";
 import { WelcomeStep } from "@/components/auth/WelcomeStep";
 import { DesktopAppShell } from "@/components/layout/DesktopAppShell";
-import { appConfig } from "@/config/app.config";
 import { consumePostAuthPath, markLoginToast, ROUTES } from "@/config/routes";
 import { useStoreHydrated } from "@/hooks/useStoreHydrated";
 import { useI18n } from "@/lib/i18n";
@@ -22,14 +20,12 @@ import { useLanguageStore } from "@/store/language.store";
 
 /**
  * Login flow container.
- * Beta: registration form → session.
- * Production: phone → OTP → existing confirm | signup (category → ABC/citizen).
+ * phone → OTP → existing confirm | signup (category → ABC/citizen).
  */
 export default function AuthPage() {
   const router = useRouter();
   const { t } = useI18n();
   const hydrated = useStoreHydrated(useAuthStore);
-  const betaEnabled = appConfig.beta.enabled;
 
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const step = useAuthStore((state) => state.step);
@@ -39,8 +35,6 @@ export default function AuthPage() {
   const identity = useAuthStore((state) => state.identity);
   const phone = useAuthStore((state) => state.phone);
   const otp = useAuthStore((state) => state.otp);
-  const profileFirstName = useAuthStore((state) => state.profileFirstName);
-  const profileLastName = useAuthStore((state) => state.profileLastName);
   const profileName = useAuthStore((state) => state.profileName);
   const profileDistrict = useAuthStore((state) => state.profileDistrict);
   const profileTaluka = useAuthStore((state) => state.profileTaluka);
@@ -53,8 +47,6 @@ export default function AuthPage() {
   const setCredential = useAuthStore((state) => state.setCredential);
   const setPhone = useAuthStore((state) => state.setPhone);
   const setOtp = useAuthStore((state) => state.setOtp);
-  const setProfileFirstName = useAuthStore((state) => state.setProfileFirstName);
-  const setProfileLastName = useAuthStore((state) => state.setProfileLastName);
   const setProfileName = useAuthStore((state) => state.setProfileName);
   const setProfileDistrict = useAuthStore((state) => state.setProfileDistrict);
   const setProfileTaluka = useAuthStore((state) => state.setProfileTaluka);
@@ -65,7 +57,6 @@ export default function AuthPage() {
   const selectSignupRole = useAuthStore((state) => state.selectSignupRole);
   const confirmRosterLink = useAuthStore((state) => state.confirmRosterLink);
   const completeCitizenProfile = useAuthStore((state) => state.completeCitizenProfile);
-  const betaLogin = useAuthStore((state) => state.betaLogin);
   const completeLogin = useAuthStore((state) => state.completeLogin);
   const backToPhone = useAuthStore((state) => state.backToPhone);
   const backToCategory = useAuthStore((state) => state.backToCategory);
@@ -73,7 +64,6 @@ export default function AuthPage() {
   const visibleStep = step === AUTH_STEP.WELCOME ? welcomeSourceStep : step;
 
   const headerTitle = (() => {
-    if (betaEnabled) return t("login");
     if (
       visibleStep === AUTH_STEP.CATEGORY ||
       visibleStep === AUTH_STEP.CREDENTIAL ||
@@ -86,12 +76,6 @@ export default function AuthPage() {
   })();
 
   const onBack = (() => {
-    if (betaEnabled && visibleStep === AUTH_STEP.CREDENTIAL) {
-      return () => {
-        useLanguageStore.getState().clearLanguageChoice();
-        router.replace(ROUTES.root);
-      };
-    }
     if (visibleStep === AUTH_STEP.PHONE) {
       return () => {
         useLanguageStore.getState().clearLanguageChoice();
@@ -127,14 +111,6 @@ export default function AuthPage() {
     return undefined;
   }, [hydrated, isAuthenticated, router]);
 
-  // Beta keeps CREDENTIAL as first step.
-  useEffect(() => {
-    if (!hydrated || !betaEnabled) return;
-    if (step === AUTH_STEP.PHONE) {
-      useAuthStore.setState({ step: AUTH_STEP.CREDENTIAL, role: null });
-    }
-  }, [hydrated, betaEnabled, step]);
-
   return (
     <DesktopAppShell
       showSidebar={false}
@@ -148,27 +124,7 @@ export default function AuthPage() {
               step === AUTH_STEP.WELCOME ? "overflow-hidden" : "overflow-y-auto"
             }`}
           >
-            {betaEnabled && visibleStep === AUTH_STEP.CREDENTIAL ? (
-              <BetaLoginStep
-                firstName={profileFirstName}
-                lastName={profileLastName}
-                district={profileDistrict}
-                taluka={profileTaluka}
-                districtId={profileDistrictId}
-                talukaId={profileTalukaId}
-                phone={credential}
-                error={error}
-                loading={loading}
-                onFirstNameChange={setProfileFirstName}
-                onLastNameChange={setProfileLastName}
-                onDistrictChange={setProfileDistrict}
-                onTalukaChange={setProfileTaluka}
-                onPhoneChange={setCredential}
-                onSubmit={betaLogin}
-              />
-            ) : null}
-
-            {!betaEnabled && visibleStep === AUTH_STEP.PHONE ? (
+            {visibleStep === AUTH_STEP.PHONE ? (
               <PhoneStep
                 phone={phone}
                 error={error}
@@ -178,7 +134,7 @@ export default function AuthPage() {
               />
             ) : null}
 
-            {!betaEnabled && visibleStep === AUTH_STEP.OTP ? (
+            {visibleStep === AUTH_STEP.OTP ? (
               <OtpStep
                 otp={otp}
                 error={error}
@@ -189,7 +145,7 @@ export default function AuthPage() {
               />
             ) : null}
 
-            {!betaEnabled && visibleStep === AUTH_STEP.CONFIRM ? (
+            {visibleStep === AUTH_STEP.CONFIRM ? (
               <ConfirmIdentityStep
                 identity={pendingUser}
                 error={error}
@@ -202,11 +158,11 @@ export default function AuthPage() {
               />
             ) : null}
 
-            {!betaEnabled && visibleStep === AUTH_STEP.CATEGORY ? (
+            {visibleStep === AUTH_STEP.CATEGORY ? (
               <CategoryStep onSelect={selectSignupRole} />
             ) : null}
 
-            {!betaEnabled && visibleStep === AUTH_STEP.CREDENTIAL ? (
+            {visibleStep === AUTH_STEP.CREDENTIAL ? (
               <RosterCredentialStep
                 role={role}
                 credential={credential}
@@ -217,7 +173,7 @@ export default function AuthPage() {
               />
             ) : null}
 
-            {!betaEnabled && visibleStep === AUTH_STEP.IDENTITY ? (
+            {visibleStep === AUTH_STEP.IDENTITY ? (
               <ConfirmIdentityStep
                 identity={identity}
                 error={error}
@@ -226,7 +182,7 @@ export default function AuthPage() {
               />
             ) : null}
 
-            {!betaEnabled && visibleStep === AUTH_STEP.PROFILE ? (
+            {visibleStep === AUTH_STEP.PROFILE ? (
               <CitizenProfileStep
                 name={profileName}
                 district={profileDistrict}

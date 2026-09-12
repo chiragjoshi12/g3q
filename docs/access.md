@@ -8,11 +8,20 @@ This document outlines deployment infrastructure, configured CLIs, and mandatory
 
 | Project | Environment / Target | Access / CLI Tool |
 | --- | --- | --- |
-| `backend/` | **Azure Portal** (Azure App Service & MySQL) | Azure CLI (`az`) |
-| `client/` | **Vercel** | Vercel CLI (`vercel`) |
+| `backend/` | **Azure Portal** (Azure App Service & MySQL) — production today; staging App Service/DB later | Azure CLI (`az`) |
+| `client/` | **Vercel** (production; staging/Preview later) | Vercel CLI (`vercel`) |
 | `admin/` | **Vercel** | Vercel CLI (`vercel`) |
 | `analytics/` | **Vercel** | Vercel CLI (`vercel`) |
-| Repository | **GitHub** (`chiragjoshi12/g3q`) | GitHub CLI (`gh`) |
+| Repository | **GitHub** (`chiragjoshi12/g3q`) — branches `main` (prod) and `staging` | GitHub CLI (`gh`) |
+
+Branch mapping (same code; different hosts/DBs when staging resources exist):
+
+| Branch | Backend | Database |
+| --- | --- | --- |
+| `main` | `g3q-backend` | `g3q_backend` |
+| `staging` | `g3q-backend-staging` (future) | `g3q_backend_staging` (future) |
+
+See [`docs/g3q-azure.md`](g3q-azure.md) for secrets names and CI details.
 
 ---
 

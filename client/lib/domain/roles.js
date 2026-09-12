@@ -89,26 +89,3 @@ export function validateCitizenProfile({ name, district, taluka, districtId, tal
   if (!hasTaluka) return translateCurrent("taluka");
   return null;
 }
-
-export function validateBetaLoginProfile({
-  firstName,
-  lastName,
-  district,
-  taluka,
-  districtId,
-  talukaId,
-  phone,
-}) {
-  const joinedName = [String(firstName || "").trim(), String(lastName || "").trim()]
-    .filter(Boolean)
-    .join(" ");
-  const nameError = validateCitizenProfile({
-    name: joinedName,
-    district,
-    taluka,
-    districtId,
-    talukaId,
-  });
-  if (nameError) return nameError;
-  return validatePhone(phone);
-}

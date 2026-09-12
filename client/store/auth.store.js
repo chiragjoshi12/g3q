@@ -303,42 +303,6 @@ export const useAuthStore = create()(
         }
       },
 
-      betaLogin: async () => {
-        const {
-          credential,
-          profileFirstName,
-          profileLastName,
-          profileDistrict,
-          profileTaluka,
-          profileDistrictId,
-          profileTalukaId,
-        } = get();
-        set({ loading: true, error: null });
-        try {
-          const { user, token } = await authController.betaLogin({
-            firstName: profileFirstName,
-            lastName: profileLastName,
-            district: profileDistrict,
-            taluka: profileTaluka,
-            districtId: profileDistrictId,
-            talukaId: profileTalukaId,
-            phone: credential,
-          });
-          set({
-            loading: false,
-            step: AUTH_STEP.WELCOME,
-            welcomeSourceStep: AUTH_STEP.CREDENTIAL,
-            pendingUser: user,
-            pendingToken: token,
-            token,
-          });
-          return true;
-        } catch (error) {
-          set({ loading: false, error: toMessage(error) });
-          return false;
-        }
-      },
-
       completeLogin: () => {
         const { pendingUser, pendingToken, token } = get();
         if (!pendingUser) return false;

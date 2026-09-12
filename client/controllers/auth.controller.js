@@ -4,7 +4,6 @@ import { AppError, ERROR_CODE, ERROR_MESSAGE } from "@/lib/core/errors";
 import {
   isCitizen,
   usesRosterIdentity,
-  validateBetaLoginProfile,
   validateCitizenProfile,
   validateCredential,
   validatePhone,
@@ -128,34 +127,6 @@ export const authController = {
       id,
       role,
       credential: String(credential).trim(),
-    });
-    if (!user) {
-      throw new AppError(ERROR_CODE.UNKNOWN, ERROR_MESSAGE[ERROR_CODE.UNKNOWN]);
-    }
-    return { user, token };
-  },
-
-  async betaLogin({ firstName, lastName, district, taluka, districtId, talukaId, phone }) {
-    const invalid = validateBetaLoginProfile({
-      firstName,
-      lastName,
-      district,
-      taluka,
-      districtId,
-      talukaId,
-      phone: String(phone || "").trim(),
-    });
-    if (invalid) {
-      throw new AppError(ERROR_CODE.INVALID_CREDENTIAL, invalid);
-    }
-    const { user, token } = await authRepository.betaLogin({
-      firstName: String(firstName).trim(),
-      lastName: String(lastName).trim(),
-      district: district != null ? String(district).trim() : undefined,
-      taluka: taluka != null ? String(taluka).trim() : undefined,
-      districtId: districtId != null ? Number(districtId) : undefined,
-      talukaId: talukaId != null ? Number(talukaId) : undefined,
-      phone: String(phone).trim(),
     });
     if (!user) {
       throw new AppError(ERROR_CODE.UNKNOWN, ERROR_MESSAGE[ERROR_CODE.UNKNOWN]);
