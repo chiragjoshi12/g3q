@@ -9,7 +9,7 @@ This document outlines deployment infrastructure, configured CLIs, and mandatory
 | Project | Environment / Target | Access / CLI Tool |
 | --- | --- | --- |
 | `backend/` | **Azure** App Service + MySQL — staging live now; production later | Azure CLI (`az`) |
-| `client/` | **Vercel** (staging → Azure staging backend; production later) | Vercel CLI (`vercel`) |
+| `client/` | **Vercel** `g3q-staging` (branch `staging` → Azure staging backend); production project `g3q` later | Vercel CLI (`vercel`) |
 | `admin/` | **Vercel** | Vercel CLI (`vercel`) |
 | `analytics/` | **Vercel** | Vercel CLI (`vercel`) |
 | Repository | **GitHub** (`chiragjoshi12/g3q`) — branches `main` (future prod) and `staging` | GitHub CLI (`gh`) |

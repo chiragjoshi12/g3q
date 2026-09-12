@@ -12,7 +12,8 @@ Same codebase and schema. Environments differ by branch, App Service, and databa
 | Backend App Service | `g3q-backend-staging` | *not provisioned yet* |
 | Backend URL | `https://g3q-backend-staging.azurewebsites.net` | — |
 | MySQL database | `g3q_backend_staging` | *not provisioned yet* |
-| Client / admin | Vercel staging → staging backend | Vercel production → prod backend |
+| Client / admin | Vercel `g3q-staging` (`https://g3q-staging.vercel.app`, branch `staging`) | Vercel production |
+
 
 **Cutover note:** The previous App Service `g3q-backend` still exists and points at `g3q_backend_staging` so older clients keep working during the rename. Prefer `g3q-backend-staging` for all new staging frontend config.
 
@@ -82,10 +83,10 @@ az account show
   - GitHub Actions deploys the `backend/` folder
 
 - `client/`
-  - Public quiz app on Vercel
-  - Staging backend:
-    - `NEXT_PUBLIC_DATA_SOURCE=rest`
+  - Staging: Vercel project `g3q-staging` → `https://g3q-staging.vercel.app`
+    - Git production branch: `staging`
     - `BACKEND_ORIGIN=https://g3q-backend-staging.azurewebsites.net`
+    - Deploys automatically on push to `staging` (non-staging branches are ignored)
   - Default Azure origin in `client/config/backend-origin.mjs` is the staging App Service
 
 - `admin/`

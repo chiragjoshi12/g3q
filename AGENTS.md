@@ -22,7 +22,7 @@ There is a single root `.gitignore`. Do not add per-app `.gitignore` files for t
 ## Deployments & CLI Access Policy
 
 - **`backend/`**: Deployed on Azure Portal (Azure App Service). Staging is live as `g3q-backend-staging` / `g3q_backend_staging` (see [`docs/g3q-azure.md`](file:///Users/chiragjoshi/Documents/GitHub-chirguz/g3q/docs/g3q-azure.md)).
-- **`client/`**, **`admin/`**, **`analytics/`**: Deployed on Vercel and configured with Vercel CLI (`vercel`). Staging frontend should use `BACKEND_ORIGIN=https://g3q-backend-staging.azurewebsites.net`.
+- **`client/`**: Staging on Vercel project `g3q-staging` (`https://g3q-staging.vercel.app`, Git branch `staging` → Azure staging API). **`admin/`**, **`analytics/`**: also on Vercel.
 - **CLI Access & Permission Rules**: Refer to [`docs/access.md`](file:///Users/chiragjoshi/Documents/GitHub-chirguz/g3q/docs/access.md). Agents can access Vercel, Azure, and GitHub through CLI (`vercel`, `az`, `gh`), but **MUST ALWAYS ask for explicit user permission before processing or executing anything** on these platforms.
 - **Capacitor Mobile Builds**: Refer to [`docs/capacitor-build.md`](file:///Users/chiragjoshi/Documents/GitHub-chirguz/g3q/docs/capacitor-build.md) for Android APK and iOS iPhone build commands and output artifact locations.
 
