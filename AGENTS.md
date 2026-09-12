@@ -21,9 +21,8 @@ There is a single root `.gitignore`. Do not add per-app `.gitignore` files for t
 
 ## Deployments & CLI Access Policy
 
-- **`backend/`**: Deployed on Azure Portal (Azure App Service). Accessible via Azure CLI (`az`) if allowed (see [`docs/g3q-azure.md`](file:///Users/chiragjoshi/Documents/GitHub-chirguz/g3q/docs/g3q-azure.md)).
-- **`client/`**, **`admin/`**, **`analytics/`**: Deployed on Vercel and configured with Vercel CLI (`vercel`).
-- **Branches**: `main` → production; `staging` → staging (same code/schema; separate App Service + DB when provisioned). Details in [`docs/g3q-azure.md`](file:///Users/chiragjoshi/Documents/GitHub-chirguz/g3q/docs/g3q-azure.md).
+- **`backend/`**: Deployed on Azure Portal (Azure App Service). Staging is live as `g3q-backend-staging` / `g3q_backend_staging` (see [`docs/g3q-azure.md`](file:///Users/chiragjoshi/Documents/GitHub-chirguz/g3q/docs/g3q-azure.md)).
+- **`client/`**, **`admin/`**, **`analytics/`**: Deployed on Vercel and configured with Vercel CLI (`vercel`). Staging frontend should use `BACKEND_ORIGIN=https://g3q-backend-staging.azurewebsites.net`.
 - **CLI Access & Permission Rules**: Refer to [`docs/access.md`](file:///Users/chiragjoshi/Documents/GitHub-chirguz/g3q/docs/access.md). Agents can access Vercel, Azure, and GitHub through CLI (`vercel`, `az`, `gh`), but **MUST ALWAYS ask for explicit user permission before processing or executing anything** on these platforms.
 - **Capacitor Mobile Builds**: Refer to [`docs/capacitor-build.md`](file:///Users/chiragjoshi/Documents/GitHub-chirguz/g3q/docs/capacitor-build.md) for Android APK and iOS iPhone build commands and output artifact locations.
 
@@ -38,7 +37,6 @@ There is a single root `.gitignore`. Do not add per-app `.gitignore` files for t
 - Optional Gemini (`@google/genai`) for question personalisation
 - Entry: `backend/index.js` → `backend/src/app.js`
 - Config: `backend/src/config/index.js` (loads `backend/.env`)
-- App settings (quiz knobs, AI model/timeout defaults, etc.): `backend/src/config/settings.js`
 - Schema: `backend/src/prisma/schema.prisma`
 
 API prefixes:

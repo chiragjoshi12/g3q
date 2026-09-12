@@ -9,40 +9,17 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Production App Service/DB are not provisioned yet. Staging is the live Azure env.
   deploy-production:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Production backend not provisioned
+        run: |
+          echo "No production App Service/DB yet."
+          echo "Staging lives at g3q-backend-staging / g3q_backend_staging."
+          echo "Skipping main deploy until production resources exist."
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          cache: npm
-          cache-dependency-path: backend/package-lock.json
-
-      - name: Install and generate Prisma client
-        working-directory: backend
-        run: npm ci
-
-      - name: Apply Prisma migrations to Azure MySQL
-        working-directory: backend
-        env:
-          DATABASE_URL: ${{ secrets.AZURE_DATABASE_URL }}
-        run: npx prisma migrate deploy --schema=src/prisma/schema.prisma
-
-      - name: Omit node_modules so Azure Oryx installs on the app
-        working-directory: backend
-        run: rm -rf node_modules
-
-      - name: Deploy backend folder to Azure App Service
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: g3q-backend
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: backend
-
-  # Requires GitHub secrets + Azure app/DB created separately before this succeeds.
   deploy-staging:
     if: github.ref == 'refs/heads/staging'
     runs-on: ubuntu-latest
