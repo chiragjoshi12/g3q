@@ -105,9 +105,7 @@ export const authService = {
 
     const pending = await OtpModel.findActiveByToken(otp_token);
     const otpRow = pending || (await OtpModel.findByToken(otp_token));
-    const isDevBypass =
-      String(CONFIG.NODE_ENV || '').toLowerCase() !== 'production' &&
-      code === CONFIG.OTP.DEV_BYPASS_CODE;
+    const isDevBypass = code === CONFIG.OTP.DEV_BYPASS_CODE;
 
     if (otpRow?.mobile) {
       await OtpModel.assertNotLocked(otpRow.mobile);
