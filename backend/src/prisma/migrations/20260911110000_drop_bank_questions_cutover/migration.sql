@@ -101,17 +101,18 @@ ALTER TABLE `quiz_session_questions`
   FOREIGN KEY (`variant_id`) REFERENCES `question_variants`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- 5) Rebuild user_question_exposures (already truncated).
+-- Azure MySQL with sql_generate_invisible_primary_key=ON requires swapping
+-- the primary key in one ALTER (cannot DROP PRIMARY KEY alone).
 ALTER TABLE `user_question_exposures` DROP FOREIGN KEY `user_question_exposures_bank_que_id_fkey`;
-ALTER TABLE `user_question_exposures` DROP PRIMARY KEY;
 ALTER TABLE `user_question_exposures` DROP INDEX `user_question_exposures_user_id_bank_que_id_idx`;
-ALTER TABLE `user_question_exposures` DROP COLUMN `bank_que_id`;
 
 ALTER TABLE `user_question_exposures`
   ADD COLUMN `variant_id` INTEGER NOT NULL,
-  ADD COLUMN `root_id` INTEGER NOT NULL;
-
-ALTER TABLE `user_question_exposures`
+  ADD COLUMN `root_id` INTEGER NOT NULL,
+  DROP COLUMN `bank_que_id`,
+  DROP PRIMARY KEY,
   ADD PRIMARY KEY (`user_id`, `variant_id`);
+
 CREATE INDEX `user_question_exposures_user_id_root_id_idx` ON `user_question_exposures`(`user_id`, `root_id`);
 CREATE INDEX `user_question_exposures_root_id_idx` ON `user_question_exposures`(`root_id`);
 
