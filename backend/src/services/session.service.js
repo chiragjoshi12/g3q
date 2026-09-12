@@ -129,9 +129,10 @@ async function fetchCandidateLight({
   personalized,
 }) {
   const params = [userId];
-  const scopeExpr = "UPPER(COALESCE(qr.scope, 'GENERAL'))";
   const districtExpr = 'qr.district_id';
   const casteExpr = "UPPER(COALESCE(qr.caste_category, 'GENERAL'))";
+  // Serve ACCEPTED bank variants the user has never seen.
+  // Scope is informational (GENERAL / TARGETED); beta product mode is gone.
   const filters = [
     "qv.review_status = 'ACCEPTED'",
     `(
@@ -139,7 +140,6 @@ async function fetchCandidateLight({
       OR JSON_EXTRACT(qv.payload, '$.answer') IS NOT NULL
       OR qv.type IN ('mcq', 'true_false', 'match_pairs', 'sequence', 'fill_blanks')
     )`,
-    `${scopeExpr} <> 'BETA'`,
     'uqe.variant_id IS NULL',
   ];
 
