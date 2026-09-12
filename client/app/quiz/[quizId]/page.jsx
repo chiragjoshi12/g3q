@@ -21,19 +21,7 @@ import { useI18n } from "@/lib/i18n";
 import { unlockQuizSounds } from "@/lib/quiz-sounds";
 import { QUIZ_PHASE, useQuizStore } from "@/store/quiz.store";
 
-const QUIZ_PLAY_BG = "/quiz/play-bg.png";
-const QUIZ_QUESTION_BGS = [
-  QUIZ_PLAY_BG,
-  "/quiz-bg/q2.jpeg",
-  "/quiz-bg/q3.jpeg",
-  "/quiz-bg/q4.jpeg",
-  "/quiz-bg/q5.jpeg",
-  "/quiz-bg/q6.jpeg",
-];
-
-function quizPlayBackground(index) {
-  return QUIZ_QUESTION_BGS[index] ?? QUIZ_PLAY_BG;
-}
+const QUIZ_PLAY_BG_FALLBACK = "/quiz/play-bg.png";
 
 /**
  * Quiz runner — glass header, illustrated backdrop, one question at a time.
@@ -139,7 +127,7 @@ function QuizScreen({ params }) {
     );
   }
 
-  const playBg = question?.backgroundImageUrl || quizPlayBackground(currentIndex);
+  const playBg = question?.backgroundImageUrl || QUIZ_PLAY_BG_FALLBACK;
 
   return (
     <AppShell fullOnDesktop className="font-canva">

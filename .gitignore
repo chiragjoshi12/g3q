@@ -98,8 +98,4 @@ client/ios/
 
 # Locust load test artifacts
 loadtest/
-loadtest/.venv/
-loadtest/users.json
-loadtest/report-*
-loadtest/__pycache__/
 databank

@@ -11,6 +11,7 @@ import {
 } from '../models/QuizSessionModel.js';
 import { flattenVariantRow } from '../models/BankQuestionModel.js';
 import { UserModel } from '../models/UserModel.js';
+import { resolveBetaDepartment } from '../config/beta-departments.js';
 import { gradeQuestion } from './grading.service.js';
 import { resolveAzureBlobUrl } from '../utils/azureStorage.js';
 
@@ -198,20 +199,37 @@ function mixBetaQuestions(pool, count) {
   return picked.slice(0, count);
 }
 
+function betaDepartmentIdForRow(row) {
+  const fromName = resolveBetaDepartment(row.departmentEn || row.departmentGu);
+  if (fromName?.id) return fromName.id;
+
+  const fromKey = resolveBetaDepartment(row.departmentRef?.key);
+  if (fromKey?.id) return fromKey.id;
+
+  // Legacy import path stored beta_department.id on department_id.
+  const rawId = Number(row.departmentId);
+  return Number.isFinite(rawId) ? rawId : null;
+}
+
 async function attachBetaQuestionBackgrounds(bankRows) {
-  const tagged = bankRows.filter((row) => Number.isFinite(Number(row.departmentId)));
-  if (!tagged.length) {
+  const withBetaDept = bankRows
+    .map((row) => ({ row, betaDepartmentId: betaDepartmentIdForRow(row) }))
+    .filter((entry) => Number.isFinite(entry.betaDepartmentId));
+
+  if (!withBetaDept.length) {
     return { bankRows, backgroundStyle: null };
   }
 
-  const departmentIds = [...new Set(tagged.map((row) => Number(row.departmentId)))];
-  const imageRows = await prisma.departmentQuizImage.findMany({
+  const betaDepartmentIds = [
+    ...new Set(withBetaDept.map((entry) => entry.betaDepartmentId)),
+  ];
+  const imageRows = await prisma.betaDepartmentQuizImage.findMany({
     where: {
-      departmentId: { in: departmentIds },
+      betaDepartmentId: { in: betaDepartmentIds },
       isActive: true,
     },
     select: {
-      departmentId: true,
+      betaDepartmentId: true,
       imageUrl: true,
     },
   });
@@ -220,26 +238,31 @@ async function attachBetaQuestionBackgrounds(bankRows) {
     return { bankRows, backgroundStyle: null };
   }
 
-  const byDepartment = new Map();
-
+  const byBetaDepartment = new Map();
   for (const row of imageRows) {
-    if (!byDepartment.has(row.departmentId)) byDepartment.set(row.departmentId, []);
-    byDepartment.get(row.departmentId).push(row);
+    if (!byBetaDepartment.has(row.betaDepartmentId)) {
+      byBetaDepartment.set(row.betaDepartmentId, []);
+    }
+    byBetaDepartment.get(row.betaDepartmentId).push(row);
   }
+
+  const betaIdByQueId = new Map(
+    withBetaDept.map((entry) => [entry.row.queId, entry.betaDepartmentId])
+  );
 
   return {
     backgroundStyle: null,
     bankRows: bankRows.map((row) => {
-      const departmentId = Number(row.departmentId);
-      if (!Number.isFinite(departmentId)) return row;
-      const fallback = byDepartment.get(departmentId) || [];
-      const chosenImage = pickRandom(fallback);
+      const betaDepartmentId = betaIdByQueId.get(row.queId);
+      if (!Number.isFinite(betaDepartmentId)) return row;
+      const chosenImage = pickRandom(byBetaDepartment.get(betaDepartmentId) || []);
+      if (!chosenImage?.imageUrl) return row;
       const content = parseJson(row.content) || {};
       return {
         ...row,
         content: {
           ...content,
-          backgroundImageUrl: resolveAzureBlobUrl(chosenImage?.imageUrl),
+          backgroundImageUrl: resolveAzureBlobUrl(chosenImage.imageUrl),
           backgroundStyle: null,
         },
       };

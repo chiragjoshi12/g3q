@@ -18,7 +18,7 @@ const MIN_STREAM_DURATION_MS = 2600;
 const MAX_STREAM_DURATION_MS = 4200;
 const PROGRESS_COMPLETE_DELAY_MS = 320;
 /** Wait after explanation finishes typing before showing correct/incorrect. */
-const RESULT_REVEAL_DELAY_MS = 20_00000;
+const RESULT_REVEAL_DELAY_MS = 0;
 
 /**
  * Fun-fact sheet that opens the moment an answer is submitted.
